@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ROLES } from '../utils/constants';
-import { isAdopterProfileComplete } from '../utils/profileComplete';
+import { useLocation } from 'react-router-dom';
+import { isAdopterProfileComplete, isSenderProfileComplete } from '../utils/profileComplete';
 // Layouts
 import GuestLayout from '../components/layout/GuestLayout';
 import AdminLayout from '../components/layout/AdminLayout';
@@ -12,7 +13,6 @@ import HomePage from '../pages/guest/HomePage';
 import GuidePage from '../pages/guest/GuidePage';
 import LoginPage from '../pages/guest/LoginPage';
 import RegisterPage from '../pages/guest/RegisterPage';
-import RoleSelectPage from '../pages/guest/RoleSelectPage';
 
 // ─── Sender ───────────────────────────────────────────
 import CreateChildRequest from '../pages/sender/CreateChildRequest';
@@ -31,6 +31,8 @@ import AdopterProfile from '../pages/adopter/AdopterProfile';
 import ReceptionDashboard from '../pages/staff-reception/ReceptionDashboard';
 import ChildRequestList from '../pages/staff-reception/ChildRequestList';
 import ChildRequestDetail from '../pages/staff-reception/ChildRequestDetail';
+import ReceptionProfileList from '../pages/staff-reception/ReceptionProfileList';
+import ReceptionProfileDetail from '../pages/staff-reception/ReceptionProfileDetail';
 import CreateReceptionProfile from '../pages/staff-reception/CreateReceptionProfile';
 import ChildList from '../pages/staff-reception/ChildList';
 import ChildForm from '../pages/staff-reception/ChildForm';
@@ -42,6 +44,7 @@ import AdoptionRequestList from '../pages/staff-adoption/AdoptionRequestList';
 import AdoptionRequestDetail from '../pages/staff-adoption/AdoptionRequestDetail';
 import CreateAdoptionProfile from '../pages/staff-adoption/CreateAdoptionProfile';
 import AdoptionProfileList from '../pages/staff-adoption/AdoptionProfileList';
+import AdoptionProfileDetail from '../pages/staff-adoption/AdoptionProfileDetail';
 // ─── Manager ──────────────────────────────────────────
 import ManagerDashboard from '../pages/manager/ManagerDashboard';
 import PendingProfileList from '../pages/manager/PendingProfileList';
@@ -60,12 +63,8 @@ function ProtectedRoute({ allowedRoles, children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/dang-nhap" replace />;
-  if (allowedRoles) {
-    // Kiểm tra cả primary role lẫn toàn bộ feRoles (user có thể có nhiều vai trò)
-    const userRoles = user.feRoles?.length ? user.feRoles : [user.role];
-    if (!allowedRoles.some(r => userRoles.includes(r)))
-      return <Navigate to="/dang-nhap" replace />;
-  }
+  if (allowedRoles && !allowedRoles.includes(user.role))
+    return <Navigate to="/dang-nhap" replace />;
   return children;
 }
 function RequireCompletedAdopterProfile({ children }) {
@@ -92,6 +91,32 @@ function RequireCompletedAdopterProfile({ children }) {
 
   return children;
 }
+function RequireCompletedSenderProfile({ children }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return null;
+
+  if (!user) {
+    return <Navigate to="/dang-nhap" replace />;
+  }
+
+  if (!isSenderProfileComplete(user)) {
+    return (
+      <Navigate
+        to="/gui-tre/ho-so?required=1"
+        replace
+        state={{
+          from: location.pathname,
+          message:
+            'Bạn cần hoàn thiện thông tin cá nhân trước khi tạo yêu cầu gửi trẻ, theo dõi trạng thái hoặc xem thông tin trẻ đã gửi.',
+        }}
+      />
+    );
+  }
+
+  return children;
+}
 function Guard({ roles, layout: Layout }) {
   return (
     <ProtectedRoute allowedRoles={roles}>
@@ -110,22 +135,18 @@ export default function AppRouter() {
           <Route path="/huong-dan" element={<GuidePage />} />
           <Route path="/dang-nhap" element={<LoginPage />} />
           <Route path="/dang-ky" element={<RegisterPage />} />
-          <Route path="/chon-chuc-nang" element={<RoleSelectPage />} />
         </Route>
-
         {/* ── Sender /gui-tre/* ───────────────────────── */}
         <Route element={<Guard roles={[ROLES.SENDER]} layout={GuestLayout} />}>
-          <Route path="/gui-tre" element={<Navigate to="/gui-tre/tao-yeu-cau" replace />} />
-          <Route path="/gui-tre/tao-yeu-cau" element={<CreateChildRequest />} />
-          <Route path="/gui-tre/thong-tin-tre" element={<SentChildInfo />} />
-          <Route path="/gui-tre/cap-nhat/:id" element={<UpdateChildRequest />} />
-          <Route path="/gui-tre/trang-thai" element={<RequestStatus />} />
+          <Route path="/gui-tre/tao-yeu-cau" element={<RequireCompletedSenderProfile><CreateChildRequest /></RequireCompletedSenderProfile>} />
+          <Route path="/gui-tre/thong-tin-tre" element={<RequireCompletedSenderProfile><SentChildInfo /></RequireCompletedSenderProfile>} />
+          <Route path="/gui-tre/trang-thai" element={<RequireCompletedSenderProfile><RequestStatus /></RequireCompletedSenderProfile>} />
+          <Route path="/gui-tre/cap-nhat/:id" element={<RequireCompletedSenderProfile><UpdateChildRequest /></RequireCompletedSenderProfile>} />
           <Route path="/gui-tre/ho-so" element={<SenderProfile />} />
         </Route>
 
         {/* ── Adopter /nhan-nuoi/* ────────────────────── */}
         <Route element={<Guard roles={[ROLES.ADOPTER]} layout={GuestLayout} />}>
-          <Route path="/nhan-nuoi" element={<Navigate to="/nhan-nuoi/ho-so" replace />} />
           <Route path="/nhan-nuoi/tao-don" element={
             <RequireCompletedAdopterProfile><CreateAdoptionRequest /></RequireCompletedAdopterProfile>
           } />
@@ -135,20 +156,25 @@ export default function AppRouter() {
           } />
           <Route path="/nhan-nuoi/ho-so" element={<AdopterProfile />} />
         </Route>
-
         {/* ── Staff Reception /can-bo-tiep-nhan/* ─────── */}
         <Route element={<Guard roles={[ROLES.STAFF_RECEPTION]} layout={AdminLayout} />}>
+          <Route path="/can-bo-tiep-nhan" element={<Navigate to="/can-bo-tiep-nhan/dashboard" replace />} />
           <Route path="/can-bo-tiep-nhan/dashboard" element={<ReceptionDashboard />} />
+
           <Route path="/can-bo-tiep-nhan/yeu-cau" element={<ChildRequestList />} />
           <Route path="/can-bo-tiep-nhan/yeu-cau/:id" element={<ChildRequestDetail />} />
-          <Route path="/can-bo-tiep-nhan/tao-ho-so/:requestId" element={<CreateReceptionProfile />} />
-          <Route path="/can-bo-tiep-nhan/tre" element={<ChildList />} />
-          <Route path="/can-bo-tiep-nhan/tre/tao" element={<ChildForm />} />
-          <Route path="/can-bo-tiep-nhan/tre/:id/sua" element={<ChildForm />} />
-          <Route path="/can-bo-tiep-nhan/tre/:childId/suc-khoe" element={<ChildHealthList />} />
-          <Route path="/can-bo-tiep-nhan/tre/:childId/suc-khoe/tao" element={<ChildHealthForm />} />
-        </Route>
 
+          <Route path="/can-bo-tiep-nhan/ho-so-tiep-nhan" element={<ReceptionProfileList />} />
+          <Route path="/can-bo-tiep-nhan/ho-so-tiep-nhan/:id" element={<ReceptionProfileDetail />} />
+          <Route path="/can-bo-tiep-nhan/tao-ho-so/:requestId" element={<CreateReceptionProfile />} />
+
+          <Route path="/can-bo-tiep-nhan/tre" element={<ChildList />} />
+          <Route path="/can-bo-tiep-nhan/tre/:id" element={<ChildForm />} />
+          {/* Sức khỏe trẻ */}
+          <Route path="/can-bo-tiep-nhan/suc-khoe" element={<ChildHealthList />} />
+          <Route path="/can-bo-tiep-nhan/suc-khoe/tre/:childId" element={<ChildHealthForm />} />
+          <Route path="/can-bo-tiep-nhan/suc-khoe/tre/:childId/tao" element={<ChildHealthForm />} />
+        </Route>
         {/* ── Staff Adoption /can-bo-nhan-nuoi/* ─────── */}
         <Route element={<Guard roles={[ROLES.STAFF_ADOPTION]} layout={AdminLayout} />}>
           <Route path="/can-bo-nhan-nuoi" element={<Navigate to="/can-bo-nhan-nuoi/dashboard" replace />} />
@@ -157,6 +183,7 @@ export default function AppRouter() {
           <Route path="/can-bo-nhan-nuoi/chi-tiet/:id" element={<AdoptionRequestDetail />} />
           <Route path="/can-bo-nhan-nuoi/tao-ho-so/:requestId" element={<CreateAdoptionProfile />} />
           <Route path="/can-bo-nhan-nuoi/ho-so" element={<AdoptionProfileList />} />
+          <Route path="/can-bo-nhan-nuoi/ho-so/:profileId" element={<AdoptionProfileDetail />} />
         </Route>
 
         {/* ── Manager /truong-phong/* ─────────────────── */}

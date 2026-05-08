@@ -1,124 +1,122 @@
-import axiosClient from './axiosClient';
-
-// axiosClient interceptor đã unwrap response.data.data tự động
+import { MOCK_ADOPTIONS, mockApiResponse, mockApiError } from './mockData';
 
 const adoptionApi = {
-  /**
-   * Danh sách yêu cầu nhận nuôi — GET /api/adoptions
-   * params: { page, limit, status, adopterId }
-   * Trả về: { items, total, page, limit, totalPages }
-   */
-  getAll: (params = {}) =>
-    axiosClient.get('/adoptions', { params }),
+  getAll: async (params = {}) => {
+    let filteredAdoptions = [...MOCK_ADOPTIONS];
 
-  /**
-   * Chi tiết yêu cầu — GET /api/adoptions/:id
-   */
-  getById: (id) =>
-    axiosClient.get(`/adoptions/${id}`),
+    // Filter by adopter (for adopter role)
+    if (params.adopterId) {
+      filteredAdoptions = filteredAdoptions.filter(a => a.adopterId === parseInt(params.adopterId));
+    }
 
-  /**
-   * Tạo yêu cầu nhận nuôi — POST /api/adoptions
-   */
-  create: (data) =>
-    axiosClient.post('/adoptions', data),
+    // Filter by status
+    if (params.status) {
+      filteredAdoptions = filteredAdoptions.filter(a => a.status === params.status);
+    }
 
-  /**
-   * Cập nhật yêu cầu — PUT /api/adoptions/:id
-   */
-  update: (id, data) =>
-    axiosClient.put(`/adoptions/${id}`, data),
+    // Pagination
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedAdoptions = filteredAdoptions.slice(startIndex, endIndex);
 
-  /**
-   * Duyệt yêu cầu — POST /api/adoptions/:id/approve
-   * body: { ghiChu? }
-   */
-  approve: (id, body = {}) =>
-    axiosClient.post(`/adoptions/${id}/approve`, body),
+    return mockApiResponse({
+      items: paginatedAdoptions,
+      total: filteredAdoptions.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredAdoptions.length / limit),
+    });
+  },
 
-  /**
-   * Từ chối yêu cầu — POST /api/adoptions/:id/reject
-   * body: { ghiChu? }
-   */
-  reject: (id, body = {}) =>
-    axiosClient.post(`/adoptions/${id}/reject`, body),
+  getById: async (id) => {
+    const adoption = MOCK_ADOPTIONS.find(a => a.id === parseInt(id));
+    if (!adoption) {
+      return mockApiError('Adoption request not found');
+    }
+    return mockApiResponse(adoption);
+  },
 
-  /**
-   * Xóa yêu cầu — DELETE /api/adoptions/:id
-   */
-  remove: (id) =>
-    axiosClient.delete(`/adoptions/${id}`),
+  create: async (data) => {
+    const newAdoption = {
+      id: MOCK_ADOPTIONS.length + 1,
+      ...data,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      documents: [],
+    };
 
-  // ─── Hồ sơ nhận nuôi (/api/adoption-profiles) ───────────────
+    MOCK_ADOPTIONS.push(newAdoption);
+    return mockApiResponse(newAdoption);
+  },
 
-  /**
-   * Danh sách hồ sơ nhận nuôi — GET /api/adoption-profiles
-   * params: { page, limit, status }
-   */
-  getAllProfiles: (params = {}) =>
-    axiosClient.get('/adoption-profiles', { params }),
+  update: async (id, data) => {
+    const adoptionIndex = MOCK_ADOPTIONS.findIndex(a => a.id === parseInt(id));
+    if (adoptionIndex === -1) {
+      return mockApiError('Adoption request not found');
+    }
 
-  /**
-   * Chi tiết hồ sơ — GET /api/adoption-profiles/:id
-   */
-  getProfileById: (id) =>
-    axiosClient.get(`/adoption-profiles/${id}`),
+    MOCK_ADOPTIONS[adoptionIndex] = {
+      ...MOCK_ADOPTIONS[adoptionIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
 
-  /**
-   * Tạo hồ sơ nhận nuôi — POST /api/adoption-profiles
-   */
-  createProfile: (data) =>
-    axiosClient.post('/adoption-profiles', data),
+    return mockApiResponse(MOCK_ADOPTIONS[adoptionIndex]);
+  },
 
-  /**
-   * Cập nhật hồ sơ — PUT /api/adoption-profiles/:id
-   */
-  updateProfile: (id, data) =>
-    axiosClient.put(`/adoption-profiles/${id}`, data),
+  approve: async (id) => {
+    const adoptionIndex = MOCK_ADOPTIONS.findIndex(a => a.id === parseInt(id));
+    if (adoptionIndex === -1) {
+      return mockApiError('Adoption request not found');
+    }
 
-  /**
-   * Duyệt hồ sơ — POST /api/adoption-profiles/:id/approve
-   */
-  approveProfile: (id, body = {}) =>
-    axiosClient.post(`/adoption-profiles/${id}/approve`, body),
+    MOCK_ADOPTIONS[adoptionIndex] = {
+      ...MOCK_ADOPTIONS[adoptionIndex],
+      status: 'approved',
+      approvedAt: new Date().toISOString(),
+      approvedBy: 'Mock Approver',
+      updatedAt: new Date().toISOString(),
+    };
 
-  /**
-   * Từ chối hồ sơ — POST /api/adoption-profiles/:id/reject
-   */
-  rejectProfile: (id, body = {}) =>
-    axiosClient.post(`/adoption-profiles/${id}/reject`, body),
+    return mockApiResponse(MOCK_ADOPTIONS[adoptionIndex]);
+  },
 
-  // ─── Giấy tờ (/api/documents) ────────────────────────────────
+  reject: async (id, reason) => {
+    const adoptionIndex = MOCK_ADOPTIONS.findIndex(a => a.id === parseInt(id));
+    if (adoptionIndex === -1) {
+      return mockApiError('Adoption request not found');
+    }
 
-  /**
-   * Danh sách giấy tờ — GET /api/documents
-   * params: { maYeuCauGuiTre?, maYeuCauNhan?, status? }
-   */
-  getDocuments: (params = {}) =>
-    axiosClient.get('/documents', { params }),
+    MOCK_ADOPTIONS[adoptionIndex] = {
+      ...MOCK_ADOPTIONS[adoptionIndex],
+      status: 'rejected',
+      reason,
+      rejectedAt: new Date().toISOString(),
+      rejectedBy: 'Mock Approver',
+      updatedAt: new Date().toISOString(),
+    };
 
-  /**
-   * Upload file giấy tờ — POST /api/documents/upload (multipart/form-data)
-   * formData phải chứa: file, subfolder?
-   * Trả về: { filePath }
-   */
-  uploadDocument: (formData) =>
-    axiosClient.post('/documents/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    return mockApiResponse(MOCK_ADOPTIONS[adoptionIndex]);
+  },
 
-  /**
-   * Tạo bản ghi giấy tờ — POST /api/documents
-   */
-  createDocument: (data) =>
-    axiosClient.post('/documents', data),
+  uploadDocument: async (id, formData) => {
+    const adoption = MOCK_ADOPTIONS.find(a => a.id === parseInt(id));
+    if (!adoption) {
+      return mockApiError('Adoption request not found');
+    }
 
-  /**
-   * Xác minh giấy tờ — PATCH /api/documents/:id/verify
-   * body: { trangThai }
-   */
-  verifyDocument: (id, body) =>
-    axiosClient.patch(`/documents/${id}/verify`, body),
+    const newDoc = {
+      id: Date.now(),
+      name: formData.get('name') || 'Document',
+      url: `/docs/mock-${Date.now()}.pdf`,
+    };
+
+    adoption.documents.push(newDoc);
+    return mockApiResponse(newDoc);
+  },
 };
 
 export default adoptionApi;

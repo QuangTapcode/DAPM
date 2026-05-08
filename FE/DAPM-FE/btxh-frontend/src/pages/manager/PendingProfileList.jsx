@@ -4,6 +4,7 @@ import { useFetch } from '../../hooks/useFetch';
 import receptionApi from '../../api/receptionApi';
 import adoptionApi from '../../api/adoptionApi';
 import Badge from '../../components/common/Badge';
+import { REQUEST_STATUS } from '../../utils/constants';
 import { formatDate } from '../../utils/formatDate';
 
 function EyeIcon() {
@@ -25,12 +26,17 @@ function EyeIcon() {
 }
 
 const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-orange-400', 'bg-teal-500',
-  'bg-rose-400', 'bg-violet-500', 'bg-emerald-500',
+  'bg-blue-500',
+  'bg-orange-400',
+  'bg-teal-500',
+  'bg-rose-400',
+  'bg-violet-500',
+  'bg-emerald-500',
 ];
 
 function Avatar({ name, idx }) {
   const safeName = (name || 'Người dùng').trim();
+
   const initials = safeName
     .split(' ')
     .filter(Boolean)
@@ -41,7 +47,7 @@ function Avatar({ name, idx }) {
 
   return (
     <div
-      className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]
         }`}
     >
       {initials || 'ND'}
@@ -51,23 +57,21 @@ function Avatar({ name, idx }) {
 
 function ProfileRow({ item, type, idx, checked, onToggle }) {
   const navigate = useNavigate();
+
   const isReception = type === 'reception';
+
   const mainName = isReception
-    ? item.tenNguoiGui || item.senderName || item.fullName || 'Chưa có tên'
-    : item.tenNguoiNhan || item.adopterName || item.fullName || 'Chưa có tên';
+    ? item.senderName || item.parentName || item.fullName || 'Chưa có tên'
+    : item.adopterName || item.applicantName || item.fullName || 'Chưa có tên';
 
   const detailPath = `/truong-phong/duyet/${type}/${item.id}`;
 
   return (
     <tr
-      className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer transition-colors"
+      className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-blue-50/40 [&>td]:align-middle"
       onClick={() => navigate(detailPath)}
     >
-      {/* Checkbox */}
-      <td
-        className="py-3.5 px-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
           checked={checked}
@@ -76,58 +80,61 @@ function ProfileRow({ item, type, idx, checked, onToggle }) {
         />
       </td>
 
-      {/* Mã đơn */}
-      <td className="py-3.5 px-4 text-sm font-bold text-blue-600 whitespace-nowrap">
+      <td className="whitespace-nowrap px-4 py-3.5 text-sm font-bold text-blue-600">
         #{item.id}
       </td>
 
-      {/* Loại hồ sơ */}
-      <td className="py-3.5 px-3">
+      <td className="px-3 py-3.5">
         <span
-          className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap
-            ${isReception ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}
+          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${isReception
+            ? 'bg-blue-100 text-blue-700'
+            : 'bg-emerald-100 text-emerald-700'
+            }`}
         >
           {isReception ? 'Gửi trẻ' : 'Nhận nuôi'}
         </span>
       </td>
 
-      {/* Người đăng ký */}
-      <td className="py-3.5 px-3">
+      <td className="px-3 py-3.5">
         <div className="flex items-center gap-2.5">
           <Avatar name={mainName} idx={idx} />
+
           <div>
-            <p className="text-sm font-semibold text-gray-800 leading-tight">{mainName}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Mã: {item.maNguoiGui || item.maNguoiNhan || item.id || '—'}
+            <p className="text-sm font-semibold leading-tight text-gray-800">
+              {mainName}
+            </p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              CCCD: {item.cccd || item.nationalId || 'Chưa cập nhật'}
             </p>
           </div>
         </div>
       </td>
 
-      {/* Thông tin liên hệ */}
-      <td className="py-3.5 px-3">
-        <p className="text-sm font-medium text-gray-700">{item.soDienThoai || item.phone || '—'}</p>
-        <p className="text-xs text-gray-400 mt-0.5">
-          {item.diaChi || item.city || 'Chưa cập nhật'}
+      <td className="px-3 py-3.5">
+        <p className="text-sm font-medium text-gray-700">
+          {item.phone || '—'}
+        </p>
+        <p className="mt-0.5 text-xs text-gray-400">
+          {item.city || item.address || 'Chưa cập nhật'}
         </p>
       </td>
 
-      {/* Ngày nộp */}
-      <td className="py-3.5 px-3 text-sm text-gray-500 whitespace-nowrap">
-        {formatDate(item.ngayTao || item.createdAt)}
+      <td className="whitespace-nowrap px-3 py-3.5 text-sm text-gray-500">
+        {formatDate(item.createdAt)}
       </td>
 
-      {/* Trạng thái */}
-      <td className="py-3.5 px-3">
-        <Badge status={item.trangThaiYC || item.trangThai || item.status} />
+      <td className="px-3 py-3.5">
+        <Badge status={item.status} />
       </td>
 
-      {/* Thao tác */}
-      <td className="py-3.5 px-4 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+      <td
+        className="px-4 py-3.5 text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Link
           to={detailPath}
           title="Xem chi tiết"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700"
         >
           <EyeIcon />
         </Link>
@@ -138,19 +145,35 @@ function ProfileRow({ item, type, idx, checked, onToggle }) {
 
 export default function PendingProfileList() {
   const [tab, setTab] = useState('all');
-
   const [selectedRows, setSelectedRows] = useState([]);
 
-  const { data: recData } = useFetch(() => receptionApi.getAll({ status: 'Chờ xử lý' }));
-  const { data: adpData } = useFetch(() => adoptionApi.getAll({ status: 'Chờ xử lý' }));
+  const { data: recData } = useFetch(() =>
+    receptionApi.getAll({ status: REQUEST_STATUS.PENDING })
+  );
+
+  const { data: adpData } = useFetch(() =>
+    adoptionApi.getAll({ status: REQUEST_STATUS.PENDING })
+  );
 
   const receptions = recData?.items || [];
   const adoptions = adpData?.items || [];
 
   const tabs = [
-    { value: 'all', label: 'Tất cả', count: receptions.length + adoptions.length },
-    { value: 'reception', label: 'Gửi trẻ', count: receptions.length },
-    { value: 'adoption', label: 'Nhận nuôi', count: adoptions.length },
+    {
+      value: 'all',
+      label: 'Tất cả',
+      count: receptions.length + adoptions.length,
+    },
+    {
+      value: 'reception',
+      label: 'Gửi trẻ',
+      count: receptions.length,
+    },
+    {
+      value: 'adoption',
+      label: 'Nhận nuôi',
+      count: adoptions.length,
+    },
   ];
 
   const visibleReceptions = tab !== 'adoption' ? receptions : [];
@@ -158,13 +181,15 @@ export default function PendingProfileList() {
   const totalVisible = visibleReceptions.length + visibleAdoptions.length;
 
   const visibleRows = [
-    ...visibleReceptions.map((r) => ({ ...r, __type: 'reception' })),
-    ...visibleAdoptions.map((a) => ({ ...a, __type: 'adoption' })),
+    ...visibleReceptions.map((item) => ({ ...item, __type: 'reception' })),
+    ...visibleAdoptions.map((item) => ({ ...item, __type: 'adoption' })),
   ];
 
   const getRowKey = (item, type) => `${type}-${item.id}`;
 
-  const allVisibleKeys = visibleRows.map((item) => getRowKey(item, item.__type));
+  const allVisibleKeys = visibleRows.map((item) =>
+    getRowKey(item, item.__type)
+  );
 
   const isAllSelected =
     allVisibleKeys.length > 0 &&
@@ -177,7 +202,9 @@ export default function PendingProfileList() {
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
-      setSelectedRows((prev) => prev.filter((key) => !allVisibleKeys.includes(key)));
+      setSelectedRows((prev) =>
+        prev.filter((key) => !allVisibleKeys.includes(key))
+      );
     } else {
       setSelectedRows((prev) => [...new Set([...prev, ...allVisibleKeys])]);
     }
@@ -185,7 +212,9 @@ export default function PendingProfileList() {
 
   const toggleSelectRow = (key) => {
     setSelectedRows((prev) =>
-      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
+      prev.includes(key)
+        ? prev.filter((item) => item !== key)
+        : [...prev, key]
     );
   };
 
@@ -198,7 +227,9 @@ export default function PendingProfileList() {
 
         if (type === 'reception') {
           await receptionApi.approve(id);
-        } else if (type === 'adoption') {
+        }
+
+        if (type === 'adoption') {
           await adoptionApi.approve(id);
         }
       }
@@ -211,127 +242,167 @@ export default function PendingProfileList() {
   };
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-[1720px] space-y-6 px-5 py-8 sm:px-8 lg:px-10">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex w-full flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Danh sách hồ sơ chờ duyệt</h1>
-          <p className="text-sm text-gray-400 mt-1">Quản lý và theo dõi tiến độ các hồ sơ đang được xử lý.</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách hồ sơ chờ duyệt
+          </h1>
+
+          <p className="mt-1 text-sm text-gray-400">
+            Quản lý và theo dõi tiến độ các hồ sơ đang được xử lý.
+          </p>
         </div>
+
         <div className="flex gap-2">
           <button
             onClick={handleBulkApprove}
             disabled={selectedRows.length === 0}
-            className={`flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${selectedRows.length === 0
-              ? 'bg-blue-300 cursor-not-allowed'
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${selectedRows.length === 0
+              ? 'cursor-not-allowed bg-blue-300'
               : 'bg-blue-600 hover:bg-blue-700'
               }`}
           >
             ✓ Phê duyệt
           </button>
-          <button className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+
+          <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50">
             Xuất báo cáo
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-4 bg-gray-100 p-1 rounded-xl w-fit">
-        {tabs.map(t => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all
-              ${tab === t.value
+      <div className="flex w-fit gap-1.5 rounded-xl bg-gray-100 p-1">
+        {tabs.map((item) => {
+          const active = tab === item.value;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setTab(item.value)}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${active
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold
-              ${tab === t.value ? 'bg-blue-50 text-blue-500' : 'bg-gray-200 text-gray-400'}`}>
-              {t.count}
-            </span>
-          </button>
-        ))}
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              {item.label}
+
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${active
+                  ? 'bg-blue-50 text-blue-500'
+                  : 'bg-gray-200 text-gray-400'
+                  }`}
+              >
+                {item.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="py-3 px-4 text-left">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = isIndeterminate;
-                  }}
-                  onChange={toggleSelectAll}
-                  className="h-4 w-4 rounded border-gray-300 accent-[#BFD8FF] focus:ring-2 focus:ring-[#DDEBFF]"
-                />
-              </th>
-
-              {['MÃ ĐƠN', 'LOẠI HỒ SƠ', 'NGƯỜI ĐĂNG KÝ', 'THÔNG TIN LIÊN HỆ', 'NGÀY NỘP', 'TRẠNG THÁI', 'THAO TÁC'].map(h => (
-                <th
-                  key={h}
-                  className={`py-3 px-4 text-xs font-bold text-gray-400 tracking-wide uppercase ${h === 'THAO TÁC' ? 'text-center' : 'text-left'
-                    }`}
-                >
-                  {h}
+      <div className="w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1180px] border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isIndeterminate;
+                    }}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 accent-[#BFD8FF] focus:ring-2 focus:ring-[#DDEBFF]"
+                  />
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleReceptions.map((r, i) => {
-              const rowKey = getRowKey(r, 'reception');
-              return (
-                <ProfileRow
-                  key={`rec-${r.id}`}
-                  item={r}
-                  type="reception"
-                  idx={i}
-                  checked={selectedRows.includes(rowKey)}
-                  onToggle={() => toggleSelectRow(rowKey)}
-                />
-              );
-            })}
 
-            {visibleAdoptions.map((a, i) => {
-              const rowKey = getRowKey(a, 'adoption');
-              return (
-                <ProfileRow
-                  key={`adp-${a.id}`}
-                  item={a}
-                  type="adoption"
-                  idx={i + visibleReceptions.length}
-                  checked={selectedRows.includes(rowKey)}
-                  onToggle={() => toggleSelectRow(rowKey)}
-                />
-              );
-            })}
-
-            {totalVisible === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center py-12 text-sm text-gray-400">
-                  Không có hồ sơ nào chờ duyệt.
-                </td>
+                {[
+                  'MÃ ĐƠN',
+                  'LOẠI HỒ SƠ',
+                  'NGƯỜI ĐĂNG KÝ',
+                  'THÔNG TIN LIÊN HỆ',
+                  'NGÀY NỘP',
+                  'TRẠNG THÁI',
+                  'THAO TÁC',
+                ].map((header) => (
+                  <th
+                    key={header}
+                    className={`px-4 py-3 text-xs font-bold uppercase tracking-wide text-gray-400 ${header === 'THAO TÁC' ? 'text-center' : 'text-left'
+                      }`}
+                  >
+                    {header}
+                  </th>
+                ))}
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {visibleReceptions.map((item, index) => {
+                const rowKey = getRowKey(item, 'reception');
+
+                return (
+                  <ProfileRow
+                    key={`rec-${item.id}`}
+                    item={item}
+                    type="reception"
+                    idx={index}
+                    checked={selectedRows.includes(rowKey)}
+                    onToggle={() => toggleSelectRow(rowKey)}
+                  />
+                );
+              })}
+
+              {visibleAdoptions.map((item, index) => {
+                const rowKey = getRowKey(item, 'adoption');
+
+                return (
+                  <ProfileRow
+                    key={`adp-${item.id}`}
+                    item={item}
+                    type="adoption"
+                    idx={index + visibleReceptions.length}
+                    checked={selectedRows.includes(rowKey)}
+                    onToggle={() => toggleSelectRow(rowKey)}
+                  />
+                );
+              })}
+
+              {totalVisible === 0 && (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-6 py-12 text-center text-sm text-gray-400"
+                  >
+                    Không có hồ sơ nào chờ duyệt.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-sm text-gray-400">
-          <span>Hiển thị 1 – {totalVisible} trong tổng số {receptions.length + adoptions.length} hồ sơ</span>
+        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 text-sm text-gray-400">
+          <span>
+            Hiển thị 1 – {totalVisible} trong tổng số{' '}
+            {receptions.length + adoptions.length} hồ sơ
+          </span>
+
           <div className="flex gap-1">
-            {['‹', '1', '2', '3', '›'].map((p, i) => (
-              <button key={i} className={`w-8 h-8 rounded-lg border text-sm font-semibold transition-colors
-                ${p === '1'
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                {p}
+            {['‹', '1', '2', '3', '›'].map((page, index) => (
+              <button
+                key={index}
+                className={`h-8 w-8 rounded-lg border text-sm font-semibold transition-colors ${page === '1'
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                  }`}
+              >
+                {page}
               </button>
             ))}
           </div>

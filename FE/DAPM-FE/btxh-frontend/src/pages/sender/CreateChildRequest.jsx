@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import family from '../../assets/sender.jpg';
-import axiosClient from '../../api/axiosClient';
 
 const SENDER_TYPES = [
   { code: 'CME', label: 'Cha hoặc mẹ ruột', requireDocs: true },
@@ -580,6 +579,10 @@ export default function CreateChildRequest() {
     defaultValues: {
       senderName: '',
       senderTypeCode: '',
+      senderNationalId: '',
+      senderPhone: '',
+      senderProvinceCode: '',
+      senderWardCode: '',
       senderAddressDetail: '',
       childName: '',
       childDob: '',
@@ -594,164 +597,96 @@ export default function CreateChildRequest() {
     },
   });
 
-  // Province/ward state
-  const [provinces, setProvinces] = useState([]);
-  const [senderWards, setSenderWards] = useState([]);
-  const [childWards, setChildWards] = useState([]);
-
   const senderTypeCode = watch('senderTypeCode');
   const senderProvinceCode = watch('senderProvinceCode');
   const childProvinceCode = watch('childProvinceCode');
 
-  // Fetch province list on mount
-  useEffect(() => {
-    axiosClient.get('/lookups/tinh-tp')
-      .then((res) => {
-        // axiosClient interceptor returns ApiResponse.data already after .then(extract)
-        // but here we call directly - res = ApiResponse envelope { success, data, message }
-        const list = res?.data || res || [];
-        setProvinces(Array.isArray(list) ? list : []);
-      })
-      .catch(() => setProvinces([]));
-  }, []);
+  const senderProvinceOptions = LOCATION_DATA;
+  const childProvinceOptions = LOCATION_DATA;
 
-  // Fetch sender wards when sender province changes
+  const senderWardOptions = useMemo(() => {
+    const selected = LOCATION_DATA.find(
+      (item) => item.provinceCode === senderProvinceCode
+    );
+    return selected?.wards ?? [];
+  }, [senderProvinceCode]);
+
+  const childWardOptions = useMemo(() => {
+    const selected = LOCATION_DATA.find(
+      (item) => item.provinceCode === childProvinceCode
+    );
+    return selected?.wards ?? [];
+  }, [childProvinceCode]);
+
   useEffect(() => {
-    if (!senderProvinceCode) { setSenderWards([]); return; }
-    axiosClient.get('/lookups/phuong-xa', { params: { maTinhTP: senderProvinceCode } })
-      .then((res) => {
-        const list = res?.data || res || [];
-        setSenderWards(Array.isArray(list) ? list : []);
-      })
-      .catch(() => setSenderWards([]));
     setValue('senderWardCode', '');
   }, [senderProvinceCode, setValue]);
 
-  // Fetch child wards when child province changes
   useEffect(() => {
-    if (!childProvinceCode) { setChildWards([]); return; }
-    axiosClient.get('/lookups/phuong-xa', { params: { maTinhTP: childProvinceCode } })
-      .then((res) => {
-        const list = res?.data || res || [];
-        setChildWards(Array.isArray(list) ? list : []);
-      })
-      .catch(() => setChildWards([]));
     setValue('childWardCode', '');
   }, [childProvinceCode, setValue]);
 
-  // Build province/ward option arrays for selects
-  const senderProvinceOptions = useMemo(() =>
-    provinces.map((p) => ({ provinceCode: p.maTinhTP, provinceName: p.tenTinhTP })),
-    [provinces]
-  );
-  const senderWardOptions = useMemo(() =>
-    senderWards.map((w) => ({ wardCode: w.maPhuongXa, wardName: w.tenPhuongXa })),
-    [senderWards]
-  );
-  const childProvinceOptions = useMemo(() =>
-    provinces.map((p) => ({ provinceCode: p.maTinhTP, provinceName: p.tenTinhTP })),
-    [provinces]
-  );
-  const childWardOptions = useMemo(() =>
-    childWards.map((w) => ({ wardCode: w.maPhuongXa, wardName: w.tenPhuongXa })),
-    [childWards]
+  const selectedSenderType = SENDER_TYPES.find(
+    (item) => item.code === senderTypeCode
   );
 
-  // Docs config: required docs based on sender type
   const docsConfig = useMemo(() => {
-    const selectedType = SENDER_TYPES.find((t) => t.code === senderTypeCode);
-    return BASE_DOCS.map((d) => ({
-      ...d,
-      required: d.baseRequired && (selectedType?.requireDocs !== false),
+    return BASE_DOCS.map((doc) => ({
+      ...doc,
+      required: selectedSenderType?.requireDocs ? doc.baseRequired : false,
     }));
-  }, [senderTypeCode]);
+  }, [selectedSenderType]);
 
-  // Count missing required fields
-  const requiredMissing = useMemo(() => {
-    const values = watch();
-    const requiredFields = [
-      'senderName', 'senderTypeCode', 'childName', 'childDob',
-      'childProvinceCode', 'childWardCode', 'childAddressDetail',
-    ];
-    const missingForm = requiredFields.filter((f) => !values[f]).length;
-    const missingDocs = docsConfig.filter((d) => d.required && !docs[d.key]).length;
-    return missingForm + missingDocs;
-  }, [watch, docsConfig, docs]);
-
-  // Map gender value to Vietnamese for BE
-  const mapGender = (val) => {
-    if (!val) return 'Khác';
-    if (val === 'male') return 'Nam';
-    if (val === 'female') return 'Nữ';
-    return val;
-  };
+  const requiredMissing = docsConfig.filter(
+    (doc) => doc.required && !docs[doc.key]
+  ).length;
 
   const onSubmit = async (data) => {
-    const missingDocs = docsConfig.filter((d) => d.required && !docs[d.key]);
-    if (missingDocs.length > 0) {
-      alert(`Vui lòng tải lên các giấy tờ bắt buộc: ${missingDocs.map(d => d.label).join(', ')}`);
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-
-      // Append JSON data as a string part
-      const jsonData = {
+    const payload = {
+      nguoiGui: {
+        hoTen: data.senderName,
         maLoaiNguoiGui: data.senderTypeCode,
-        hoTenNguoiGui: data.senderName,
-        soCCCDNguoiGui: data.senderNationalId,
-        soDienThoaiNguoiGui: data.senderPhone,
-        maPhuongXaNguoiGui: data.senderWardCode,
-        diaChiCuTheNguoiGui: data.senderAddressDetail,
-        lyDoGui: data.reason || '',
-        ghiChu: data.reasonDetail || '',
-        thongTinTre: {
-          tenTre: data.childName,
-          ngaySinh: data.childDob ? data.childDob : null,
-          gioiTinh: mapGender(data.childGender),
-          maPhuongXa: data.childWardCode,
-          diaChiCuThe: data.childAddressDetail,
-          danToc: data.ethnicity || '',
-          tinhTrangSucKhoe: data.healthStatus || '',
-        },
-      };
-      formData.append('data', new Blob([JSON.stringify(jsonData)], { type: 'application/json' }));
+        soCCCD: data.senderNationalId,
+        soDienThoai: data.senderPhone,
+        maXa: data.senderWardCode,
+        diaChiCuThe: data.senderAddressDetail,
+      },
+      tre: {
+        hoTen: data.childName,
+        ngaySinh: data.childDob,
+        gioiTinh: data.childGender,
+        danToc: data.ethnicity,
+        maXa: data.childWardCode,
+        diaChiCuThe: data.childAddressDetail,
+        tinhTrangSucKhoe: data.healthStatus,
+      },
+      lyDo: {
+        maLyDo: data.reason,
+        moTaChiTiet: data.reasonDetail,
+      },
+      giayTo: Object.entries(docs)
+        .filter(([, file]) => !!file)
+        .map(([key, file]) => ({
+          loaiGiayTo: key,
+          tenFile: file.name,
+          kichThuoc: file.size,
+        })),
+    };
 
-      // Append files
-      Object.entries(docs).forEach(([key, file]) => {
-        if (file) {
-          formData.append(key, file);
-        }
-      });
+    console.log('Payload gửi đi:', payload);
 
-      await axiosClient.post('/receptions', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      navigate('/gui-tre/trang-thai');
-    } catch (err) {
-      console.error('Tạo yêu cầu thất bại:', err);
-      alert(err?.message || 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.');
-    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    navigate('/gui-tre/trang-thai');
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F9FE] pb-12">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-[36px] font-bold text-[#0D47A1] leading-none">
-            Tạo yêu cầu gửi trẻ
-          </h1>
-          <p className="text-sm text-[#8FA0B8] mt-2">
-            Điền đầy đủ thông tin và tài liệu cần thiết để nộp hồ sơ.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
-            {/* Left column */}
-            <div className="space-y-6">
+    <div className="w-full bg-[#f6f8fc] min-h-screen">
+      <div className="max-w-[1500px] mx-auto px-3 lg:px-4 py-8">
+        <PageHeader />
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-stretch">
+            {/* Hàng 1 */}
+            <div className="lg:col-span-8">
               <ApplicantSection
                 register={register}
                 errors={errors}
@@ -759,25 +694,61 @@ export default function CreateChildRequest() {
                 senderWardOptions={senderWardOptions}
                 senderTypeCode={senderTypeCode}
               />
+            </div>
+
+            <div className="lg:col-span-4 h-full">
+              <div className="grid h-full grid-rows-[1fr_auto] gap-5">
+                <NotesCard />
+
+                <SubmitCard
+                  isSubmitting={isSubmitting}
+                  requiredMissing={requiredMissing}
+                  onCancel={() => navigate(-1)}
+                />
+              </div>
+            </div>
+
+            {/* Hàng 2 */}
+            <div className="lg:col-span-8">
               <ChildSection
                 register={register}
                 errors={errors}
                 childProvinceOptions={childProvinceOptions}
                 childWardOptions={childWardOptions}
               />
-              <ReasonSection register={register} errors={errors} />
-              <DocumentsSection docs={docs} setDocs={setDocs} docsConfig={docsConfig} />
             </div>
 
-            {/* Right column */}
-            <div className="space-y-6">
+            <div className="lg:col-span-4">
               <ImageCard />
-              <RightTopPanel
-                isSubmitting={isSubmitting}
-                requiredMissing={requiredMissing}
-                onCancel={() => navigate('/gui-tre/trang-thai')}
+            </div>
+
+            {/* Hàng 3 */}
+            <div className="lg:col-span-8">
+              <ReasonSection register={register} errors={errors} />
+            </div>
+
+            {/* Hàng 4 */}
+            <div className="lg:col-span-8">
+              <DocumentsSection
+                docs={docs}
+                setDocs={setDocs}
+                docsConfig={docsConfig}
               />
             </div>
+
+            {requiredMissing > 0 && (
+              <div className="lg:col-span-8">
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm font-semibold text-red-700">
+                    Còn thiếu tài liệu bắt buộc
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-red-600">
+                    Vui lòng tải lên {requiredMissing} tài liệu bắt buộc trước khi
+                    gửi hồ sơ.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </div>

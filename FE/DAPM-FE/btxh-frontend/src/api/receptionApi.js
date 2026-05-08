@@ -1,53 +1,106 @@
-import axiosClient from './axiosClient';
-
-// axiosClient interceptor đã unwrap response.data.data tự động
+import { MOCK_RECEPTIONS, mockApiResponse, mockApiError } from './mockData';
 
 const receptionApi = {
-  /**
-   * Danh sách yêu cầu gửi trẻ — GET /api/receptions
-   * params: { page, limit, status, senderId }
-   * Trả về: { items, total, page, limit, totalPages }
-   */
-  getAll: (params = {}) =>
-    axiosClient.get('/receptions', { params }),
+  getAll: async (params = {}) => {
+    let filteredReceptions = [...MOCK_RECEPTIONS];
 
-  /**
-   * Chi tiết yêu cầu — GET /api/receptions/:id
-   */
-  getById: (id) =>
-    axiosClient.get(`/receptions/${id}`),
+    // Filter by sender (for sender role)
+    if (params.senderId) {
+      filteredReceptions = filteredReceptions.filter(r => r.senderId === parseInt(params.senderId));
+    }
 
-  /**
-   * Tạo yêu cầu gửi trẻ — POST /api/receptions
-   */
-  create: (data) =>
-    axiosClient.post('/receptions', data),
+    // Filter by status
+    if (params.status) {
+      filteredReceptions = filteredReceptions.filter(r => r.status === params.status);
+    }
 
-  /**
-   * Cập nhật yêu cầu — PUT /api/receptions/:id
-   */
-  update: (id, data) =>
-    axiosClient.put(`/receptions/${id}`, data),
+    // Pagination
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedReceptions = filteredReceptions.slice(startIndex, endIndex);
 
-  /**
-   * Duyệt yêu cầu — POST /api/receptions/:id/approve
-   * body: { ghiChu? }
-   */
-  approve: (id, body = {}) =>
-    axiosClient.post(`/receptions/${id}/approve`, body),
+    return mockApiResponse({
+      items: paginatedReceptions,
+      total: filteredReceptions.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredReceptions.length / limit),
+    });
+  },
 
-  /**
-   * Từ chối yêu cầu — POST /api/receptions/:id/reject
-   * body: { ghiChu? }
-   */
-  reject: (id, body = {}) =>
-    axiosClient.post(`/receptions/${id}/reject`, body),
+  getById: async (id) => {
+    const reception = MOCK_RECEPTIONS.find(r => r.id === parseInt(id));
+    if (!reception) {
+      return mockApiError('Reception request not found');
+    }
+    return mockApiResponse(reception);
+  },
 
-  /**
-   * Hủy yêu cầu — DELETE /api/receptions/:id
-   */
-  cancel: (id) =>
-    axiosClient.delete(`/receptions/${id}`),
+  create: async (data) => {
+    const newReception = {
+      id: MOCK_RECEPTIONS.length + 1,
+      ...data,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      documents: [],
+    };
+
+    MOCK_RECEPTIONS.push(newReception);
+    return mockApiResponse(newReception);
+  },
+
+  update: async (id, data) => {
+    const receptionIndex = MOCK_RECEPTIONS.findIndex(r => r.id === parseInt(id));
+    if (receptionIndex === -1) {
+      return mockApiError('Reception request not found');
+    }
+
+    MOCK_RECEPTIONS[receptionIndex] = {
+      ...MOCK_RECEPTIONS[receptionIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return mockApiResponse(MOCK_RECEPTIONS[receptionIndex]);
+  },
+
+  approve: async (id) => {
+    const receptionIndex = MOCK_RECEPTIONS.findIndex(r => r.id === parseInt(id));
+    if (receptionIndex === -1) {
+      return mockApiError('Reception request not found');
+    }
+
+    MOCK_RECEPTIONS[receptionIndex] = {
+      ...MOCK_RECEPTIONS[receptionIndex],
+      status: 'approved',
+      approvedAt: new Date().toISOString(),
+      approvedBy: 'Mock Approver',
+      updatedAt: new Date().toISOString(),
+    };
+
+    return mockApiResponse(MOCK_RECEPTIONS[receptionIndex]);
+  },
+
+  reject: async (id, reason) => {
+    const receptionIndex = MOCK_RECEPTIONS.findIndex(r => r.id === parseInt(id));
+    if (receptionIndex === -1) {
+      return mockApiError('Reception request not found');
+    }
+
+    MOCK_RECEPTIONS[receptionIndex] = {
+      ...MOCK_RECEPTIONS[receptionIndex],
+      status: 'rejected',
+      reasonReject: reason,
+      rejectedAt: new Date().toISOString(),
+      rejectedBy: 'Mock Approver',
+      updatedAt: new Date().toISOString(),
+    };
+
+    return mockApiResponse(MOCK_RECEPTIONS[receptionIndex]);
+  },
 };
 
 export default receptionApi;

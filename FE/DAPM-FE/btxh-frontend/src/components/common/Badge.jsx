@@ -48,8 +48,6 @@ const CONFIG = {
   'Đã đổi lịch': { label: 'Đã đổi lịch', cls: 'bg-sky-100 text-sky-800 border-sky-200' },
   'Đã gặp mặt': { label: 'Đã gặp mặt', cls: 'bg-blue-100 text-blue-800 border-blue-200' },
   'Đã hủy': { label: 'Đã hủy', cls: 'bg-gray-100 text-gray-700 border-gray-200' },
-  'Đã tiếp nhận': { label: 'Đã tiếp nhận', cls: 'bg-green-100 text-green-800 border-green-200' },
-  'Yêu cầu bổ sung': { label: 'Cần bổ sung', cls: 'bg-orange-100 text-orange-800 border-orange-200' },
 
   // kết quả gặp mặt
   'Phù hợp': { label: 'Phù hợp', cls: 'bg-green-100 text-green-800 border-green-200' },

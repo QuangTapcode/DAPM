@@ -26,19 +26,13 @@ export default function AdopterProfile() {
   }, [requiredProfile, profileComplete, navigate]);
 
   const handleSave = async (payload) => {
-    try {
-      await updateUser({
-        HoTen: payload.fullName,
-        SDT: payload.phone,
-        CCCD: payload.nationalId,
-        GioiTinh: payload.gender,
-        NgaySinh: payload.dateOfBirth || null,
-        DiaChiCuThe: payload.addressDetail || '',
-      });
-      navigate('/nhan-nuoi/tao-don', { replace: true });
-    } catch (error) {
-      console.error('Lỗi khi cập nhật hồ sơ:', error);
-    }
+    console.log('PAYLOAD PROFILE:', payload);
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    updateUser(payload);
+
+    navigate('/nhan-nuoi/tao-don', { replace: true });
   };
 
   return (

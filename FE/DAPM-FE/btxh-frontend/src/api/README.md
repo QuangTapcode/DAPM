@@ -44,7 +44,7 @@ Khi backend sẵn sàng:
 
 ```javascript
 // Login
-await authApi.login({ email: 'admin@ttbt.vn', password: '123456' });
+await authApi.login({ email: 'admin@btxh.vn', password: '123456' });
 
 // Get children
 await childApi.getAll({ page: 1, limit: 10 });

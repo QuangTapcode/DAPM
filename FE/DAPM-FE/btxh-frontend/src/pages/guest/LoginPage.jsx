@@ -5,7 +5,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { ROLE_REDIRECT } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import hide_yey from '../../assets/hide.png';
-
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -20,24 +19,14 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
+      remember: false,
     },
   });
 
   const onSubmit = async (data) => {
     try {
-      const normalized = await login({ email: data.email, password: data.password });
-      const feRoles = normalized?.feRoles || [normalized?.role];
-
-      // Nếu có cả sender lẫn adopter → cho chọn chức năng
-      if (feRoles.includes('sender') && feRoles.includes('adopter')) {
-        navigate('/chon-chuc-nang');
-        return;
-      }
-
-      // Ưu tiên: admin > manager > staff_adoption > staff_reception > adopter > sender
-      const PRIORITY = ['admin', 'manager', 'staff_adoption', 'staff_reception', 'adopter', 'sender'];
-      const bestRole = PRIORITY.find(r => feRoles.includes(r)) || normalized?.role;
-      navigate(ROLE_REDIRECT[bestRole] || '/');
+      const user = await login(data);
+      navigate(ROLE_REDIRECT[user.role] || '/');
     } catch (err) {
       setError('root', {
         message: err?.message || 'Sai tài khoản hoặc mật khẩu',
@@ -142,6 +131,18 @@ export default function LoginPage() {
             {errors.password && (
               <p className="mt-2 text-sm text-red-500">{errors.password.message}</p>
             )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              id="remember"
+              type="checkbox"
+              {...register('remember')}
+              className="h-5 w-5 rounded border border-[#cbd5e1] text-[var(--c-primary)] focus:ring-[var(--c-primary)]"
+            />
+            <label htmlFor="remember" className="text-[17px] text-[#6b7280]">
+              Ghi nhớ đăng nhập trong 30 ngày
+            </label>
           </div>
 
           {errors.root && (

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
 import adminApi from '../../api/adminApi';
+import Button from '../../components/common/Button';
+import { ROLES } from '../../utils/constants';
 
-// Dùng BE role codes trực tiếp (khớp với Roles.cs)
 const ROLE_OPTIONS = [
-  { value: 'NGGT', label: 'Người gửi trẻ' },
-  { value: 'NGNN', label: 'Người nhận nuôi' },
-  { value: 'QLNT', label: 'Cán bộ tiếp nhận' },
-  { value: 'QLNN', label: 'Cán bộ nhận nuôi' },
-  { value: 'TPQL', label: 'Trưởng phòng' },
-  { value: 'ADMI', label: 'Admin' },
+  { value: ROLES.SENDER,          label: 'Người gửi trẻ' },
+  { value: ROLES.ADOPTER,         label: 'Người nhận nuôi' },
+  { value: ROLES.STAFF_RECEPTION, label: 'Cán bộ tiếp nhận' },
+  { value: ROLES.STAFF_ADOPTION,  label: 'Cán bộ nhận nuôi' },
+  { value: ROLES.MANAGER,         label: 'Trưởng phòng' },
+  { value: ROLES.ADMIN,           label: 'Admin' },
 ];
 
 export default function RoleManagement() {
@@ -20,7 +21,7 @@ export default function RoleManagement() {
   const handleChangeRole = async (userId, newRole) => {
     setSaving(userId);
     try {
-      await adminApi.updateUser(userId, { Roles: [newRole] });
+      await adminApi.updateUser(userId, { role: newRole });
       refetch();
     } finally {
       setSaving(null);
@@ -52,21 +53,19 @@ export default function RoleManagement() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Đang tải...</td></tr>
-            ) : data?.items?.map((user) => {
-              const primaryRole = (user.roles || [])[0] || user.role || '';
-              return (
+            ) : data?.items?.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{user.hoTen || user.fullName || '—'}</td>
+                <td className="px-4 py-3">{user.fullName}</td>
                 <td className="px-4 py-3 text-gray-500">{user.email}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
-                    {ROLE_OPTIONS.find(r => r.value === primaryRole)?.label || primaryRole || 'Chưa phân quyền'}
+                    {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <select
-                      defaultValue={primaryRole}
+                      defaultValue={user.role}
                       onChange={(e) => handleChangeRole(user.id, e.target.value)}
                       className="border rounded px-2 py-1 text-xs"
                     >
@@ -78,8 +77,7 @@ export default function RoleManagement() {
                   </div>
                 </td>
               </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
       </div>

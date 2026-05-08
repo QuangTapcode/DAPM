@@ -11,7 +11,7 @@ import {
   normalizeStatus,
 } from '../../utils/statusHelpers';
 
-import { childApi } from '../../api/childApi';
+import receptionApi from '../../api/receptionApi';
 
 import StatusListPanel from '../../components/request-status/StatusListPanel';
 import StatusProgress from '../../components/request-status/StatusProgress';
@@ -168,17 +168,6 @@ function mapSnapshotToDisplay(snapshot) {
 function mapApiItemToDisplay(item) {
   if (!item) return null;
 
-  // BE trả về: tenNguoiGui, thongTinTre.{tenTre, ngaySinh, gioiTinh, danToc}
-  //            giayTos (mảng string ID), quanHeVoiTre, lyDoGui, ghiChu
-  const childInfo = item.thongTinTre || item.tre || {};
-
-  // giayTos là mảng string ID từ BE; item.giayTo là mock data với objects
-  const rawGiayTo = item.giayTo || item.giayTos || [];
-  // Nếu giayTos là mảng string, convert sang mảng object giả để mapGiayToArrayToGroups
-  const giayToList = Array.isArray(rawGiayTo)
-    ? rawGiayTo.map((x) => (typeof x === 'string' ? { tenFile: x, otherDocs: true } : x))
-    : [];
-
   const nestedDocuments =
     item.documents && !Array.isArray(item.documents)
       ? {
@@ -187,43 +176,44 @@ function mapApiItemToDisplay(item) {
         healthCert: mapDocumentArrayToText(item.documents.healthCert),
         otherDocs: mapDocumentArrayToText(item.documents.otherDocs),
       }
-      : mapGiayToArrayToGroups(giayToList);
+      : mapGiayToArrayToGroups(item.giayTo);
 
   return {
-    id: item.id || item.maYeuCauGuiTre,
-    code: item.code || item.maYeuCauGuiTre || `GT-${String(item.id || '').padStart(6, '0')}`,
+    id: item.id,
+    code: item.code || `GT-${String(item.id).padStart(6, '0')}`,
     title: 'Yêu cầu gửi trẻ',
-    createdAt: item.createdAt || item.ngayTao,
-    status: item.status || item.trangThaiYC,
+    createdAt: item.createdAt,
+    status: item.status,
     approverName:
       item.approverName || item.reviewerName || item.approvedBy || 'Chưa có',
     formData: {
-      // Sender: BE chỉ trả tenNguoiGui (không có CCCD/SDT riêng)
-      senderName: item.senderName || item.tenNguoiGui || item.nguoiGui?.hoTen || item.applicantName || '',
-      senderTypeCode: item.senderTypeCode || item.maLoaiNguoiGui || item.nguoiGui?.maLoaiNguoiGui || '',
-      senderNationalId: item.senderNationalId || item.nguoiGui?.soCCCD || '',
-      senderPhone: item.senderPhone || item.phone || item.nguoiGui?.soDienThoai || '',
+      senderName:
+        item.senderName || item.nguoiGui?.hoTen || item.applicantName || '',
+      senderTypeCode:
+        item.senderTypeCode || item.nguoiGui?.maLoaiNguoiGui || '',
+      senderNationalId:
+        item.senderNationalId || item.nguoiGui?.soCCCD || '',
+      senderPhone:
+        item.senderPhone || item.phone || item.nguoiGui?.soDienThoai || '',
       senderAddress: joinAddress(
         item.senderAddressDetail || item.nguoiGui?.diaChiCuThe || item.address,
         item.senderWardName,
         item.senderProvinceName
       ),
 
-      // Child: ưu tiên thongTinTre từ BE, fallback tre (mock)
-      childName: item.childName || childInfo.tenTre || childInfo.hoTen || '',
-      childDob: item.childDob || childInfo.ngaySinh || '',
-      childGender: item.childGender || childInfo.gioiTinh || '',
-      ethnicity: item.ethnicity || childInfo.danToc || '',
+      childName: item.childName || item.tre?.hoTen || '',
+      childDob: item.childDob || item.tre?.ngaySinh || '',
+      childGender: item.childGender || item.tre?.gioiTinh || '',
+      ethnicity: item.ethnicity || item.tre?.danToc || '',
       childAddress: joinAddress(
-        item.childAddressDetail || childInfo.diaChiCuThe,
+        item.childAddressDetail || item.tre?.diaChiCuThe,
         item.childWardName,
         item.childProvinceName
       ),
-      healthStatus: item.healthStatus || childInfo.tinhTrangSucKhoe || '',
+      healthStatus: item.healthStatus || item.tre?.tinhTrangSucKhoe || '',
 
-      // Lý do: BE dùng lyDoGui, ghiChu
-      reason: item.reason || item.lyDoGui || item.lyDo?.maLyDo || '',
-      reasonDetail: item.reasonDetail || item.ghiChu || item.lyDo?.moTaChiTiet || '',
+      reason: item.reason || item.lyDo?.maLyDo || '',
+      reasonDetail: item.reasonDetail || item.lyDo?.moTaChiTiet || '',
 
       documents: nestedDocuments,
     },
@@ -234,9 +224,9 @@ export default function RequestStatus() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const { data, loading } = useFetch(() => childApi.getRequests({
+  const { data, loading } = useFetch(receptionApi.getAll, {
     senderId: user?.id,
-  }));
+  });
 
   const apiItems = data?.items || [];
   const tempRequestFromState = location.state?.request || null;

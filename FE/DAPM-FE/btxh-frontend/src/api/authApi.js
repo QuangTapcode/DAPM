@@ -1,55 +1,138 @@
-import axiosClient from './axiosClient';
+import { MOCK_USERS, mockApiResponse, mockApiError } from './mockData';
 
-// axiosClient interceptor đã unwrap response.data.data tự động
-// KHÔNG gọi thêm .then(extract) vì sẽ bị double-unwrap
+function toAuthUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName || '',
+    role: user.role,
+    phone: user.phone || '',
+    nationalId: user.nationalId || '',
+    birthDate: user.birthDate || '',
+    gender: user.gender || '',
+    provinceCode: user.provinceCode || '',
+    wardCode: user.wardCode || '',
+    addressDetail: user.addressDetail || '',
+    address: user.address || '',
+    occupation: user.occupation || '',
+    monthlyIncome: user.monthlyIncome || '',
+  };
+}
 
 const authApi = {
-  /**
-   * Đăng nhập — POST /api/auth/login
-   * @param {{ email: string, password: string }} credentials
-   * @returns {{ token: string, user: object }}
-   */
-  login: (credentials) =>
-    axiosClient.post('/auth/login', credentials),
+  login: async (credentials) => {
+    const user = MOCK_USERS.find(
+      (u) =>
+        u.email === credentials.email &&
+        credentials.password === '123456'
+    );
 
-  /**
-   * Đăng ký — POST /api/auth/register
-   * Body: { SDT, Password, FullName, NgaySinh?, GioiTinh, CCCD?, Email?, MaXaPhuong?, DiaChiCuThe? }
-   */
-  register: (data) =>
-    axiosClient.post('/auth/register', data),
+    if (!user) {
+      return mockApiError('Email hoặc mật khẩu không đúng', 1000);
+    }
 
-  /**
-   * Lấy thông tin người dùng hiện tại — GET /api/auth/profile
-   */
-  getProfile: () =>
-    axiosClient.get('/auth/profile'),
+    const token = `mock-token-${user.id}-${Date.now()}`;
 
-  /**
-   * Đổi mật khẩu — POST /api/auth/change-password
-   * Body: { oldPassword, newPassword }
-   */
-  changePassword: (data) =>
-    axiosClient.post('/auth/change-password', data),
+    return mockApiResponse({
+      token,
+      user: toAuthUser(user),
+    });
+  },
 
-  /**
-   * Đăng xuất — POST /api/auth/logout (stateless, FE chỉ cần xóa token)
-   */
-  logout: () =>
-    axiosClient.post('/auth/logout'),
+  register: async (data) => {
+    const existingUser = MOCK_USERS.find((u) => u.email === data.email);
 
-  /**
-   * Refresh token — POST /api/auth/refresh
-   */
-  refreshToken: () =>
-    axiosClient.post('/auth/refresh'),
+    if (existingUser) {
+      return mockApiError('Email đã tồn tại', 1000);
+    }
 
-  /**
-   * Cập nhật thông tin cá nhân — PUT /api/auth/profile
-   * Body: { FullName, SDT, CCCD, GioiTinh, NgaySinh, DiaChiCuThe, MaXaPhuong? }
-   */
-  updateProfile: (data) =>
-    axiosClient.put('/auth/profile', data),
+    const newUser = {
+      id: MOCK_USERS.length + 1,
+      email: data.email,
+      password: data.password || '123456',
+      role: data.role || 'adopter',
+      fullName: '',
+      phone: '',
+      nationalId: '',
+      birthDate: '',
+      gender: '',
+      provinceCode: '',
+      wardCode: '',
+      addressDetail: '',
+      address: '',
+      occupation: '',
+      monthlyIncome: '',
+      createdAt: new Date().toISOString(),
+      isActive: true,
+    };
+
+    MOCK_USERS.push(newUser);
+
+    const token = `mock-token-${newUser.id}-${Date.now()}`;
+
+    return mockApiResponse({
+      token,
+      user: toAuthUser(newUser),
+    });
+  },
+
+  updateProfile: async (payload) => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      return mockApiError('No token found');
+    }
+
+    const userId = token.split('-')[2];
+    const userIndex = MOCK_USERS.findIndex(
+      (u) => u.id === parseInt(userId)
+    );
+
+    if (userIndex === -1) {
+      return mockApiError('User not found');
+    }
+
+    MOCK_USERS[userIndex] = {
+      ...MOCK_USERS[userIndex],
+      ...payload,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return mockApiResponse(toAuthUser(MOCK_USERS[userIndex]));
+  },
+
+  logout: async () => {
+    return mockApiResponse({ success: true });
+  },
+
+  getProfile: async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      return mockApiError('No token found');
+    }
+
+    const userId = token.split('-')[2];
+    const user = MOCK_USERS.find((u) => u.id === parseInt(userId));
+
+    if (!user) {
+      return mockApiError('User not found');
+    }
+
+    return mockApiResponse(toAuthUser(user));
+  },
+
+  refreshToken: async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      return mockApiError('No token found');
+    }
+
+    return mockApiResponse({
+      token: `mock-token-refreshed-${Date.now()}`,
+    });
+  },
 };
 
 export default authApi;

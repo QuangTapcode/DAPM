@@ -1,78 +1,91 @@
-import axiosClient from './axiosClient';
+import { MOCK_USERS, MOCK_STATS, mockApiResponse, mockApiError } from './mockData';
 
 const adminApi = {
-  // ─── Quản lý người dùng (/api/users) ─────────────────────────
+  getUsers: async (params = {}) => {
+    let filteredUsers = [...MOCK_USERS];
 
-  /**
-   * Danh sách người dùng — GET /api/users
-   * params: { page, limit, search, role }
-   * Trả về: { items, total, page, limit, totalPages }
-   */
-  getUsers: (params = {}) =>
-    axiosClient.get('/users', { params }),
+    // Filter by role
+    if (params.role) {
+      filteredUsers = filteredUsers.filter(u => u.role === params.role);
+    }
 
-  /**
-   * Chi tiết người dùng — GET /api/users/:id
-   */
-  getUserById: (id) =>
-    axiosClient.get(`/users/${id}`),
+    // Filter by search
+    if (params.search) {
+      const searchTerm = params.search.toLowerCase();
+      filteredUsers = filteredUsers.filter(u =>
+        u.fullName.toLowerCase().includes(searchTerm) ||
+        u.email.toLowerCase().includes(searchTerm)
+      );
+    }
 
-  /**
-   * Tạo người dùng — POST /api/users
-   * body: { SDT, HoTen, Password?, GioiTinh, NgaySinh?, CCCD?, Email?,
-   *         MaXaPhuong?, DiaChiCuThe?, Roles? }
-   */
-  createUser: (data) =>
-    axiosClient.post('/users', data),
+    // Pagination
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-  /**
-   * Cập nhật người dùng — PUT /api/users/:id
-   * body: { HoTen?, SDT?, Email?, CCCD?, GioiTinh?, NgaySinh?,
-   *         MaXaPhuong?, DiaChiCuThe?, TrangThaiTK?, Roles? }
-   */
-  updateUser: (id, data) =>
-    axiosClient.put(`/users/${id}`, data),
+    return mockApiResponse({
+      items: paginatedUsers,
+      total: filteredUsers.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredUsers.length / limit),
+    });
+  },
 
-  /**
-   * Khóa/mở tài khoản — PATCH /api/users/:id/status
-   * body: { trangThaiTK: bool }
-   */
-  updateStatus: (id, trangThaiTK) =>
-    axiosClient.patch(`/users/${id}/status`, { trangThaiTK }),
+  getUserById: async (id) => {
+    const user = MOCK_USERS.find(u => u.id === parseInt(id));
+    if (!user) {
+      return mockApiError('User not found');
+    }
+    return mockApiResponse(user);
+  },
 
-  /**
-   * Xóa người dùng — DELETE /api/users/:id
-   */
-  deleteUser: (id) =>
-    axiosClient.delete(`/users/${id}`),
+  createUser: async (data) => {
+    const existingUser = MOCK_USERS.find(u => u.email === data.email);
+    if (existingUser) {
+      return mockApiError('Email already exists');
+    }
 
-  // ─── Thống kê (/api/stats) ────────────────────────────────────
+    const newUser = {
+      id: MOCK_USERS.length + 1,
+      ...data,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+    };
 
-  /**
-   * Thống kê tổng quan — GET /api/stats
-   */
-  getStats: () =>
-    axiosClient.get('/stats'),
+    MOCK_USERS.push(newUser);
+    return mockApiResponse(newUser);
+  },
 
-  /**
-   * Phân bố trẻ theo trạng thái — GET /api/stats/children-by-status
-   */
-  getChildrenByStatus: () =>
-    axiosClient.get('/stats/children-by-status'),
+  updateUser: async (id, data) => {
+    const userIndex = MOCK_USERS.findIndex(u => u.id === parseInt(id));
+    if (userIndex === -1) {
+      return mockApiError('User not found');
+    }
 
-  /**
-   * Yêu cầu theo tháng — GET /api/stats/requests-by-month
-   */
-  getRequestsByMonth: () =>
-    axiosClient.get('/stats/requests-by-month'),
+    MOCK_USERS[userIndex] = {
+      ...MOCK_USERS[userIndex],
+      ...data,
+    };
 
-  // ─── Vai trò (/api/roles) ─────────────────────────────────────
+    return mockApiResponse(MOCK_USERS[userIndex]);
+  },
 
-  /**
-   * Danh sách vai trò — GET /api/roles
-   */
-  getRoles: () =>
-    axiosClient.get('/roles'),
+  deleteUser: async (id) => {
+    const userIndex = MOCK_USERS.findIndex(u => u.id === parseInt(id));
+    if (userIndex === -1) {
+      return mockApiError('User not found');
+    }
+
+    MOCK_USERS.splice(userIndex, 1);
+    return mockApiResponse({ success: true });
+  },
+
+  getStats: async () => {
+    return mockApiResponse(MOCK_STATS);
+  },
 };
 
 export default adminApi;

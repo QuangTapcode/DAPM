@@ -17,7 +17,6 @@ import adminApi from '../../api/adminApi';
 import receptionApi from '../../api/receptionApi';
 import adoptionApi from '../../api/adoptionApi';
 import { REQUEST_STATUS } from '../../utils/constants';
-import { normalizeStatus } from '../../utils/statusHelpers';
 import { formatDate } from '../../utils/formatDate';
 
 const FALLBACK_MONTHLY_DATA = [
@@ -205,10 +204,8 @@ function isWithinLastDays(dateValue, days = 30) {
   return now - time <= days * 24 * 60 * 60 * 1000;
 }
 
-// Dùng normalizeStatus từ statusHelpers để map cả tiếng Việt từ BE sang FE key
 function getStatusValue(status) {
-  if (!status) return '';
-  return normalizeStatus(status);
+  return typeof status === 'string' ? status.toLowerCase() : status;
 }
 
 function LatestRequestItem({ item }) {
@@ -324,7 +321,7 @@ export default function ManagerDashboard() {
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-[1720px]">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800">Dashboard trưởng phòng</h1>
           <p className="mt-1 text-sm text-slate-500">

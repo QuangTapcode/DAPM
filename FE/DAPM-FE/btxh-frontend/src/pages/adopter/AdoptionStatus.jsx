@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import adoptionApi from '../../api/adoptionApi';
 import { formatDate } from '../../utils/formatDate';
 
-import { STATUS, getCurrentStep, getProgressWidth, normalizeStatus } from '../../utils/statusHelpers';
+import { STATUS, getCurrentStep, getProgressWidth } from '../../utils/statusHelpers';
 import StatusListPanel from '../../components/request-status/StatusListPanel';
 import StatusProgress from '../../components/request-status/StatusProgress';
 import DetailField from '../../components/request-status/DetailField';
@@ -60,26 +60,25 @@ function mapApiItemToDisplay(item) {
   if (!item) return null;
 
   return {
-    id: item.id || item.maYeuCauNhan,
-    code: item.id ? `AD-${String(item.id).padStart(6, '0')}` : (item.maYeuCauNhan || 'AD-?'),
+    id: item.id,
+    code: item.code || `AD-${String(item.id).padStart(6, '0')}`,
     title: 'Đơn nhận nuôi',
-    createdAt: item.createdAt || item.ngayTao,
-    status: item.status || item.trangThai,
-    approverName: item.nguoiDuyet || item.approverName || 'Chưa có',
-    desiredChild: item.mongMuonVeTre || item.expectedChild || 'Chưa cập nhật',
+    createdAt: item.createdAt,
+    status: item.status,
+    approverName:
+      item.approverName || item.reviewerName || item.approvedBy || 'Chưa có',
+    desiredChild: item.expectedChild || 'Chưa cập nhật',
     formData: {
-      fullName: item.tenNguoiNhan || item.adopterName || '',
-      phone: '',
-      nationalId: item.soGiayTo || '',
-      address: '',
-      occupation: item.ngheNghiep || '',
-      income: item.thuNhapHangThang
-        ? `${Number(item.thuNhapHangThang).toLocaleString('vi-VN')} VNĐ`
-        : '',
-      reason: item.lyDoNhanNuoi || '',
-      birthDate: '',
-      gender: '',
-      documents: {},
+      fullName: item.adopterName || item.applicantName || '',
+      phone: item.phone || '',
+      nationalId: item.nationalId || '',
+      address: item.address || '',
+      occupation: item.occupation || '',
+      income: item.monthlyIncome || item.income || '',
+      reason: item.motivation || item.reasonText || '',
+      birthDate: item.birthDate || '',
+      gender: item.gender || '',
+      documents: item.documents || {},
     },
   };
 }
@@ -121,7 +120,10 @@ export default function AdoptionStatus() {
     mergedItems.find((item) => String(item.id) === String(selectedId)) ||
     mergedItems[0] ||
     null;
-  const canUpdate = normalizeStatus(selectedRequest?.status) === 'missing_info';
+  const canUpdate =
+    selectedRequest?.status === STATUS.MISSING_INFO ||
+    selectedRequest?.status === 'missing_info' ||
+    selectedRequest?.status === 'MISSING_INFO';
   if (loading && mergedItems.length === 0) {
     return (
       <div className="px-4 py-6">
