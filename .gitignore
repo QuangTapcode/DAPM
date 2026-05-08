@@ -1,0 +1,9 @@
+.vs/
+*.vsidx
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.env
+bin/
+obj/

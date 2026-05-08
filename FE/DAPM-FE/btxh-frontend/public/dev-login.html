@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Dev Login</title></head>
+<body>
+<script>
+  const role = new URLSearchParams(location.search).get('role') || 'sender';
+  const accounts = {
+    sender:         { email: 'sender@test.com',    role: 'sender',          fullName: 'Nguyễn Thị Lan' },
+    adopter:        { email: 'adopter@test.com',   role: 'adopter',         fullName: 'Trần Văn Hùng'  },
+    staff_reception:{ email: 'reception@test.com', role: 'staff_reception', fullName: 'Lê Thị Hoa'     },
+    staff_adoption: { email: 'adoption@test.com',  role: 'staff_adoption',  fullName: 'Phạm Văn Dũng'  },
+    manager:        { email: 'manager@test.com',   role: 'manager',         fullName: 'Hoàng Minh Tuấn'},
+    admin:          { email: 'admin@test.com',      role: 'admin',           fullName: 'Admin Hệ Thống' },
+  };
+  const user = accounts[role] || accounts.sender;
+  localStorage.setItem('mock_user', JSON.stringify(user));
+  localStorage.setItem('token', 'mock-dev-token');
+  const redirect = new URLSearchParams(location.search).get('to') || '/';
+  window.location.replace(redirect);
+</script>
+</body>
+</html>

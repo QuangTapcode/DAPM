@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+btxh-frontend/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+btxh-frontend/dist/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Large binary / installer files
+*.msi
+*.exe
+*.dmg
+*.pkg
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Misc
+*.local
+*.suo
+*.sw?

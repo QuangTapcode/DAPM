@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+  localStorage.setItem("mock_user", JSON.stringify({
+    id: 1,
+    email: "sender@test.com",
+    fullName: "Nguyễn Thị Lan",
+    role: "sender",
+    token: "mock-token-abc123"
+  }));
+  localStorage.setItem("token", "mock-token-abc123");
+  window.location.href = "http://localhost:5173/gui-tre/dashboard";
+</script>
+</head>
+<body>Redirecting...</body>
+</html>
