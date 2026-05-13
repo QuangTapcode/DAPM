@@ -7,6 +7,8 @@ public class YeuCauNhanNuoiDto
     public string MaYeuCauNhan { get; set; } = null!;
     public string MaNguoiNhan { get; set; } = null!;
     public string? TenNguoiNhan { get; set; }
+    public string? SDTNguoiNhan { get; set; }
+    public DateTime? NgaySinhNguoiNhan { get; set; }
     public string? LyDoNhanNuoi { get; set; }
     public string? MongMuonVeTre { get; set; }
     public decimal? ThuNhapHangThang { get; set; }

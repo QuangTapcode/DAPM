@@ -26,6 +26,8 @@ public class YeuCauNhanNuoiController : ControllerBase
         MaYeuCauNhan = y.MaYeuCauNhan,
         MaNguoiNhan = y.MaNguoiNhan,
         TenNguoiNhan = y.NguoiNhan?.HoTen,
+        SDTNguoiNhan = y.NguoiNhan?.SDT,
+        NgaySinhNguoiNhan = y.NguoiNhan?.NgaySinh,
         LyDoNhanNuoi = y.LyDoNhanNuoi,
         MongMuonVeTre = y.MongMuonVeTre,
         ThuNhapHangThang = y.ThuNhapHangThang,

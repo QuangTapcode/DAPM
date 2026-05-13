@@ -19,6 +19,7 @@ public interface ICodeGenerator
     Task<string> NextGiayToAsync(CancellationToken ct = default);
     Task<string> NextTheoDoiSucKhoeAsync(CancellationToken ct = default);
     Task<string> NextLichSuTiemChungAsync(CancellationToken ct = default);
+    Task<string> NextLichHenGapMatAsync(CancellationToken ct = default);
 }
 
 public class CodeGenerator : ICodeGenerator
@@ -109,5 +110,13 @@ public class CodeGenerator : ICodeGenerator
         var next = list.Select(s => s.Length > 4 && int.TryParse(s.Substring(4), out var n) ? n : 0)
                        .DefaultIfEmpty(0).Max() + 1;
         return Build("LSTC", next, 4);
+    }
+
+    public async Task<string> NextLichHenGapMatAsync(CancellationToken ct = default)
+    {
+        var list = await _db.LICHHENGAPMAT.Select(x => x.MaLichGap).ToListAsync(ct);
+        var next = list.Select(s => s.Length > 4 && int.TryParse(s.Substring(4), out var n) ? n : 0)
+                       .DefaultIfEmpty(0).Max() + 1;
+        return Build("LHGM", next, 4);
     }
 }

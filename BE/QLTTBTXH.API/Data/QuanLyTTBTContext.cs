@@ -25,6 +25,7 @@ public class QuanLyTTBTContext : DbContext
     public DbSet<ThongTinTreTam> THONGTINTRETAM => Set<ThongTinTreTam>();
     public DbSet<HoSoNhanNuoi> HOSONHANNUOI => Set<HoSoNhanNuoi>();
     public DbSet<HoSoTiepNhanTre> HOSOTIEPNHANTRE => Set<HoSoTiepNhanTre>();
+    public DbSet<LichHenGapMat> LICHHENGAPMAT => Set<LichHenGapMat>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

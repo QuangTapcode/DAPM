@@ -41,6 +41,33 @@ const ICONS = {
         d="M12 8v4l3 3m6-3a9 9 0 11-3-6.708" />
     </svg>
   ),
+  file: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 3h7l5 5v13a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M14 3v5h5M8 13h8M8 17h6"
+      />
+    </svg>
+  ),
+
+  health: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
+      />
+    </svg>
+  ),
 };
 
 const MENU_BY_ROLE = {
@@ -51,12 +78,14 @@ const MENU_BY_ROLE = {
   [ROLES.STAFF_RECEPTION]: [
     { path: '/can-bo-tiep-nhan/dashboard', label: 'Tổng quan', icon: ICONS.dashboard },
     { path: '/can-bo-tiep-nhan/yeu-cau', label: 'Yêu cầu gửi trẻ', icon: ICONS.folder },
+    { path: '/can-bo-tiep-nhan/ho-so-tiep-nhan', label: 'Hồ sơ tiếp nhận', icon: ICONS.file, },
     { path: '/can-bo-tiep-nhan/tre', label: 'Quản lý trẻ', icon: ICONS.child },
+    { path: '/can-bo-tiep-nhan/suc-khoe', label: 'Sức khỏe trẻ', icon: ICONS.health, },
   ],
   [ROLES.STAFF_ADOPTION]: [
     { path: '/can-bo-nhan-nuoi/dashboard', label: 'Tổng quan', icon: ICONS.dashboard },
     { path: '/can-bo-nhan-nuoi/danh-sach', label: 'Yêu cầu nhận nuôi', icon: ICONS.folder },
-    { path: '/can-bo-nhan-nuoi/ho-so', label: 'Hồ sơ nhận nuôi', icon: ICONS.child },
+    { path: '/can-bo-nhan-nuoi/ho-so', label: 'Theo dõi nhận nuôi', icon: ICONS.child },
   ],
   [ROLES.MANAGER]: [
     { path: '/truong-phong/dashboard', label: 'Tổng quan', icon: ICONS.dashboard },

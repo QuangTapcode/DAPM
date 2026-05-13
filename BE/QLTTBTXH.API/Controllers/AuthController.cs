@@ -30,6 +30,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login([FromBody] LoginDto req)
     {
         var user = await _db.NGUOIDUNG
+            .Include(u => u.PhuongXa).ThenInclude(p => p!.TinhTP)
             .FirstOrDefaultAsync(u => u.Email == req.Email || u.SDT == req.Email);
 
         if (user is null || !_pwd.Verify(req.Password, user.MatKhau))
@@ -105,7 +106,9 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(id))
             return Unauthorized(ApiResponse<UserInfoDto>.Fail("Token không hợp lệ"));
 
-        var user = await _db.NGUOIDUNG.FirstOrDefaultAsync(u => u.MaNguoiDung == id);
+        var user = await _db.NGUOIDUNG
+            .Include(u => u.PhuongXa).ThenInclude(p => p!.TinhTP)
+            .FirstOrDefaultAsync(u => u.MaNguoiDung == id);
         if (user is null) return NotFound(ApiResponse<UserInfoDto>.Fail("User not found"));
 
         var roles = await _db.NGUOIDUNG_VAITRO
@@ -164,6 +167,9 @@ public class AuthController : ControllerBase
             GioiTinh = u.GioiTinh,
             NgaySinh = u.NgaySinh,
             MaXaPhuong = u.MaXaPhuong,
+            TenPhuongXa = u.PhuongXa?.TenPhuongXa,
+            MaTinhTP = u.PhuongXa?.MaTinhTP,
+            TenTinhTP = u.PhuongXa?.TinhTP?.TenTinhTP,
             DiaChiCuThe = u.DiaChiCuThe,
             IsActive = u.TrangThaiTK,
             CreatedAt = u.NgayTao,

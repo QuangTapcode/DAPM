@@ -25,7 +25,7 @@ export default function DashboardAdmin() {
 
   const allUsers   = userData?.items || [];
   const total      = allUsers.length;
-  const active     = allUsers.filter(u => u.trangThaiTK !== false && u.isActive !== false).length;
+  const active     = allUsers.filter(u => u.isActive !== false).length;
   const locked     = total - active;
 
   const STATS = [

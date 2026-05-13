@@ -28,6 +28,12 @@ public class HoSoNhanNuoiController : ControllerBase
         TenTre = h.Tre?.HoTen,
         MaCanBo = h.MaCanBo,
         TenCanBo = h.CanBo?.HoTen,
+        TenNguoiNhan = h.YeuCauNhanNuoi?.NguoiNhan?.HoTen,
+        SDTNguoiNhan = h.YeuCauNhanNuoi?.NguoiNhan?.SDT,
+        LyDoNhanNuoi = h.YeuCauNhanNuoi?.LyDoNhanNuoi,
+        MongMuonVeTre = h.YeuCauNhanNuoi?.MongMuonVeTre,
+        ThuNhapHangThang = h.YeuCauNhanNuoi?.ThuNhapHangThang,
+        NgheNghiep = h.YeuCauNhanNuoi?.NgheNghiep,
         NgayLap = h.NgayLap,
         NgayDuyet = h.NgayDuyet,
         TrangThai = h.TrangThai,
@@ -37,7 +43,11 @@ public class HoSoNhanNuoiController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<HoSoNhanNuoiDto>>>> GetAll([FromQuery] QueryParams q)
     {
-        var query = _db.HOSONHANNUOI.Include(h => h.Tre).Include(h => h.CanBo).AsQueryable();
+        var query = _db.HOSONHANNUOI
+            .Include(h => h.Tre)
+            .Include(h => h.CanBo)
+            .Include(h => h.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(q.Status)) query = query.Where(h => h.TrangThai == q.Status);
 
         var total = await query.CountAsync();
@@ -55,7 +65,10 @@ public class HoSoNhanNuoiController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<HoSoNhanNuoiDto>>> GetById(string id)
     {
-        var h = await _db.HOSONHANNUOI.Include(x => x.Tre).Include(x => x.CanBo)
+        var h = await _db.HOSONHANNUOI
+            .Include(x => x.Tre)
+            .Include(x => x.CanBo)
+            .Include(x => x.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
             .FirstOrDefaultAsync(x => x.MaHSNhanNuoi == id);
         if (h is null) return NotFound(ApiResponse<HoSoNhanNuoiDto>.Fail("Not found"));
         return Ok(ApiResponse<HoSoNhanNuoiDto>.Ok(Map(h)));
@@ -76,7 +89,7 @@ public class HoSoNhanNuoiController : ControllerBase
             MaTre = dto.MaTre,
             MaCanBo = dto.MaCanBo ?? userId,
             NgayLap = DateTime.Today,
-            TrangThai = "Đang lập",
+            TrangThai = "Chờ duyệt",
             GhiChu = dto.GhiChu
         };
         _db.HOSONHANNUOI.Add(h);

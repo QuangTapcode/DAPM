@@ -1,10 +1,25 @@
 import { useState } from 'react';
 import { useFetch } from '../../hooks/useFetch';
-import receptionApi from '../../api/receptionApi';
-import adoptionApi from '../../api/adoptionApi';
+import receptionProfileApi from '../../api/receptionProfileApi';
+import adoptionProfileApi from '../../api/adoptionProfileApi';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
+
+function normalizeProfile(item) {
+  return {
+    id: item.id || item.Id || item.maHSTiepNhan || item.MaHSTiepNhan || item.maHSNhanNuoi || item.MaHSNhanNuoi || item.maHoSoNhanNuoi || item.MaHoSoNhanNuoi || '',
+    status: item.status || item.Status || item.trangThai || item.TrangThai || '',
+    senderName: item.tenNguoiGui || item.TenNguoiGui || '',
+    adopterName: item.tenNguoiNhan || item.TenNguoiNhan || '',
+    phone: item.sdtNguoiNhan || item.SDTNguoiNhan || item.sDTNguoiNhan || '',
+    createdAt: item.ngayLap || item.NgayLap || item.ngayTiepNhan || item.NgayTiepNhan || '',
+    approvedAt: item.ngayDuyet || item.NgayDuyet || '',
+    childName: item.tenTre || item.TenTre || '',
+    officerName: item.tenCanBo || item.TenCanBo || '',
+    ...item,
+  };
+}
 
 const AVATAR_COLORS = [
     'bg-blue-500', 'bg-orange-400', 'bg-teal-500',
@@ -33,8 +48,8 @@ function Avatar({ name, idx }) {
 function ProfileRow({ item, type, idx, onClick }) {
     const isReception = type === 'reception';
     const mainName = isReception
-        ? item.tenNguoiGui || item.senderName || item.fullName || 'Chưa có tên'
-        : item.tenNguoiNhan || item.adopterName || item.fullName || 'Chưa có tên';
+        ? item.senderName || item.parentName || item.fullName || 'Chưa có tên'
+        : item.adopterName || item.applicantName || item.fullName || 'Chưa có tên';
 
     return (
         <tr
@@ -58,16 +73,16 @@ function ProfileRow({ item, type, idx, onClick }) {
                     <div>
                         <p className="text-sm font-semibold text-gray-800 leading-tight">{mainName}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            Mã: {item.maNguoiGui || item.maNguoiNhan || item.id || '—'}
+                            CCCD: {item.cccd || item.nationalId || 'Chưa cập nhật'}
                         </p>
                     </div>
                 </div>
             </td>
             <td className="py-3.5 px-3 text-sm text-gray-500 whitespace-nowrap">
-                {formatDate(item.ngayCapNhat || item.updatedAt || item.ngayTao || item.createdAt)}
+                {formatDate(item.updatedAt || item.createdAt)}
             </td>
             <td className="py-3.5 px-3">
-                <Badge status={item.trangThaiYC || item.trangThai || item.status} />
+                <Badge status={item.status} />
             </td>
         </tr>
     );
@@ -78,8 +93,8 @@ function DetailModal({ item, type, isOpen, onClose }) {
 
     const isReception = type === 'reception';
     const mainName = isReception
-        ? item.tenNguoiGui || item.senderName || item.fullName || 'Chưa có tên'
-        : item.tenNguoiNhan || item.adopterName || item.fullName || 'Chưa có tên';
+        ? item.senderName || item.parentName || item.fullName || 'Chưa có tên'
+        : item.adopterName || item.applicantName || item.fullName || 'Chưa có tên';
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Chi tiết phiếu xét duyệt" size="lg">
@@ -102,20 +117,24 @@ function DetailModal({ item, type, isOpen, onClose }) {
                         <p className="mt-1 text-sm text-gray-900">{mainName}</p>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Mã người nộp</label>
-                        <p className="mt-1 text-sm text-gray-900">{item.maNguoiGui || item.maNguoiNhan || '—'}</p>
+                        <label className="block text-sm font-medium text-gray-700">CCCD</label>
+                        <p className="mt-1 text-sm text-gray-900">{item.cccd || item.nationalId || '—'}</p>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Lý do</label>
-                        <p className="mt-1 text-sm text-gray-900">{item.lyDoGui || item.lyDo || '—'}</p>
+                        <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
+                        <p className="mt-1 text-sm text-gray-900">{item.phone || '—'}</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
+                        <p className="mt-1 text-sm text-gray-900">{item.city || item.address || '—'}</p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Ngày nộp</label>
-                        <p className="mt-1 text-sm text-gray-900">{formatDate(item.ngayTao || item.createdAt)}</p>
+                        <p className="mt-1 text-sm text-gray-900">{formatDate(item.createdAt)}</p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Ngày duyệt</label>
-                        <p className="mt-1 text-sm text-gray-900">{formatDate(item.ngayCapNhat || item.updatedAt || item.ngayTao || item.createdAt)}</p>
+                        <p className="mt-1 text-sm text-gray-900">{formatDate(item.updatedAt || item.createdAt)}</p>
                     </div>
                 </div>
 
@@ -148,11 +167,11 @@ export default function ProfileHistory() {
     const [selectedItem, setSelectedItem] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { data: recData } = useFetch(() => receptionApi.getAll({ status: 'Đã tiếp nhận' }));
-    const { data: adpData } = useFetch(() => adoptionApi.getAll({ status: 'Đã duyệt' }));
+    const { data: recData } = useFetch(() => receptionProfileApi.getAll({ page: 1, limit: 200 }));
+    const { data: adpData } = useFetch(() => adoptionProfileApi.getAll({ page: 1, limit: 200 }));
 
-    const receptions = recData?.items || [];
-    const adoptions = adpData?.items || [];
+    const receptions = (recData?.items ?? recData ?? []).map(normalizeProfile);
+    const adoptions = (adpData?.items ?? adpData ?? []).map(normalizeProfile);
 
     const tabs = [
         { value: 'reception', label: 'Gửi trẻ', count: receptions.length },
@@ -173,7 +192,7 @@ export default function ProfileHistory() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-[1720px] space-y-6 px-5 py-8 sm:px-8 lg:px-10">
             <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h1 className="mt-3 text-3xl font-bold text-slate-950">Lịch sử hồ sơ</h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">

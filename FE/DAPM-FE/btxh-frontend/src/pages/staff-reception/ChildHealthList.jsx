@@ -1,312 +1,547 @@
-import { useState } from 'react';
-import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { useBasePath } from '../../hooks/useBasePath';
-import { useForm } from 'react-hook-form';
-import { useFetch } from '../../hooks/useFetch';
-import { childApi } from '../../api/childApi';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Eye,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
+
 import { formatDate } from '../../utils/formatDate';
 
-const avatarUrl = (seed = 'child', bg = 'b6e3f4') =>
-  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bg}&backgroundType=solid`;
+const STORAGE_HEALTH_KEY = 'mock_health_records';
+const STORAGE_CHILD_KEY = 'mock_children';
 
-const inputClass = 'w-full bg-gray-50 border border-transparent focus:border-[#2c7a91] focus:ring-1 focus:ring-[#2c7a91] rounded-lg text-sm p-3 outline-none transition';
+const DEMO_CHILDREN = [
+  {
+    MaTre: 'TRE00015',
+    HoTen: 'Nguyễn An',
+    GioiTinh: 'Nữ',
+    NgaySinh: '2019-02-14',
+    TrangThai: 'Đang chăm sóc',
+  },
+  {
+    MaTre: 'TRE00016',
+    HoTen: 'Trần Văn Đức',
+    GioiTinh: 'Nam',
+    NgaySinh: '2019-08-20',
+    TrangThai: 'Đang chăm sóc',
+  },
+  {
+    MaTre: 'TRE00017',
+    HoTen: 'Lê Thị Mai',
+    GioiTinh: 'Nữ',
+    NgaySinh: '2021-12-10',
+    TrangThai: 'Chờ nhận nuôi',
+  },
+];
 
-export default function ChildHealthList() {
-  const { childId: paramChildId } = useParams();
-  const [searchParams] = useSearchParams();
-  const childId = paramChildId || searchParams.get('childId');
-  const basePath = useBasePath();
-  const navigate = useNavigate();
-  const [saving, setSaving] = useState(false);
+const DEMO_HEALTH_RECORDS = [
+  {
+    MaTheoDoi: 'TDSK0001',
+    MaTre: 'TRE00015',
+    MaNguoiCapNhat: 'ND000005',
+    NgayCapNhat: '2026-05-01T09:00:00',
+    CanNang: 18.5,
+    ChieuCao: 108,
+    NhipTim: 92,
+    NhomMau: 'O+',
+    NhietDo: 36.7,
+    KetLuan: 'Sức khỏe ổn định',
+    TinhTrangChiTiet: 'Ăn ngủ bình thường, chưa phát hiện dấu hiệu bất thường.',
+  },
+  {
+    MaTheoDoi: 'TDSK0002',
+    MaTre: 'TRE00016',
+    MaNguoiCapNhat: 'ND000005',
+    NgayCapNhat: '2026-05-04T14:20:00',
+    CanNang: 20.2,
+    ChieuCao: 112,
+    NhipTim: 88,
+    NhomMau: 'A+',
+    NhietDo: 36.5,
+    KetLuan: 'Tốt',
+    TinhTrangChiTiet: 'Thể trạng tốt, vận động bình thường.',
+  },
+  {
+    MaTheoDoi: 'TDSK0003',
+    MaTre: 'TRE00017',
+    MaNguoiCapNhat: 'ND000006',
+    NgayCapNhat: '2026-05-06T08:10:00',
+    CanNang: 12.4,
+    ChieuCao: 88,
+    NhipTim: 118,
+    NhomMau: 'B+',
+    NhietDo: 37.8,
+    KetLuan: 'Cần theo dõi',
+    TinhTrangChiTiet: 'Nhiệt độ hơi cao, cần theo dõi thêm trong ngày.',
+  },
+];
 
-  const { data: child, loading: loadingChild } = useFetch(() => (childId ? childApi.getById(childId) : null), [childId]);
-  const { data: healthData, loading: loadingHealth, refetch } = useFetch(() => (childId ? childApi.getHealth(childId) : null), [childId]);
+function safeReadStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = JSON.parse(raw || '[]');
 
-  const rawRecords = healthData?.items || (Array.isArray(healthData) ? healthData : []);
-  const records = rawRecords.map(r => ({
-    ...r,
-    height: r.chieuCao ?? r.height,
-    weight: r.canNang ?? r.weight,
-    checkDate: r.ngayCapNhat ?? r.checkDate,
-    notes: r.tinhTrangChiTiet ?? r.notes,
-    diagnosis: r.ketLuan ?? r.diagnosis,
-  }));
-  const latest = records[0] || {};
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
-  const { register, handleSubmit, reset } = useForm({
-    defaultValues: { checkDate: new Date().toISOString().split('T')[0] },
+function normalizeChildCode(value) {
+  if (!value) return '';
+
+  const text = String(value).trim().toUpperCase();
+  const match = text.match(/^TRE(\d+)$/);
+
+  if (match) return `TRE${match[1].padStart(5, '0')}`;
+  if (/^\d+$/.test(text)) return `TRE${text.padStart(5, '0')}`;
+
+  return text;
+}
+
+function normalizeHealthCode(value) {
+  if (!value) return '';
+
+  const text = String(value).trim().toUpperCase();
+  const match = text.match(/^TDSK(\d+)$/);
+
+  if (match) return `TDSK${match[1].padStart(4, '0')}`;
+  if (/^\d+$/.test(text)) return `TDSK${text.padStart(4, '0')}`;
+
+  return text;
+}
+
+function normalizeUserCode(value) {
+  if (!value) return '';
+
+  const text = String(value).trim().toUpperCase();
+  const match = text.match(/^ND(\d+)$/);
+
+  if (match) return `ND${match[1].padStart(6, '0')}`;
+  if (/^\d+$/.test(text)) return `ND${text.padStart(6, '0')}`;
+
+  return text;
+}
+
+function toDateInput(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function toNumberOrNull(value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  const number = Number(value);
+  return Number.isNaN(number) ? null : number;
+}
+
+function normalizeChild(item) {
+  return {
+    MaTre: normalizeChildCode(item.MaTre || item.maTre || item.id || item.childId),
+    HoTen:
+      item.HoTen ||
+      item.hoTen ||
+      item.TenTre ||
+      item.childName ||
+      'Chưa cập nhật',
+    GioiTinh: item.GioiTinh || item.gioiTinh || item.gender || '',
+    NgaySinh: toDateInput(item.NgaySinh || item.ngaySinh || item.birthDate),
+    TrangThai: item.TrangThai || item.trangThai || item.status || '',
+  };
+}
+
+function normalizeHealthRecord(item) {
+  return {
+    MaTheoDoi: normalizeHealthCode(
+      item.MaTheoDoi || item.maTheoDoi || item.id || item.healthId
+    ),
+    MaTre: normalizeChildCode(item.MaTre || item.maTre || item.childId),
+    MaNguoiCapNhat: normalizeUserCode(
+      item.MaNguoiCapNhat || item.maNguoiCapNhat || item.updatedBy
+    ),
+    NgayCapNhat:
+      item.NgayCapNhat ||
+      item.ngayCapNhat ||
+      item.updatedAt ||
+      new Date().toISOString(),
+    CanNang: toNumberOrNull(item.CanNang || item.canNang || item.weight),
+    ChieuCao: toNumberOrNull(item.ChieuCao || item.chieuCao || item.height),
+    NhipTim: toNumberOrNull(item.NhipTim || item.nhipTim || item.heartRate),
+    NhomMau: item.NhomMau || item.nhomMau || item.bloodType || '',
+    NhietDo: toNumberOrNull(item.NhietDo || item.nhietDo || item.temperature),
+    KetLuan: item.KetLuan || item.ketLuan || item.conclusion || '',
+    TinhTrangChiTiet:
+      item.TinhTrangChiTiet ||
+      item.tinhTrangChiTiet ||
+      item.detail ||
+      item.note ||
+      '',
+  };
+}
+
+function getChildren() {
+  const stored = safeReadStorage(STORAGE_CHILD_KEY);
+  const merged = [...stored, ...DEMO_CHILDREN];
+
+  const map = new Map();
+
+  merged.forEach((item) => {
+    const child = normalizeChild(item);
+
+    if (child.MaTre && !map.has(child.MaTre)) {
+      map.set(child.MaTre, child);
+    }
   });
 
-  const onSubmit = async (data) => {
-    if (!childId) return;
-    setSaving(true);
-    try {
-      await childApi.addHealth(childId, data);
-      await refetch();
-      reset({ checkDate: new Date().toISOString().split('T')[0] });
-    } finally {
-      setSaving(false);
+  return Array.from(map.values());
+}
+
+function getHealthRecords() {
+  const stored = safeReadStorage(STORAGE_HEALTH_KEY);
+  const merged = [...stored, ...DEMO_HEALTH_RECORDS];
+
+  const map = new Map();
+
+  merged.forEach((item) => {
+    const record = normalizeHealthRecord(item);
+
+    if (record.MaTheoDoi && !map.has(record.MaTheoDoi)) {
+      map.set(record.MaTheoDoi, record);
     }
-  };
+  });
 
-  const bmi = latest.height && latest.weight
-    ? (latest.weight / ((latest.height / 100) ** 2)).toFixed(1)
-    : null;
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.NgayCapNhat) - new Date(a.NgayCapNhat)
+  );
+}
 
-  if (loadingChild || loadingHealth) {
-    return <div className="p-6 text-center text-slate-500">Đang tải dữ liệu sức khỏe...</div>;
+function getChildName(children, childId) {
+  return children.find((child) => child.MaTre === childId)?.HoTen || 'Chưa cập nhật';
+}
+
+function getVitalWarning(record) {
+  const warnings = [];
+
+  if (record.NhietDo !== null && (record.NhietDo < 36 || record.NhietDo >= 37.5)) {
+    warnings.push('Nhiệt độ');
   }
 
-  if (!child) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        Không tìm thấy thông tin trẻ với ID: {childId}.
-      </div>
-    );
+  if (record.NhipTim !== null && (record.NhipTim < 60 || record.NhipTim > 120)) {
+    warnings.push('Nhịp tim');
+  }
+
+  const conclusion = String(record.KetLuan || '').toLowerCase();
+
+  if (
+    conclusion.includes('theo dõi') ||
+    conclusion.includes('bất thường') ||
+    conclusion.includes('cần khám') ||
+    conclusion.includes('sốt')
+  ) {
+    warnings.push('Kết luận');
+  }
+
+  return warnings;
+}
+
+function isWarningRecord(record) {
+  return getVitalWarning(record).length > 0;
+}
+
+function StatusPill({ record }) {
+  const warning = isWarningRecord(record);
+
+  return (
+    <span
+      className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold ${warning
+          ? 'border-amber-200 bg-amber-50 text-amber-700'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        }`}
+    >
+      {warning ? 'Cần theo dõi' : 'Ổn định'}
+    </span>
+  );
+}
+
+function ValueText({ value, suffix }) {
+  if (value === null || value === undefined || value === '') {
+    return <span className="text-[#9AACBF]">—</span>;
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-8 text-slate-800">
+    <span className="font-bold text-[#26364A]">
+      {value}
+      {suffix ? ` ${suffix}` : ''}
+    </span>
+  );
+}
 
-      {/* Breadcrumb */}
-      <div className="mb-2">
-        <Link to={`${basePath}/danh-sach-tre`}
-          className="text-slate-400 hover:text-[#2c7a91] text-sm transition-colors flex items-center gap-1">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-          </svg>
-          Quay lại danh sách trẻ
-        </Link>
-      </div>
+export default function ChildHealthList() {
+  const navigate = useNavigate();
 
-      {/* Student summary */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
-          <div className="relative shrink-0">
-            <img
-              src={child.avatar || avatarUrl(child.fullName)}
-              alt={child.fullName}
-              className="h-24 w-24 rounded-full border-4 border-white shadow-md object-cover"
-            />
-            <span className="absolute bottom-1 right-1 h-6 w-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
-              <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-            </span>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-800">{child.fullName}</h1>
-              <span className="text-xs text-gray-400">Mã hồ sơ: {child.code || `TRE-${String(child.id).padStart(3, '0')}`}</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-emerald-400 text-white text-[10px] font-semibold px-3 py-1 rounded-full uppercase">Trạng thái: ổn định</span>
-              <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                </svg>
-                Lần khám cuối: {records.length > 0 ? formatDate(latest.checkDate) : 'Chưa có'}
-              </span>
-            </div>
-          </div>
-        </div>
+  const children = useMemo(() => getChildren(), []);
+  const records = useMemo(() => getHealthRecords(), []);
 
-        <div className="flex flex-col gap-4 w-full lg:w-72">
-          <button className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg text-[#2c7a91]">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-gray-800">Xuất báo cáo sức khỏe</p>
-                <p className="text-[10px] text-gray-400">Tải xuống bản dạng PDF cho bác sĩ</p>
-              </div>
-            </div>
-            <svg className="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M17 8l4 4m0 0l-4 4m4-4H3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-            </svg>
-          </button>
-          <button
-            onClick={() => navigate(`/can-bo-tiep-nhan/tre/${childId}/suc-khoe/tao`)}
-            className="text-white rounded-xl p-4 flex items-center justify-between transition shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #2c7a91 0%, #1e5a6b 100%)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-bold">Nhập chỉ số mới</p>
-                <p className="text-[10px] text-white/70">Cập nhật chiều cao, cân nặng...</p>
-              </div>
-            </div>
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-            </svg>
-          </button>
-        </div>
-      </div>
+  const [keyword, setKeyword] = useState('');
+  const [childFilter, setChildFilter] = useState('');
+  const [conditionFilter, setConditionFilter] = useState('');
 
-      {/* Health Metric Cards */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Chỉ số sức khỏe hiện tại</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Chiều cao', value: latest.height ?? 112, unit: 'cm', pct: Math.min(((latest.height ?? 112) / 180) * 100, 100) },
-            { label: 'Cân nặng', value: latest.weight ?? 19.5, unit: 'kg', pct: Math.min(((latest.weight ?? 19.5) / 80) * 100, 100) },
-          ].map(m => (
-            <div key={m.label} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{m.label}</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-blue-900">{m.value}</span>
-                <span className="text-xs font-semibold text-gray-500">{m.unit}</span>
-              </div>
-              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-700 rounded-full" style={{ width: `${m.pct}%` }} />
-              </div>
-            </div>
-          ))}
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">BMI</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-blue-900">{bmi ?? 15.5}</span>
-              <span className="text-xs font-semibold text-gray-500">pts</span>
-            </div>
-            <span className="inline-block text-[8px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">Bình thường</span>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nhóm máu</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-red-600">{child.bloodType || 'O+'}</span>
-            </div>
-            <p className="text-[9px] text-gray-400">Không ghi nhận dị ứng máu</p>
-          </div>
-        </div>
-      </section>
+  const selectedChildId = childFilter;
 
-      {/* Update Health Form */}
-      <section className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-blue-50 text-[#2c7a91] rounded-lg">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold text-blue-900">Cập nhật tình trạng sức khỏe</h2>
-        </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Chiều cao (cm)</label>
-              <input {...register('height')} className={inputClass} placeholder="Ví dụ: 112" type="number" step="0.1" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Cân nặng (kg)</label>
-              <input {...register('weight')} className={inputClass} placeholder="Ví dụ: 19.5" type="number" step="0.1" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Ngày đo</label>
-              <input {...register('checkDate')} className={inputClass} type="date" />
-            </div>
-          </div>
+  const filteredRecords = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+
+    return records.filter((record) => {
+      const childName = getChildName(children, record.MaTre);
+      const warning = isWarningRecord(record);
+
+      const matchChild = !selectedChildId || record.MaTre === selectedChildId;
+
+      const matchCondition =
+        !conditionFilter ||
+        (conditionFilter === 'normal' && !warning) ||
+        (conditionFilter === 'warning' && warning);
+
+      const searchable = [
+        record.MaTheoDoi,
+        record.MaTre,
+        childName,
+        record.MaNguoiCapNhat,
+        record.NhomMau,
+        record.KetLuan,
+        record.TinhTrangChiTiet,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const matchKeyword = !kw || searchable.includes(kw);
+
+      return matchChild && matchCondition && matchKeyword;
+    });
+  }, [records, children, selectedChildId, conditionFilter, keyword]);
+
+  const resetFilters = () => {
+    setKeyword('');
+    setChildFilter('');
+    setConditionFilter('');
+  };
+
+  const openCreateHealth = () => {
+    if (!selectedChildId) return;
+
+    navigate(`/can-bo-tiep-nhan/suc-khoe/tre/${selectedChildId}/tao`);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F5F7FB]">
+      <div className="mx-auto max-w-[1720px] space-y-7 px-5 py-8 sm:px-8 lg:px-10">
+        <header className="flex flex-col justify-between gap-5 border-b border-[#DDE6F0] pb-7 lg:flex-row lg:items-end">
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">Ghi chú (Tùy chọn)</label>
-            <textarea {...register('notes')} className={inputClass} placeholder="Nhập thêm chi tiết về tình trạng hiện tại..." rows={4} />
+            <h1 className="mt-3 text-[34px] font-bold leading-tight text-[#0D47A1] md:text-[42px]">
+              Theo dõi sức khỏe trẻ
+            </h1>
+
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-[#6F83A3]">
+              Quản lý các bản ghi theo dõi sức khỏe. Bộ lọc chỉ thay đổi dữ liệu
+              trong bảng, không chuyển sang trang chi tiết.
+            </p>
           </div>
-          <div className="flex justify-end items-center gap-4 pt-4">
-            <button type="button" onClick={() => reset()} className="text-sm font-bold text-gray-400 hover:text-gray-600">Hủy bỏ</button>
-            <button type="submit" disabled={saving} className="bg-blue-800 text-white px-6 py-3 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition disabled:opacity-60">
-              {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                </svg>
-              )}
-              {saving ? 'Đang lưu...' : 'Lưu cập nhật'}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              disabled={!selectedChildId}
+              onClick={openCreateHealth}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0D47A1] px-5 text-sm font-bold text-white transition hover:bg-[#083778] disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <Plus size={17} />
+              Thêm theo dõi
             </button>
           </div>
-        </form>
-      </section>
+        </header>
 
-      {/* Vaccination + Medical History */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Vaccination list */}
-        <section className="lg:col-span-3 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-lg font-bold text-blue-900">Danh sách Vaccine tiêm chủng</h2>
-            <span className="text-[10px] font-bold text-[#2c7a91] cursor-pointer hover:underline">Xem tất cả</span>
-          </div>
-          <div className="space-y-6">
-            {records.slice(0, 5).map((r, i) => {
-              const done = r.treatment !== 'Lên lịch tiêm';
-              return r.diagnosis ? (
-                <div key={r.id || i} className="flex items-center justify-between pb-6 border-b border-gray-50 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500'}`}>
-                      <svg className="h-5 w-5" fill={done ? 'currentColor' : 'none'} stroke={done ? 'none' : 'currentColor'} viewBox="0 0 24 24">
-                        {done
-                          ? <path clipRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fillRule="evenodd" />
-                          : <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        }
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-800">{r.diagnosis}</h4>
-                      <p className={`text-[10px] font-bold ${done ? 'text-gray-400' : 'text-blue-500'}`}>
-                        {done ? 'Đã hoàn thành' : 'Lên lịch tiêm'}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-gray-600">{formatDate(r.checkDate)}</span>
-                </div>
-              ) : null;
-            })}
-          </div>
-        </section>
+        <section className="overflow-hidden rounded-xl border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]">
+          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+            <div className="grid gap-4 xl:grid-cols-[1fr_620px]">
+              <div className="relative">
+                <Search
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA0B8]"
+                />
 
-        {/* Medical History */}
-        <section className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <svg className="h-4 w-4 text-[#2c7a91]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              <h2 className="text-sm font-bold text-blue-900">Lịch sử y tế & Ghi chú</h2>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl space-y-1">
-              <p className="text-[10px] font-bold text-blue-600 uppercase">Bệnh gần đây</p>
-              <p className="text-sm italic text-gray-700">"{latest.notes || 'Cảm cúm nhẹ hồi tháng 9.'}"</p>
-            </div>
-            <div className="bg-red-50/50 p-4 rounded-xl space-y-3">
-              <p className="text-[10px] font-bold text-red-500 uppercase tracking-tighter">Dị ứng (Allergies)</p>
-              <div className="flex gap-2 flex-wrap">
-                {(child.allergies?.length > 0 ? child.allergies : ['Đậu phộng', 'Penicillin']).map((a, i) => (
-                  <span key={i} className="bg-red-500 text-white text-[9px] px-3 py-1 rounded-full font-bold">{a}</span>
-                ))}
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Tìm mã theo dõi, mã trẻ, tên trẻ, kết luận..."
+                  className="h-12 w-full rounded-xl border border-[#D7E5F7] bg-white py-3 pl-11 pr-4 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <select
+                  value={childFilter}
+                  onChange={(e) => setChildFilter(e.target.value)}
+                  className="h-12 rounded-xl border border-[#D7E5F7] bg-white px-4 text-sm font-bold text-[#26364A] outline-none transition focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10"
+                >
+                  <option value="">Tất cả trẻ</option>
+                  {children.map((child) => (
+                    <option key={child.MaTre} value={child.MaTre}>
+                      {child.MaTre} - {child.HoTen}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={conditionFilter}
+                  onChange={(e) => setConditionFilter(e.target.value)}
+                  className="h-12 rounded-xl border border-[#D7E5F7] bg-white px-4 text-sm font-bold text-[#26364A] outline-none transition focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10"
+                >
+                  <option value="">Tất cả tình trạng</option>
+                  <option value="normal">Ổn định</option>
+                  <option value="warning">Cần theo dõi</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#CFE0F5] bg-white px-4 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+                >
+                  <SlidersHorizontal size={16} />
+                  Xóa lọc
+                </button>
               </div>
             </div>
-            <div className="border-l-4 border-blue-900 pl-4 py-1 space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Nhu cầu đặc biệt</p>
-              <p className="text-sm font-bold text-gray-800">{child.specialNeeds || 'Cần chế độ ăn không hạt.'}</p>
-            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start gap-3">
-            <div className="mt-1 text-[#2c7a91]">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-gray-800">Ghi ý sức khỏe</p>
-              <p className="text-[9px] text-gray-400 leading-relaxed">
-                Dựa trên BMI {bmi ?? 15.5}, bé đang phát triển rất tốt. Duy trì vận động ngoài trời 30p mỗi ngày.
+          <div className="flex items-center justify-between border-b border-[#EDF3FB] px-7 py-5">
+            <div>
+              <h2 className="text-xl font-bold text-[#0D47A1]">
+                Danh sách theo dõi sức khỏe
+              </h2>
+
+              <p className="mt-1 text-sm text-[#8FA0B8]">
+                Hiển thị {filteredRecords.length} / {records.length} bản ghi.
               </p>
             </div>
           </div>
+
+          {filteredRecords.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <p className="text-sm font-semibold text-[#8FA0B8]">
+                Không có bản ghi sức khỏe phù hợp.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1320px] border-collapse text-left text-sm">
+                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                  <tr>
+                    <th className="px-6 py-4 font-bold">Mã theo dõi</th>
+                    <th className="px-6 py-4 font-bold">Trẻ</th>
+                    <th className="px-6 py-4 font-bold">Ngày cập nhật</th>
+                    <th className="px-6 py-4 font-bold">Cân nặng</th>
+                    <th className="px-6 py-4 font-bold">Chiều cao</th>
+                    <th className="px-6 py-4 font-bold">Nhiệt độ</th>
+                    <th className="px-6 py-4 font-bold">Nhịp tim</th>
+                    <th className="px-6 py-4 font-bold">Nhóm máu</th>
+                    <th className="px-6 py-4 font-bold">Kết luận</th>
+                    <th className="px-6 py-4 font-bold">Tình trạng</th>
+                    <th className="px-6 py-4 font-bold">Người cập nhật</th>
+                    <th className="w-[120px] px-6 py-4 text-right font-bold">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-[#EDF3FB]">
+                  {filteredRecords.map((record) => {
+                    const childName = getChildName(children, record.MaTre);
+                    const warnings = getVitalWarning(record);
+
+                    return (
+                      <tr
+                        key={record.MaTheoDoi}
+                        className="transition hover:bg-[#F8FBFF] [&>td]:align-middle"
+                      >
+                        <td className="px-6 py-5">
+                          <span className="rounded-lg bg-[#EAF3FF] px-3 py-1 text-xs font-extrabold text-[#0D47A1]">
+                            {record.MaTheoDoi}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <p className="font-bold text-[#26364A]">
+                            {childName}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-[#8FA0B8]">
+                            {record.MaTre}
+                          </p>
+                        </td>
+
+                        <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                          {record.NgayCapNhat
+                            ? formatDate(record.NgayCapNhat)
+                            : '—'}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <ValueText value={record.CanNang} suffix="kg" />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <ValueText value={record.ChieuCao} suffix="cm" />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <ValueText value={record.NhietDo} suffix="°C" />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <ValueText value={record.NhipTim} suffix="lần/phút" />
+                        </td>
+
+                        <td className="px-6 py-5 text-sm font-bold text-[#26364A]">
+                          {record.NhomMau || '—'}
+                        </td>
+
+                        <td className="max-w-[220px] px-6 py-5 text-sm font-semibold leading-6 text-[#26364A]">
+                          {record.KetLuan || 'Chưa kết luận'}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <StatusPill record={record} />
+                          {warnings.length > 0 && (
+                            <p className="mt-2 text-xs font-semibold text-amber-700">
+                              Cần chú ý: {warnings.join(', ')}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-5 text-sm text-[#5F738F]">
+                          {record.MaNguoiCapNhat || '—'}
+                        </td>
+
+                        <td className="px-6 py-5 text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/can-bo-tiep-nhan/suc-khoe/tre/${record.MaTre}`)
+                            }
+                            className="inline-flex h-10 w-[96px] items-center justify-center gap-2 rounded-xl border border-[#CFE0F5] bg-white px-4 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+                          >
+                            <Eye size={14} />
+                            Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
     </div>

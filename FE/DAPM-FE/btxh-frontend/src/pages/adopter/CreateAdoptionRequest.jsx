@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
-import { useAuth } from '../../hooks/useAuth';
 import FileUpload from '../../components/common/FileUpload';
-import userIcon from '../../assets/user.png';
-import documentIcon from '../../assets/document.png';
+import user from '../../assets/user.png';
+import document from '../../assets/document.png';
 import family from '../../assets/adoption_family.jpg';
 
 const labelClass =
@@ -46,7 +45,7 @@ function ApplicantSection({ register, errors }) {
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
         <img
-          src={userIcon}
+          src={user}
           alt="User icon"
           className="w-4 h-4 object-contain"
         />
@@ -168,7 +167,7 @@ function DocumentsSection({ files, setFiles, showMissingDocsWarning }) {
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
         <img
-          src={documentIcon}
+          src={document}
           alt="Document icon"
           className="w-4 h-4 object-contain"
         />
@@ -314,7 +313,7 @@ function ImageCard() {
 
 function buildRequestSnapshot(data, files, response) {
   return {
-    requestId: response?.id || response?.maYeuCauNhan || '',
+    requestId: response?.data?.id || response?.data?.requestId || '',
     childId: data.childId || '',
     adopterName: data.adopterName || '',
     phone: data.phone || '',
@@ -339,7 +338,6 @@ function buildRequestSnapshot(data, files, response) {
 }
 
 export default function CreateAdoptionRequest() {
-  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [files, setFiles] = useState({
     idCard: [],
@@ -393,15 +391,20 @@ export default function CreateAdoptionRequest() {
     try {
       setSubmitAttempted(false);
 
-      const payload = {
-        TenNguoiNhan: data.adopterName,
-        LyDoNhanNuoi: data.motivation || '',
-        MongMuonVeTre: data.expectedChild || '',
-        ThuNhapHangThang: data.monthlyIncome ? Number(data.monthlyIncome) : null,
-        NgheNghiep: data.occupation || '',
-      };
+      const formData = new FormData();
 
-      const response = await adoptionApi.create(payload);
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+      });
+
+      [
+        ...files.idCard,
+        ...files.health,
+        ...files.marriage,
+        ...files.income,
+      ].forEach((file) => formData.append('documents', file));
+
+      const response = await adoptionApi.create(formData);
 
       const requestSnapshot = buildRequestSnapshot(data, files, response);
 

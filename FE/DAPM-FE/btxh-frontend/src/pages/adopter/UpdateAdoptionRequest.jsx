@@ -167,29 +167,34 @@ export default function UpdateAdoptionRequest() {
         setCurrentRequest(item);
 
         reset({
-          adopterName: item?.tenNguoiNhan || item?.adopterName || '',
-          phone: '',
-          gender: '',
-          birthDate: '',
-          nationalId: item?.soGiayTo || '',
-          address: '',
-          occupation: item?.ngheNghiep || item?.occupation || '',
-          monthlyIncome: item?.thuNhapHangThang ?? item?.monthlyIncome ?? '',
-          motivation: item?.lyDoNhanNuoi || item?.motivation || '',
-          expectedChild: item?.mongMuonVeTre || item?.expectedChild || '',
+          adopterName: item?.adopterName || item?.applicantName || '',
+          phone: item?.phone || '',
+          gender: item?.gender || '',
+          birthDate: item?.birthDate || '',
+          nationalId: item?.nationalId || '',
+          address: item?.address || '',
+          occupation: item?.occupation || '',
+          monthlyIncome: item?.monthlyIncome || item?.income || '',
+          motivation: item?.motivation || item?.reason || '',
+          expectedChild: item?.expectedChild || '',
         });
       })
       .catch(console.error);
   }, [id, reset]);
 
   const onSubmit = async (data) => {
-    await adoptionApi.update(id, {
-      TenNguoiNhan: data.adopterName,
-      NgheNghiep: data.occupation || '',
-      ThuNhapHangThang: data.monthlyIncome ? Number(data.monthlyIncome) : null,
-      LyDoNhanNuoi: data.motivation || '',
-      MongMuonVeTre: data.expectedChild || '',
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+      formData.append(key, value ?? '');
     });
+
+    files.idCard.forEach((file) => formData.append('idCard', file));
+    files.health.forEach((file) => formData.append('health', file));
+    files.marriage.forEach((file) => formData.append('marriage', file));
+    files.income.forEach((file) => formData.append('income', file));
+
+    await adoptionApi.update(id, formData);
     navigate('/nhan-nuoi/trang-thai');
   };
 

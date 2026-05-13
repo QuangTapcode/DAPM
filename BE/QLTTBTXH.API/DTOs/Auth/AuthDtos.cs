@@ -32,6 +32,9 @@ public class UserInfoDto
     public string GioiTinh { get; set; } = null!;
     public DateTime? NgaySinh { get; set; }
     public string? MaXaPhuong { get; set; }
+    public string? TenPhuongXa { get; set; }
+    public string? MaTinhTP { get; set; }
+    public string? TenTinhTP { get; set; }
     public string? DiaChiCuThe { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }

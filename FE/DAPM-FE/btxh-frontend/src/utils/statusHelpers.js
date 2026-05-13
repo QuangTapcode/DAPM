@@ -43,25 +43,9 @@ export function normalizeStatus(status) {
         REJECTED: 'rejected',
         PROCESSING: 'processing',
         COMPLETED: 'completed',
-
-        // Vietnamese status strings from BE
-        'chờ xử lý': 'pending',
-        'đang xem xét': 'reviewing',
-        'yêu cầu bổ sung': 'missing_info',
-        'thiếu thông tin': 'missing_info',
-        'đã tiếp nhận': 'approved',
-        'đã duyệt': 'approved',
-        'từ chối': 'rejected',
-        'đã hủy': 'cancelled',
-        'đã từ chối': 'rejected',
-        'đang chờ xử lý': 'pending',
-        'đang xử lý': 'processing',
-        'hoàn thành': 'completed',
-        'đã hoàn thành': 'completed',
-        'cancelled': 'cancelled',
     };
 
-    return statusMap[status] || statusMap[String(status).toLowerCase()] || status;
+    return statusMap[status] || status;
 }
 
 export function getCurrentStep(status) {

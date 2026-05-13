@@ -404,7 +404,8 @@ VALUES
 ('ND000017', '0905123017', '123456', N'Phan Ngọc Trâm', '1996-12-15', N'Nữ', '048196001217', 'ngoctram17@gmail.com', 'HHAC01', N'Khu ven biển Hòa Hải', '2026-03-18 08:30:00', 1),
 ('ND000018', '0905123018', '123456', N'Lý Quốc Thịnh', '1987-09-09', N'Nam', '046187001218', 'quocthinh18@gmail.com', 'ANTH01', N'Đường Xuân Phú', '2026-03-18 08:40:00', 1),
 ('ND000019', '0905123019', '123456', N'Đào Thu Phương', '1994-11-27', N'Nữ', '048194001219', 'thuphuong19@gmail.com', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-18 08:50:00', 1),
-('ND000020', '0905123020', '123456', N'Đinh Gia Huy', '1991-02-14', N'Nam', '046191001220', 'giahuy20@gmail.com', 'ANXU01', N'Khu dân cư Thanh Khê', '2026-03-18 09:00:00', 1);
+('ND000020', '0905123020', '123456', N'Đinh Gia Huy', '1991-02-14', N'Nam', '046191001220', 'giahuy20@gmail.com', 'ANXU01', N'Khu dân cư Thanh Khê', '2026-03-18 09:00:00', 1),
+('ND000007', '0905123007', '123456', N'Nguyễn Văn Tùng', '1982-04-15', N'Nam', '048182001207', 'truongphong@ttbt.vn', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-01 08:30:00', 1);
 
 INSERT INTO NGUOIDUNG_VAITRO (MaNguoiDung, MaVaiTro)
 VALUES
@@ -412,6 +413,7 @@ VALUES
 ('ND000002', 'QLNT'),
 ('ND000003', 'QLNN'),
 ('ND000003', 'TPQL'),
+('ND000007', 'TPQL'),
 ('ND000004', 'NGGT'),
 ('ND000004', 'NGNN'),
 ('ND000005', 'NGGT'),
@@ -451,12 +453,12 @@ VALUES
 
 INSERT INTO YEUCAUGUITRE (MaYeuCauGuiTre, MaNguoiGui, MaLoaiNguoiGui, QuanHeVoiTre, LyDoGui, NgayTao, NgayCapNhat, TrangThaiYC, GhiChu)
 VALUES
-('YCGT0001', 'ND000004', 'CME', N'Mẹ ruột', N'Hoàn cảnh kinh tế khó khăn, chưa đủ điều kiện chăm sóc trẻ ổn định', '2026-03-05 09:00:00', '2026-03-06 10:15:00', N'Đã tiếp nhận', N'Hồ sơ đã được kiểm tra và tiếp nhận ban đầu'),
-('YCGT0002', 'ND000006', 'NTH', N'Cô ruột', N'Gia đình không còn khả năng chăm sóc lâu dài cho trẻ', '2026-03-08 14:20:00', '2026-03-09 09:40:00', N'Đang xem xét', N'Đang chờ bổ sung xác nhận cư trú'),
-('YCGT0003', 'ND000004', 'CME', N'Mẹ ruột', N'Mẹ đơn thân, đang điều trị bệnh dài ngày', '2026-03-12 08:30:00', '2026-03-12 15:20:00', N'Chờ xử lý', N'Hồ sơ mới tạo trên hệ thống'),
-('YCGT0004', 'ND000015', 'CME', N'Mẹ ruột', N'Hoàn cảnh kinh tế khó khăn, cần hỗ trợ chăm sóc trẻ trong thời gian ngắn', '2026-03-18 09:15:00', '2026-03-19 10:00:00', N'Đang xem xét', N'Đã tiếp nhận hồ sơ và đang kiểm tra giấy tờ'),
-('YCGT0005', 'ND000017', 'NTH', N'Bà ngoại', N'Người giám hộ hiện tại không còn đủ sức khỏe để chăm sóc trẻ', '2026-03-18 10:20:00', '2026-03-19 14:20:00', N'Đã tiếp nhận', N'Hồ sơ đã được duyệt tiếp nhận'),
-('YCGT0006', 'ND000019', 'CME', N'Mẹ ruột', N'Mẹ đang điều trị bệnh dài ngày, chưa thể trực tiếp nuôi dưỡng trẻ', '2026-03-19 08:45:00', '2026-03-20 09:30:00', N'Từ chối', N'Hồ sơ thiếu giấy xác nhận tình trạng hiện tại');
+('YCGT0001', 'ND000004', 'CME', N'Mẹ ruột',  N'Hoàn cảnh kinh tế khó khăn, chưa đủ điều kiện chăm sóc trẻ ổn định',              '2026-03-05 09:00:00', '2026-03-06 10:15:00', N'Đã duyệt',      N'Hồ sơ đã được kiểm tra, tiếp nhận và duyệt'),
+('YCGT0002', 'ND000006', 'NTH', N'Cô ruột',  N'Gia đình không còn khả năng chăm sóc lâu dài cho trẻ',                             '2026-03-08 14:20:00', '2026-03-09 09:40:00', N'Đang xem xét', N'Đang chờ bổ sung xác nhận cư trú'),
+('YCGT0003', 'ND000004', 'CME', N'Mẹ ruột',  N'Mẹ đơn thân, đang điều trị bệnh dài ngày',                                         '2026-03-12 08:30:00', '2026-03-12 15:20:00', N'Chờ xử lý',   N'Hồ sơ mới tạo, chờ cán bộ tiếp nhận xử lý'),
+('YCGT0004', 'ND000015', 'CME', N'Mẹ ruột',  N'Hoàn cảnh kinh tế khó khăn, cần hỗ trợ chăm sóc trẻ trong thời gian ngắn',        '2026-03-18 09:15:00', '2026-03-19 10:00:00', N'Đang xem xét', N'Đã tiếp nhận hồ sơ và đang kiểm tra giấy tờ'),
+('YCGT0005', 'ND000017', 'NTH', N'Bà ngoại', N'Người giám hộ hiện tại không còn đủ sức khỏe để chăm sóc trẻ',                     '2026-03-18 10:20:00', '2026-03-19 14:20:00', N'Đã duyệt',      N'Hồ sơ đã được duyệt tiếp nhận'),
+('YCGT0006', 'ND000019', 'CME', N'Mẹ ruột',  N'Mẹ đang điều trị bệnh dài ngày, chưa thể trực tiếp nuôi dưỡng trẻ',               '2026-03-19 08:45:00', '2026-03-20 09:30:00', N'Từ chối',      N'Hồ sơ thiếu giấy xác nhận tình trạng hiện tại');
 
 INSERT INTO THONGTINTRETAM (MaThongTin, MaYeuCauGuiTre, TenTre, NgaySinh, GioiTinh, DanToc)
 VALUES
@@ -469,11 +471,11 @@ VALUES
 
 INSERT INTO YEUCAUNHANNUOI (MaYeuCauNhan, MaNguoiNhan, LyDoNhanNuoi, MongMuonVeTre, ThuNhapHangThang, NgheNghiep, NgayTao, NgayCapNhat, TrangThai, NguoiDuyet)
 VALUES
-('YCNN0001', 'ND000005', N'Mong muốn chăm sóc và nuôi dạy một trẻ nhỏ trong môi trường gia đình ổn định', N'Trẻ dưới 7 tuổi, sức khỏe ổn định', 32000000, N'Kỹ sư xây dựng', '2026-03-10 09:00:00', '2026-03-12 15:00:00', N'Đang xem xét', 'ND000003'),
-('YCNN0002', 'ND000005', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ hồ sơ pháp lý', N'Trẻ từ 5 đến 8 tuổi, hòa đồng', 32000000, N'Kỹ sư xây dựng', '2026-03-14 08:45:00', '2026-03-15 16:10:00', N'Chờ ghép trẻ', 'ND000003'),
-('YCNN0003', 'ND000016', N'Mong muốn nhận nuôi trẻ để chăm sóc lâu dài trong môi trường gia đình ổn định', N'Trẻ dưới 6 tuổi, sức khỏe tốt', 28000000, N'Nhân viên kỹ thuật', '2026-03-18 13:20:00', '2026-03-19 09:45:00', N'Chờ xử lý', 'ND000003'),
-('YCNN0004', 'ND000018', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ điều kiện pháp lý', N'Trẻ nam từ 4 đến 8 tuổi, hòa đồng', 35000000, N'Chủ hộ kinh doanh', '2026-03-19 08:40:00', '2026-03-20 10:00:00', N'Chờ ghép trẻ', 'ND000003'),
-('YCNN0005', 'ND000020', N'Mong muốn nhận nuôi trẻ nữ và tạo điều kiện học tập ổn định', N'Trẻ nữ từ 3 đến 7 tuổi', 30000000, N'Giáo viên', '2026-03-19 15:10:00', '2026-03-20 11:30:00', N'Đang xem xét', 'ND000003');
+('YCNN0001', 'ND000005', N'Mong muốn chăm sóc và nuôi dạy một trẻ nhỏ trong môi trường gia đình ổn định', N'Trẻ dưới 7 tuổi, sức khỏe ổn định',  32000000, N'Kỹ sư xây dựng',    '2026-03-10 09:00:00', '2026-03-12 15:00:00', N'Chờ ghép trẻ',  'ND000003'),
+('YCNN0002', 'ND000005', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ hồ sơ pháp lý',                     N'Trẻ từ 5 đến 8 tuổi, hòa đồng',       32000000, N'Kỹ sư xây dựng',    '2026-03-14 08:45:00', '2026-03-15 16:10:00', N'Chờ ghép trẻ',  'ND000003'),
+('YCNN0003', 'ND000016', N'Mong muốn nhận nuôi trẻ để chăm sóc lâu dài trong môi trường gia đình ổn định', N'Trẻ dưới 6 tuổi, sức khỏe tốt',       28000000, N'Nhân viên kỹ thuật', '2026-03-18 13:20:00', '2026-03-25 10:00:00', N'Chờ ghép trẻ',  'ND000003'),
+('YCNN0004', 'ND000018', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ điều kiện pháp lý',                 N'Trẻ nam từ 4 đến 8 tuổi, hòa đồng',   35000000, N'Chủ hộ kinh doanh', '2026-03-19 08:40:00', '2026-03-20 10:00:00', N'Chờ ghép trẻ',  'ND000003'),
+('YCNN0005', 'ND000020', N'Mong muốn nhận nuôi trẻ nữ và tạo điều kiện học tập ổn định',                  N'Trẻ nữ từ 3 đến 7 tuổi',              30000000, N'Giáo viên',          '2026-03-19 15:10:00', '2026-03-20 11:30:00', N'Đang xem xét',  'ND000003');
 
 INSERT INTO GIAYTOPHAPLY (MaGiayTo, TenGiayTo, LoaiGiayTo, DuongDanFile, TrangThai, MaYeuCauGuiTre, MaYeuCauNhan, NgayCapNhat)
 VALUES
@@ -494,8 +496,26 @@ VALUES
 
 ('GT000005', N'Ảnh CCCD người gửi trẻ', N'Tùy thân', N'/uploads/giayto/ycgt0002/anh-cccd.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:45:00'),
 ('GT000006', N'Giấy khai sinh của trẻ', N'Hộ tịch', N'/uploads/giayto/ycgt0002/giay-khai-sinh.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:50:00'),
-('GT000015', N'Sổ hộ khẩu', N'Cư trú', N'/uploads/giayto/ycgt0002/so-ho-khau.pdf', N'Cần bổ sung', 'YCGT0002', NULL, '2026-03-09 09:52:00'),
-('GT000016', N'Giấy tờ khác', N'Khác', N'/uploads/giayto/ycgt0002/giay-to-khac.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:55:00');
+('GT000015', N'Sổ hộ khẩu',          N'Cư trú',   N'/uploads/giayto/ycgt0002/so-ho-khau.pdf',          N'Cần bổ sung', 'YCGT0002', NULL,       '2026-03-09 09:52:00'),
+('GT000016', N'Giấy tờ khác',       N'Khác',     N'/uploads/giayto/ycgt0002/giay-to-khac.pdf',        N'Hợp lệ',      'YCGT0002', NULL,       '2026-03-09 09:55:00'),
+
+-- Giấy tờ YCNN0003
+('GT000017', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0003/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:00:00'),
+('GT000018', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0003/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:05:00'),
+('GT000019', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0003/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:08:00'),
+('GT000020', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0003/minh-chung-thu-nhap.pdf',N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:10:00'),
+
+-- Giấy tờ YCNN0004
+('GT000021', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0004/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:05:00'),
+('GT000022', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0004/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:08:00'),
+('GT000023', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0004/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:10:00'),
+('GT000024', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0004/minh-chung-thu-nhap.pdf',N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:12:00'),
+
+-- Giấy tờ YCNN0005
+('GT000025', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0005/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:35:00'),
+('GT000026', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0005/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:38:00'),
+('GT000027', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0005/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:40:00'),
+('GT000028', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0005/minh-chung-thu-nhap.pdf',N'Cần bổ sung', NULL, 'YCNN0005', '2026-03-20 11:42:00');
 
 INSERT INTO TRE (MaTre, HoTen, NgaySinh, GioiTinh, MaPhuongXa, DiaChiCuThe, DanToc, TinhCach, SoThich, DacDiemNhanDang, TrangThai, NgayTiepNhan, NgayCapNhat, NgayNhanNuoi, GhiChu, MaNguoiCapNhat, HinhAnh)
 VALUES
@@ -505,14 +525,19 @@ VALUES
 ('TRE00004', N'Hoàng Nhật Nam', '2018-06-02', N'Nam', 'ANTH01', N'Tiếp nhận từ hồ sơ chuyển tuyến tại Huế', N'Kinh', N'Tự lập, lễ phép', N'Đọc truyện tranh, tô tượng', N'Vết bớt nhỏ sau gáy', N'Đã nhận nuôi', '2025-10-10', '2026-02-20 09:15:00', '2026-03-18', N'Đã hoàn tất hồ sơ nhận nuôi', 'ND000003', N'/images/tre/hoang-nhat-nam.jpg'),
 ('TRE00005', N'Phan An Nhi', '2021-07-23', N'Nữ', 'HHAC01', N'Tiếp nhận từ hồ sơ được duyệt tại Hòa Hải', N'Kinh', N'Hiền, dễ gần', N'Tô màu, ghép hình', N'Nốt ruồi nhỏ ở má trái', N'Đang chăm sóc', '2026-03-19', '2026-03-19 15:10:00', NULL, N'Trẻ được tạo từ yêu cầu gửi trẻ đã tiếp nhận', 'ND000002', N'/images/tre/phan-an-nhi.jpg'),
 ('TRE00006', N'Đặng Minh Phúc', '2020-10-30', N'Nam', 'ANTH01', N'Trẻ đang được chăm sóc tại cơ sở Huế', N'Kinh', N'Nhanh nhẹn, hòa đồng', N'Xếp lego, nghe kể chuyện', N'Không', N'Chờ nhận nuôi', '2026-02-15', '2026-03-18 11:20:00', NULL, N'Đủ điều kiện xem xét ghép hồ sơ nhận nuôi', 'ND000003', N'/images/tre/dang-minh-phuc.jpg'),
-('TRE00007', N'Ngô Gia Linh', '2019-05-18', N'Nữ', 'HKHN01', N'Trẻ đang được chăm sóc tại Đà Sơn', N'Kinh', N'Ngoan, ít nói', N'Nghe nhạc, tô tượng', N'Vết bớt nhỏ ở cánh tay phải', N'Đang chăm sóc', '2025-11-20', '2026-03-18 14:00:00', NULL, N'Đang theo dõi phát triển thể chất', 'ND000002', N'/images/tre/ngo-gia-linh.jpg');
+('TRE00007', N'Ngô Gia Linh',    '2019-05-18', N'Nữ', 'HKHN01', N'Trẻ đang được chăm sóc tại Đà Sơn',                     N'Kinh', N'Ngoan, ít nói',        N'Nghe nhạc, tô tượng',         N'Vết bớt nhỏ ở cánh tay phải', N'Đang chăm sóc', '2025-11-20', '2026-03-18 14:00:00', NULL, N'Đang theo dõi phát triển thể chất',                  'ND000002', N'/images/tre/ngo-gia-linh.jpg'),
+-- Trẻ từ yêu cầu gửi YCGT0002 (Võ Nhật Minh)
+('TRE00008', N'Võ Nhật Minh',   '2020-12-03', N'Nam', 'ANTH01', N'Tiếp nhận từ yêu cầu gửi trẻ YCGT0002',                 N'Kinh', N'Hiếu động, dễ gần',  N'Chơi lego, nghe nhạc thiếu nhi',N'Không',                        N'Đang chăm sóc', '2026-03-12', '2026-03-12 11:00:00', NULL, N'Hồ sơ tiếp nhận đã hoàn tất',                        'ND000002', N'/images/tre/vo-nhat-minh.jpg'),
+-- Trẻ từ yêu cầu gửi YCGT0004 (Trần Gia Bảo)
+('TRE00009', N'Trần Gia Bảo',   '2022-09-11', N'Nam', 'HKHN01', N'Tiếp nhận từ yêu cầu gửi trẻ YCGT0004',                 N'Kinh', N'Nhút nhát, cần quan tâm', N'Tô màu, xem hoạt hình',      N'Nốt ruồi nhỏ ở lưng',          N'Đang chăm sóc', '2026-03-21', '2026-03-21 09:00:00', NULL, N'Trẻ mới tiếp nhận, đang theo dõi thích nghi môi trường', 'ND000002', N'/images/tre/tran-gia-bao.jpg');
 
 INSERT INTO HOSOTIEPNHANTRE (MaHSTiepNhan, MaYeuCauGuiTre, MaTre, MaCanBoTiepNhan, NgayTiepNhan, TrangThai, NgayDuyet, GhiChu)
 VALUES
-('HSTN0001', 'YCGT0001', 'TRE00001', 'ND000002', '2026-03-07', N'Đã duyệt', '2026-03-07', N'Đã hoàn tất tiếp nhận trẻ vào hồ sơ chính thức'),
-('HSTN0002', 'YCGT0002', NULL, 'ND000002', '2026-03-09', N'Đang xử lý', NULL, N'Đang chờ bổ sung giấy tờ còn thiếu'),
-('HSTN0003', 'YCGT0005', 'TRE00005', 'ND000002', '2026-03-19', N'Đã duyệt', '2026-03-19', N'Đã tiếp nhận và tạo hồ sơ trẻ chính thức'),
-('HSTN0004', 'YCGT0004', NULL, 'ND000002', '2026-03-19', N'Đang xử lý', NULL, N'Đang chờ hoàn tất xác minh hồ sơ');
+('HSTN0001', 'YCGT0001', 'TRE00001', 'ND000002', '2026-03-07', N'Đã duyệt',    '2026-03-07', N'Đã hoàn tất tiếp nhận trẻ vào hồ sơ chính thức'),
+('HSTN0002', 'YCGT0002', 'TRE00008', 'ND000002', '2026-03-12', N'Đã duyệt',    '2026-03-12', N'Đã bổ sung đủ giấy tờ, hoàn tất tiếp nhận trẻ'),
+('HSTN0003', 'YCGT0005', 'TRE00005', 'ND000002', '2026-03-19', N'Đã duyệt',    '2026-03-19', N'Đã tiếp nhận và tạo hồ sơ trẻ chính thức'),
+('HSTN0004', 'YCGT0004', 'TRE00009', 'ND000002', '2026-03-19', N'Chờ duyệt',   NULL,         N'Đang chờ trưởng phòng duyệt hồ sơ tiếp nhận'),
+('HSTN0005', 'YCGT0003', 'TRE00003', 'ND000002', '2026-03-13', N'Chờ duyệt',   NULL,         N'Hồ sơ đã lập, chờ trưởng phòng phê duyệt tiếp nhận');
 
 INSERT INTO THEODOISUCKHOE (MaTheoDoi, MaTre, MaNguoiCapNhat, NgayCapNhat, CanNang, ChieuCao, NhipTim, NhomMau, NhietDo, KetLuan, TinhTrangChiTiet)
 VALUES
@@ -522,7 +547,9 @@ VALUES
 ('TDSK0004', 'TRE00004', 'ND000003', '2026-03-16 10:20:00', 23.10, 118.00, 88, 'O+', 36.60, N'Sức khỏe tốt', N'Đủ điều kiện bàn giao hồ sơ sau nhận nuôi'),
 ('TDSK0005', 'TRE00005', 'ND000002', '2026-03-20 08:15:00', 14.30, 96.00, 97, 'A+', 36.70, N'Sức khỏe ổn định', N'Trẻ ăn ngủ tốt, thích nghi nhanh với môi trường mới'),
 ('TDSK0006', 'TRE00006', 'ND000003', '2026-03-20 09:10:00', 17.80, 104.50, 93, 'O+', 36.80, N'Phát triển bình thường', N'Đủ điều kiện tham gia sinh hoạt nhóm'),
-('TDSK0007', 'TRE00007', 'ND000002', '2026-03-20 10:25:00', 18.20, 107.00, 91, 'B+', 36.60, N'Cần theo dõi thêm', N'Khuyến nghị bổ sung dinh dưỡng và tái khám định kỳ');
+('TDSK0007', 'TRE00007', 'ND000002', '2026-03-20 10:25:00', 18.20, 107.00, 91, 'B+', 36.60, N'Cần theo dõi thêm', N'Khuyến nghị bổ sung dinh dưỡng và tái khám định kỳ'),
+('TDSK0008', 'TRE00008', 'ND000002', '2026-03-13 09:00:00', 13.50, 86.00, 97, 'O+', 36.80, N'Sức khỏe ổn định', N'Trẻ tiếp nhận tốt, ăn ngủ bình thường'),
+('TDSK0009', 'TRE00009', 'ND000002', '2026-03-22 08:30:00', 11.80, 83.00, 99, 'A+', 36.90, N'Cần theo dõi dinh dưỡng', N'Trẻ mới nhập, hơi gầy so với độ tuổi, cần bổ sung dinh dưỡng');
 
 INSERT INTO LICHSUTIEMCHUNG (MaLSTiemChung, MaTre, MaVacxin, MuiSo, NgayTiem, GhiChu)
 VALUES
@@ -585,12 +612,53 @@ VALUES
 
 ('LSTC0052', 'TRE00007', 'MV',    1, '2020-06-25', N'Sởi mũi 1'),
 ('LSTC0053', 'TRE00007', 'MR',    1, '2021-03-25', N'Sởi - Rubella mũi 1'),
-('LSTC0054', 'TRE00007', 'DPT',   4, '2021-03-25', N'DPT mũi nhắc');
+('LSTC0054', 'TRE00007', 'DPT',   4, '2021-03-25', N'DPT mũi nhắc'),
+
+-- TRE00008 (Võ Nhật Minh, sinh 2020-12-03)
+('LSTC0055', 'TRE00008', 'HBV',   0, '2020-12-10', N'Viêm gan B mũi sơ sinh'),
+('LSTC0056', 'TRE00008', 'BCG',   1, '2020-12-10', N'BCG mũi 1'),
+('LSTC0057', 'TRE00008', 'PENTA', 1, '2021-02-10', N'5 trong 1 mũi 1'),
+('LSTC0058', 'TRE00008', 'OPV',   1, '2021-02-10', N'Bại liệt uống mũi 1'),
+('LSTC0059', 'TRE00008', 'PENTA', 2, '2021-03-10', N'5 trong 1 mũi 2'),
+('LSTC0060', 'TRE00008', 'OPV',   2, '2021-03-10', N'Bại liệt uống mũi 2'),
+('LSTC0061', 'TRE00008', 'MV',    1, '2021-09-10', N'Sởi mũi 1'),
+('LSTC0062', 'TRE00008', 'MR',    1, '2022-06-10', N'Sởi - Rubella mũi 1'),
+
+-- TRE00009 (Trần Gia Bảo, sinh 2022-09-11)
+('LSTC0063', 'TRE00009', 'HBV',   0, '2022-09-18', N'Viêm gan B mũi sơ sinh'),
+('LSTC0064', 'TRE00009', 'BCG',   1, '2022-09-18', N'BCG mũi 1'),
+('LSTC0065', 'TRE00009', 'PENTA', 1, '2022-11-18', N'5 trong 1 mũi 1'),
+('LSTC0066', 'TRE00009', 'OPV',   1, '2022-11-18', N'Bại liệt uống mũi 1'),
+('LSTC0067', 'TRE00009', 'PENTA', 2, '2022-12-18', N'5 trong 1 mũi 2'),
+('LSTC0068', 'TRE00009', 'OPV',   2, '2022-12-18', N'Bại liệt uống mũi 2');
 
 INSERT INTO HOSONHANNUOI (MaHSNhanNuoi, MaYeuCauNhan, MaTre, MaCanBo, NgayLap, NgayDuyet, TrangThai, GhiChu)
 VALUES
-('HSNN0001', 'YCNN0002', 'TRE00002', 'ND000003', '2026-03-16', NULL, N'Đang lập', N'Đang hoàn thiện hồ sơ ghép trẻ phù hợp'),
-('HSNN0002', 'YCNN0004', 'TRE00006', 'ND000003', '2026-03-20', NULL, N'Đang lập', N'Đang hoàn thiện hồ sơ ghép trẻ phù hợp');
+('HSNN0001', 'YCNN0002', 'TRE00002', 'ND000003', '2026-03-16', NULL,          N'Chờ duyệt', N'Đã lập hồ sơ, chờ trưởng phòng duyệt'),
+('HSNN0002', 'YCNN0004', 'TRE00006', 'ND000003', '2026-03-20', NULL,          N'Chờ duyệt', N'Đã lập hồ sơ, chờ trưởng phòng duyệt'),
+('HSNN0003', 'YCNN0003', 'TRE00003', 'ND000003', '2026-03-26', '2026-03-28', N'Đã duyệt',  N'Hồ sơ đã được trưởng phòng phê duyệt, trẻ chuẩn bị bàn giao');
+
+INSERT INTO LICHHENGAPMATNHANNUOI (MaLichGap, MaYeuCauNhan, MaTre, MaCanBo, NgayGapMat, ThoiGian, DiaDiem, TrangThai, KetQua, PhanHoiNguoiNhan, ThoiGianDeXuatMoi, GhiChuCanBo, NgayTao, NgayCapNhat)
+VALUES
+('LHGM0001', 'YCNN0001', 'TRE00002', 'ND000003', NULL,
+ '2026-03-25 09:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Chờ xác nhận', NULL, NULL, NULL,
+ N'Lịch gặp mặt lần đầu giữa gia đình và trẻ TRE00002', '2026-03-22 08:00:00', NULL),
+
+('LHGM0002', 'YCNN0002', 'TRE00002', 'ND000003', NULL,
+ '2026-03-22 14:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã xác nhận', NULL, NULL, NULL,
+ N'Buổi gặp mặt thứ hai để hoàn thiện hồ sơ', '2026-03-18 10:00:00', '2026-03-20 09:00:00'),
+
+('LHGM0003', 'YCNN0005', 'TRE00007', 'ND000003', '2026-03-20 08:30:00',
+ '2026-03-20 08:30:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã gặp mặt', N'Cần gặp lại', N'Gia đình cần thêm thời gian suy nghĩ', NULL,
+ N'Kết quả gặp mặt: Cần sắp xếp thêm buổi gặp', '2026-03-17 07:30:00', '2026-03-20 10:00:00'),
+
+('LHGM0004', 'YCNN0004', 'TRE00006', 'ND000003', NULL,
+ '2026-04-02 10:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Chờ xác nhận', NULL, NULL, NULL,
+ N'Lịch gặp mặt để gia đình tìm hiểu thông tin trẻ TRE00006', '2026-03-28 08:30:00', NULL),
+
+('LHGM0005', 'YCNN0003', 'TRE00003', 'ND000003', '2026-03-25 09:30:00',
+ '2026-03-25 09:30:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã gặp mặt', N'Phù hợp', N'Gia đình rất hài lòng và mong muốn tiến hành thủ tục nhận nuôi', NULL,
+ N'Kết quả gặp mặt: Phù hợp, tiến hành lập hồ sơ nhận nuôi', '2026-03-22 08:00:00', '2026-03-25 11:00:00');
 GO
 USE QuanLyTTBT;
 GO

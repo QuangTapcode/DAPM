@@ -43,4 +43,6 @@ public class DashboardStatsDto
     public int TotalAdoptionRequests { get; set; }
     public int TotalReceptionProfiles { get; set; }
     public int TotalAdoptionProfiles { get; set; }
+    public int PendingReceptionProfiles { get; set; }
+    public int PendingAdoptionProfiles { get; set; }
 }

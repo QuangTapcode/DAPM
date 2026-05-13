@@ -8,16 +8,62 @@ import Badge from '../../components/common/Badge';
 const cardClass =
   'rounded-[32px] border border-[#E1ECF8] bg-white shadow-[0_18px_50px_rgba(42,74,122,0.08)]';
 
+const fallbackRequests = [
+  {
+    MaYeuCauNhan: 'YCNN0006',
+    TenNguoiNhan: 'Nguyễn Minh Anh',
+    SDTNguoiNhan: '0901234567',
+    NgheNghiep: 'Nhân viên văn phòng',
+    ThuNhapHangThang: 18000000,
+    NgayTao: '2026-03-18',
+    TrangThai: 'Chờ xử lý',
+    SoGiayTo: 4,
+    SoGiayToHopLe: 2,
+  },
+  {
+    MaYeuCauNhan: 'YCNN0005',
+    TenNguoiNhan: 'Trần Quốc Huy',
+    SDTNguoiNhan: '0912345678',
+    NgheNghiep: 'Kỹ sư xây dựng',
+    ThuNhapHangThang: 25000000,
+    NgayTao: '2026-03-17',
+    TrangThai: 'Đang xem xét',
+    SoGiayTo: 4,
+    SoGiayToHopLe: 4,
+  },
+  {
+    MaYeuCauNhan: 'YCNN0004',
+    TenNguoiNhan: 'Lê Thanh Mai',
+    SDTNguoiNhan: '0987654321',
+    NgheNghiep: 'Giáo viên',
+    ThuNhapHangThang: 22000000,
+    NgayTao: '2026-03-15',
+    TrangThai: 'Chờ ghép trẻ',
+    SoGiayTo: 4,
+    SoGiayToHopLe: 4,
+  },
+];
+
 function normalizeRequests(data) {
-  const raw = Array.isArray(data) ? data : (data?.items ?? []);
+  const raw = Array.isArray(data) ? data : data?.items;
+
+  if (!raw || raw.length === 0) return fallbackRequests;
+
   return raw.map((item) => ({
-    id: item.maYeuCauNhan || item.id,
-    tenNguoiNhan: item.tenNguoiNhan || 'Chưa rõ',
-    ngheNghiep: item.ngheNghiep || 'Chưa cập nhật',
-    thuNhapHangThang: item.thuNhapHangThang ?? null,
-    ngayTao: item.ngayTao || item.createdAt,
-    trangThai: item.trangThai || item.status || 'Chờ xử lý',
-    soGiayTo: Array.isArray(item.giayTos) ? item.giayTos.length : 0,
+    MaYeuCauNhan: item.MaYeuCauNhan || item.maYeuCauNhan || item.id,
+    TenNguoiNhan:
+      item.TenNguoiNhan || item.tenNguoiNhan || item.adopterName || 'Chưa rõ',
+    SDTNguoiNhan:
+      item.SDTNguoiNhan || item.sdtNguoiNhan || item.phone || 'Chưa cập nhật',
+    NgheNghiep:
+      item.NgheNghiep || item.ngheNghiep || item.job || 'Chưa cập nhật',
+    ThuNhapHangThang:
+      item.ThuNhapHangThang ?? item.thuNhapHangThang ?? item.monthlyIncome,
+    NgayTao: item.NgayTao || item.ngayTao || item.createdAt,
+    TrangThai: item.TrangThai || item.trangThai || item.status || 'Chờ xử lý',
+    SoGiayTo: item.SoGiayTo ?? item.soGiayTo ?? item.totalDocuments ?? 0,
+    SoGiayToHopLe:
+      item.SoGiayToHopLe ?? item.soGiayToHopLe ?? item.validDocuments ?? 0,
   }));
 }
 
@@ -36,9 +82,11 @@ export default function AdoptionDashboard() {
   const requests = normalizeRequests(data);
 
   const countByStatus = (status) =>
-    requests.filter((item) => item.trangThai === status).length;
+    requests.filter((item) => item.TrangThai === status).length;
 
-  const missingDocs = 0;
+  const missingDocs = requests.filter(
+    (item) => Number(item.SoGiayToHopLe || 0) < Number(item.SoGiayTo || 0)
+  ).length;
 
   const stats = [
     {
@@ -185,46 +233,49 @@ export default function AdoptionDashboard() {
                   <tbody className="divide-y divide-[#EDF3FB]">
                     {requests.slice(0, 5).map((item) => (
                       <tr
-                        key={item.id}
+                        key={item.MaYeuCauNhan}
                         className="transition hover:bg-[#F7FAFF]"
                       >
                         <td className="px-5 py-5 font-bold text-[#0D47A1]">
-                          {item.id}
+                          {item.MaYeuCauNhan}
                         </td>
 
                         <td className="px-5 py-5">
                           <p className="font-bold text-[#26364A]">
-                            {item.tenNguoiNhan}
+                            {item.TenNguoiNhan}
+                          </p>
+                          <p className="mt-1 text-xs text-[#8FA0B8]">
+                            {item.SDTNguoiNhan}
                           </p>
                         </td>
 
                         <td className="px-5 py-5 text-[#6F83A3]">
-                          {item.ngheNghiep}
+                          {item.NgheNghiep}
                         </td>
 
                         <td className="px-5 py-5 text-[#6F83A3]">
-                          {formatDate(item.ngayTao)}
+                          {formatDate(item.NgayTao)}
                         </td>
 
                         <td className="px-5 py-5">
                           <p className="font-semibold text-[#26364A]">
-                            {formatCurrency(item.thuNhapHangThang)}
+                            {formatCurrency(item.ThuNhapHangThang)}
                           </p>
                         </td>
 
                         <td className="px-5 py-5">
                           <p className="font-bold text-[#26364A]">
-                            {item.soGiayTo} tệp
+                            {item.SoGiayToHopLe}/{item.SoGiayTo}
                           </p>
                         </td>
 
                         <td className="px-5 py-5">
-                          <Badge status={item.trangThai} size="md" />
+                          <Badge status={item.TrangThai} size="md" />
                         </td>
 
                         <td className="px-5 py-5 text-right">
                           <Link
-                            to={`/can-bo-nhan-nuoi/chi-tiet/${item.id}`}
+                            to={`/can-bo-nhan-nuoi/chi-tiet/${item.MaYeuCauNhan}`}
                             className="rounded-xl bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#083778]"
                           >
                             Chi tiết

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES, ROLE_REDIRECT } from '../../utils/constants';
 
@@ -49,26 +49,11 @@ const GUEST_NAV = [
   { to: '/huong-dan', label: 'Hướng dẫn' },
 ];
 
-const CONTEXT_KEY = 'nav_role_context';
-
-function detectRoleFromPath(pathname, feRoles = []) {
-  if (pathname.startsWith('/nhan-nuoi') && feRoles.includes('adopter')) return ROLES.ADOPTER;
-  if (pathname.startsWith('/gui-tre') && feRoles.includes('sender')) return ROLES.SENDER;
-  return null;
-}
-
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { pathname } = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Xác định role từ path; nếu path trung lập (/ hay /chon-chuc-nang) dùng context đã lưu
-  const pathRole = user ? detectRoleFromPath(pathname, user.feRoles) : null;
-  if (pathRole) sessionStorage.setItem(CONTEXT_KEY, pathRole);
-
-  const savedContext = sessionStorage.getItem(CONTEXT_KEY);
-  const activeRole = pathRole ?? savedContext ?? user?.role ?? null;
-  const navLinks = user ? (ROLE_NAV[activeRole] ?? []) : GUEST_NAV;
+  const navLinks = user ? (ROLE_NAV[user.role] ?? []) : GUEST_NAV;
 
   return (
     <header
@@ -167,15 +152,6 @@ export default function Navbar() {
                         onClick={() => setDropdownOpen(false)}
                       />
                       <div className="absolute right-0 top-[62px] z-20 w-52 rounded-2xl border border-gray-100 bg-white py-2 shadow-lg">
-                        {user?.feRoles?.includes('sender') && user?.feRoles?.includes('adopter') && (
-                          <Link
-                            to="/chon-chuc-nang"
-                            onClick={() => setDropdownOpen(false)}
-                            className="block w-full px-4 py-3 text-left text-sm font-medium text-[#0D47A1] hover:bg-blue-50"
-                          >
-                            Đổi chức năng
-                          </Link>
-                        )}
                         <button
                           onClick={() => {
                             logout();

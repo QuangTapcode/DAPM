@@ -1,78 +1,37 @@
 import axiosClient from './axiosClient';
 
 const adminApi = {
-  // ─── Quản lý người dùng (/api/users) ─────────────────────────
+  getUsers: (params = {}) => axiosClient.get('/users', { params }),
 
-  /**
-   * Danh sách người dùng — GET /api/users
-   * params: { page, limit, search, role }
-   * Trả về: { items, total, page, limit, totalPages }
-   */
-  getUsers: (params = {}) =>
-    axiosClient.get('/users', { params }),
+  getUserById: (id) => axiosClient.get(`/users/${id}`),
 
-  /**
-   * Chi tiết người dùng — GET /api/users/:id
-   */
-  getUserById: (id) =>
-    axiosClient.get(`/users/${id}`),
+  createUser: (data) => axiosClient.post('/users', data),
 
-  /**
-   * Tạo người dùng — POST /api/users
-   * body: { SDT, HoTen, Password?, GioiTinh, NgaySinh?, CCCD?, Email?,
-   *         MaXaPhuong?, DiaChiCuThe?, Roles? }
-   */
-  createUser: (data) =>
-    axiosClient.post('/users', data),
+  updateUser: (id, data) => axiosClient.put(`/users/${id}`, data),
 
-  /**
-   * Cập nhật người dùng — PUT /api/users/:id
-   * body: { HoTen?, SDT?, Email?, CCCD?, GioiTinh?, NgaySinh?,
-   *         MaXaPhuong?, DiaChiCuThe?, TrangThaiTK?, Roles? }
-   */
-  updateUser: (id, data) =>
-    axiosClient.put(`/users/${id}`, data),
+  deleteUser: (id) => axiosClient.delete(`/users/${id}`),
 
-  /**
-   * Khóa/mở tài khoản — PATCH /api/users/:id/status
-   * body: { trangThaiTK: bool }
-   */
-  updateStatus: (id, trangThaiTK) =>
-    axiosClient.patch(`/users/${id}/status`, { trangThaiTK }),
+  setUserStatus: (id, isActive) =>
+    axiosClient.patch(`/users/${id}/status`, { isActive }),
 
-  /**
-   * Xóa người dùng — DELETE /api/users/:id
-   */
-  deleteUser: (id) =>
-    axiosClient.delete(`/users/${id}`),
+  getStats: () => axiosClient.get('/stats'),
 
-  // ─── Thống kê (/api/stats) ────────────────────────────────────
+  getChildrenByStatus: () => axiosClient.get('/stats/children-by-status'),
 
-  /**
-   * Thống kê tổng quan — GET /api/stats
-   */
-  getStats: () =>
-    axiosClient.get('/stats'),
+  getRequestsByMonth: () => axiosClient.get('/stats/requests-by-month'),
 
-  /**
-   * Phân bố trẻ theo trạng thái — GET /api/stats/children-by-status
-   */
-  getChildrenByStatus: () =>
-    axiosClient.get('/stats/children-by-status'),
+  // Danh mục dùng chung (không cần token)
+  getTinhTP: () => axiosClient.get('/lookups/tinh-tp'),
+  getPhuongXa: (maTinhTP) => axiosClient.get('/lookups/phuong-xa', { params: { maTinhTP } }),
+  getVacxin: () => axiosClient.get('/lookups/vacxin'),
+  getLoaiNguoiGui: () => axiosClient.get('/lookups/loai-nguoi-gui'),
+  getTrangThaiTre: () => axiosClient.get('/lookups/trang-thai-tre'),
+  getTrangThaiYCGuiTre: () => axiosClient.get('/lookups/trang-thai-yeu-cau-gui-tre'),
+  getTrangThaiYCNhanNuoi: () => axiosClient.get('/lookups/trang-thai-yeu-cau-nhan-nuoi'),
+  getTrangThaiGiayTo: () => axiosClient.get('/lookups/trang-thai-giay-to'),
 
-  /**
-   * Yêu cầu theo tháng — GET /api/stats/requests-by-month
-   */
-  getRequestsByMonth: () =>
-    axiosClient.get('/stats/requests-by-month'),
-
-  // ─── Vai trò (/api/roles) ─────────────────────────────────────
-
-  /**
-   * Danh sách vai trò — GET /api/roles
-   */
-  getRoles: () =>
-    axiosClient.get('/roles'),
+  getRoles: () => axiosClient.get('/roles'),
+  getPermissions: () => axiosClient.get('/roles/permissions'),
 };
 
 export default adminApi;

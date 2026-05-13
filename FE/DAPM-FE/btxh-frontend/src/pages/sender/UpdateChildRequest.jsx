@@ -2,39 +2,22 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
-import { childApi } from '../../api/childApi';
+import receptionApi from '../../api/receptionApi';
 import { inputCls, selectCls, textareaCls, FormField } from '../../components/common/FormField';
 
 export default function UpdateChildRequest() {
-  const { id } = useParams();
+  const { id }   = useParams();
   const navigate = useNavigate();
   const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm();
 
   const formRef = useScrollReveal({ threshold: 0.1 });
 
   useEffect(() => {
-    childApi.getRequestById(id).then((item) => {
-      if (!item) return;
-      reset({
-        childName: item.thongTinTre?.tenTre || item.childName || '',
-        childDob: item.thongTinTre?.ngaySinh
-          ? item.thongTinTre.ngaySinh.split('T')[0]
-          : (item.childDob || ''),
-        healthStatus: item.thongTinTre?.tinhTrangSucKhoe || item.healthStatus || '',
-        reason: item.lyDoGui || item.reason || '',
-      });
-    }).catch(console.error);
+    receptionApi.getById(id).then(reset).catch(console.error);
   }, [id, reset]);
 
   const onSubmit = async (data) => {
-    await childApi.updateRequest(id, {
-      ThongTinTre: {
-        TenTre: data.childName,
-        NgaySinh: data.childDob || null,
-        TinhTrangSucKhoe: data.healthStatus || '',
-      },
-      LyDoGui: data.reason,
-    });
+    await receptionApi.update(id, data);
     navigate('/gui-tre/trang-thai');
   };
 
