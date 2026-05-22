@@ -21,7 +21,7 @@ public class HoSoNhanNuoi
 
     [Column("MaCanBo", TypeName = "char(8)")]
     [MaxLength(8)]
-    public string MaCanBo { get; set; } = null!;
+    public string? MaCanBo { get; set; }
 
     [Column("NgayLap", TypeName = "date")]
     public DateTime NgayLap { get; set; } = DateTime.Today;

@@ -26,7 +26,7 @@ public class HoSoNhanNuoiController : ControllerBase
         MaYeuCauNhan = h.MaYeuCauNhan,
         MaTre = h.MaTre,
         TenTre = h.Tre?.HoTen,
-        MaCanBo = h.MaCanBo,
+        MaCanBo = h.MaCanBo ?? string.Empty,
         TenCanBo = h.CanBo?.HoTen,
         NgayLap = h.NgayLap,
         NgayDuyet = h.NgayDuyet,
@@ -66,8 +66,39 @@ public class HoSoNhanNuoiController : ControllerBase
     public async Task<ActionResult<ApiResponse<HoSoNhanNuoiDto>>> Create([FromBody] CreateHoSoNhanNuoiDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        // 1. Kiểm tra xem yêu cầu nhận nuôi đã có hồ sơ nhận nuôi nào chưa
         if (await _db.HOSONHANNUOI.AnyAsync(x => x.MaYeuCauNhan == dto.MaYeuCauNhan))
-            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu đã có hồ sơ nhận nuôi"));
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu nhận nuôi này đã có hồ sơ nhận nuôi được tạo trước đó."));
+
+        // 2. Kiểm tra trạng thái của yêu cầu nhận nuôi phải là "Đã duyệt"
+        var ycnn = await _db.YEUCAUNHANNUOI.FirstOrDefaultAsync(y => y.MaYeuCauNhan == dto.MaYeuCauNhan);
+        if (ycnn == null)
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu nhận nuôi không tồn tại."));
+        if (ycnn.TrangThai != "Đã duyệt")
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu nhận nuôi chưa được duyệt chính thức (Trạng thái phải là 'Đã duyệt')."));
+
+        // 3. Kiểm tra thông tin trẻ
+        var child = await _db.TRE.FirstOrDefaultAsync(t => t.MaTre == dto.MaTre);
+        if (child == null)
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Trẻ không tồn tại."));
+        if (child.TrangThai != "Chờ nhận nuôi")
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Trẻ hiện tại không ở trạng thái 'Chờ nhận nuôi'."));
+
+        // 4. Kiểm tra xem trẻ có đang nằm trong hồ sơ nhận nuôi nào khác đang xử lý không
+        var isChildInOtherActiveProfile = await _db.HOSONHANNUOI.AnyAsync(h =>
+            h.MaTre == dto.MaTre &&
+            (h.TrangThai == "Đang lập" || h.TrangThai == "Chờ duyệt" || h.TrangThai == "Đã duyệt" || h.TrangThai == "Đã hoàn tất"));
+        if (isChildInOtherActiveProfile)
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Trẻ đã được liên kết với một hồ sơ nhận nuôi khác đang trong quá trình xử lý hoặc đã hoàn tất."));
+
+        // 5. Kiểm tra lịch hẹn gặp mặt phải có trạng thái "Đã gặp mặt" và kết quả đánh giá trẻ phải là "Phù hợp"
+        var hasSuitableMeeting = await _db.LICHHENGAPMATNHANNUOI
+            .Where(l => l.MaYeuCauNhan == dto.MaYeuCauNhan && l.TrangThai == "Đã gặp mặt")
+            .AnyAsync(l => _db.CHITIETGAPMAT.Any(c => c.MaLichGap == l.MaLichGap && c.MaTre == dto.MaTre && c.KetQua == "Phù hợp"));
+
+        if (!hasSuitableMeeting)
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Không tìm thấy lịch hẹn gặp mặt ở trạng thái 'Đã gặp mặt' và đánh giá trẻ là 'Phù hợp' cho yêu cầu này."));
 
         var h = new HoSoNhanNuoi
         {
@@ -79,6 +110,7 @@ public class HoSoNhanNuoiController : ControllerBase
             TrangThai = "Đang lập",
             GhiChu = dto.GhiChu
         };
+
         _db.HOSONHANNUOI.Add(h);
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<HoSoNhanNuoiDto>.Ok(Map(h), "Đã tạo hồ sơ"));

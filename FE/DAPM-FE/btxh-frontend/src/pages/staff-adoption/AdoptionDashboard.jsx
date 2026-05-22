@@ -8,62 +8,44 @@ import Badge from '../../components/common/Badge';
 const cardClass =
   'rounded-[32px] border border-[#E1ECF8] bg-white shadow-[0_18px_50px_rgba(42,74,122,0.08)]';
 
-const fallbackRequests = [
-  {
-    MaYeuCauNhan: 'YCNN0006',
-    TenNguoiNhan: 'Nguyễn Minh Anh',
-    SDTNguoiNhan: '0901234567',
-    NgheNghiep: 'Nhân viên văn phòng',
-    ThuNhapHangThang: 18000000,
-    NgayTao: '2026-03-18',
-    TrangThai: 'Chờ xử lý',
-    SoGiayTo: 4,
-    SoGiayToHopLe: 2,
-  },
-  {
-    MaYeuCauNhan: 'YCNN0005',
-    TenNguoiNhan: 'Trần Quốc Huy',
-    SDTNguoiNhan: '0912345678',
-    NgheNghiep: 'Kỹ sư xây dựng',
-    ThuNhapHangThang: 25000000,
-    NgayTao: '2026-03-17',
-    TrangThai: 'Đang xem xét',
-    SoGiayTo: 4,
-    SoGiayToHopLe: 4,
-  },
-  {
-    MaYeuCauNhan: 'YCNN0004',
-    TenNguoiNhan: 'Lê Thanh Mai',
-    SDTNguoiNhan: '0987654321',
-    NgheNghiep: 'Giáo viên',
-    ThuNhapHangThang: 22000000,
-    NgayTao: '2026-03-15',
-    TrangThai: 'Chờ ghép trẻ',
-    SoGiayTo: 4,
-    SoGiayToHopLe: 4,
-  },
-];
+const STATUS = {
+  VERIFYING: 'Đang xác minh',
+  MATCHING_CHILD: 'Chờ ghép trẻ',
+  APPROVED: 'Đã duyệt',
+  PRE_REJECTED: 'Từ chối sơ bộ',
+};
+
+function getResponseItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.data?.items)) return data.data.items;
+  return [];
+}
 
 function normalizeRequests(data) {
-  const raw = Array.isArray(data) ? data : data?.items;
-
-  if (!raw || raw.length === 0) return fallbackRequests;
+  const raw = getResponseItems(data);
 
   return raw.map((item) => ({
-    MaYeuCauNhan: item.MaYeuCauNhan || item.maYeuCauNhan || item.id,
+    MaYeuCauNhan: item.maYeuCauNhan || item.MaYeuCauNhan || item.id || '',
+    MaNguoiNhan: item.maNguoiNhan || item.MaNguoiNhan || item.adopterId || '',
     TenNguoiNhan:
-      item.TenNguoiNhan || item.tenNguoiNhan || item.adopterName || 'Chưa rõ',
+      item.tenNguoiNhan || item.TenNguoiNhan || item.adopterName || 'Chưa rõ',
     SDTNguoiNhan:
-      item.SDTNguoiNhan || item.sdtNguoiNhan || item.phone || 'Chưa cập nhật',
-    NgheNghiep:
-      item.NgheNghiep || item.ngheNghiep || item.job || 'Chưa cập nhật',
+      item.sdtNguoiNhan || item.SDTNguoiNhan || item.phone || 'Chưa cập nhật',
     ThuNhapHangThang:
-      item.ThuNhapHangThang ?? item.thuNhapHangThang ?? item.monthlyIncome,
-    NgayTao: item.NgayTao || item.ngayTao || item.createdAt,
-    TrangThai: item.TrangThai || item.trangThai || item.status || 'Chờ xử lý',
-    SoGiayTo: item.SoGiayTo ?? item.soGiayTo ?? item.totalDocuments ?? 0,
+      item.thuNhapHangThang ?? item.ThuNhapHangThang ?? item.monthlyIncome ?? 0,
+    SoConDangNuoi: item.soConDangNuoi ?? item.SoConDangNuoi ?? 0,
+    TinhTrangHonNhan:
+      item.tinhTrangHonNhan || item.TinhTrangHonNhan || 'Chưa cập nhật',
+    LoaiNoiO: item.loaiNoiO || item.LoaiNoiO || 'Chưa cập nhật',
+    QuanHeVoiTre: item.quanHeVoiTre || item.QuanHeVoiTre || 'Không',
+    NgayTao: item.ngayTao || item.NgayTao || item.createdAt,
+    TrangThai:
+      item.trangThai || item.TrangThai || item.status || STATUS.VERIFYING,
+    SoGiayTo: item.soGiayTo ?? item.SoGiayTo ?? item.totalDocuments ?? 0,
     SoGiayToHopLe:
-      item.SoGiayToHopLe ?? item.soGiayToHopLe ?? item.validDocuments ?? 0,
+      item.soGiayToHopLe ?? item.SoGiayToHopLe ?? item.validDocuments ?? 0,
+    DiemUuTien: item.diemUuTien ?? item.DiemUuTien ?? 0,
   }));
 }
 
@@ -75,18 +57,29 @@ function formatCurrency(value) {
   return `${new Intl.NumberFormat('vi-VN').format(Number(value))} đ`;
 }
 
+function formatDocumentCount(item) {
+  const submitted = Number(item.SoGiayToHopLe || 0);
+  const required = Number(item.SoGiayTo || 0);
+
+  if (required <= 0) return 'Chưa có';
+
+  return `${submitted}/${required}`;
+}
+
 export default function AdoptionDashboard() {
   const { user } = useAuth();
-  const { data, loading } = useFetch(adoptionApi.getAll);
+
+  const { data, loading } = useFetch(() =>
+    adoptionApi.getAll({
+      page: 1,
+      limit: 500,
+    })
+  );
 
   const requests = normalizeRequests(data);
 
   const countByStatus = (status) =>
     requests.filter((item) => item.TrangThai === status).length;
-
-  const missingDocs = requests.filter(
-    (item) => Number(item.SoGiayToHopLe || 0) < Number(item.SoGiayTo || 0)
-  ).length;
 
   const stats = [
     {
@@ -96,35 +89,34 @@ export default function AdoptionDashboard() {
       tone: 'bg-[#EAF3FF] text-[#0D47A1]',
     },
     {
-      label: 'Chờ xử lý',
-      value: countByStatus('Chờ xử lý'),
-      icon: '⏳',
-      tone: 'bg-amber-50 text-amber-700',
-    },
-    {
-      label: 'Đang xem xét',
-      value: countByStatus('Đang xem xét'),
+      label: 'Đang xác minh',
+      value: countByStatus(STATUS.VERIFYING),
       icon: '🔎',
       tone: 'bg-sky-50 text-sky-700',
     },
     {
       label: 'Chờ ghép trẻ',
-      value: countByStatus('Chờ ghép trẻ'),
+      value: countByStatus(STATUS.MATCHING_CHILD),
       icon: '🤝',
       tone: 'bg-violet-50 text-violet-700',
     },
     {
-      label: 'Thiếu giấy tờ',
-      value: missingDocs,
-      icon: '📄',
-      tone: 'bg-rose-50 text-rose-700',
+      label: 'Đã duyệt',
+      value: countByStatus(STATUS.APPROVED),
+      icon: '✅',
+      tone: 'bg-emerald-50 text-emerald-700',
+    },
+    {
+      label: 'Từ chối sơ bộ',
+      value: countByStatus(STATUS.PRE_REJECTED),
+      icon: '🚫',
+      tone: 'bg-red-50 text-red-700',
     },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F4F8FF] via-[#F8FBFF] to-[#EEF6FF]">
       <div className="mx-auto max-w-[1720px] space-y-7 px-5 py-7 sm:px-8 lg:px-10">
-        {/* Header */}
         <section className={`${cardClass} overflow-hidden`}>
           <div className="relative p-8 lg:p-10">
             <div className="absolute right-0 top-0 h-40 w-40 rounded-bl-full bg-[#DCEEFF]" />
@@ -159,7 +151,7 @@ export default function AdoptionDashboard() {
             </div>
           </div>
         </section>
-        {/* Stats */}
+
         <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
           {stats.map((item) => (
             <div
@@ -167,7 +159,6 @@ export default function AdoptionDashboard() {
               className={`${cardClass} min-h-[165px] px-6 py-5 transition hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(42,74,122,0.12)]`}
             >
               <div className="flex h-full flex-col justify-between">
-                {/* Label + icon */}
                 <div className="flex min-h-[56px] items-center justify-between gap-4">
                   <p className="m-0 flex-1 text-[15px] font-semibold leading-5 text-[#6F83A3]">
                     {item.label}
@@ -180,7 +171,6 @@ export default function AdoptionDashboard() {
                   </div>
                 </div>
 
-                {/* Value */}
                 <p
                   className="m-0 font-extrabold leading-none tracking-[-0.04em] text-[#0D47A1]"
                   style={{ fontSize: '58px' }}
@@ -192,14 +182,16 @@ export default function AdoptionDashboard() {
           ))}
         </section>
 
-        {/* Main */}
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,2.35fr)_320px] 2xl:grid-cols-[minmax(0,2.6fr)_330px]">          {/* Recent requests */}
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,2.35fr)_320px] 2xl:grid-cols-[minmax(0,2.6fr)_330px]">
           <div className={`${cardClass} overflow-hidden`}>
             <div className="flex items-center justify-between border-b border-[#E3ECF8] px-7 py-6">
               <div>
                 <h2 className="text-xl font-bold text-[#0D47A1]">
                   Yêu cầu gần đây
                 </h2>
+                <p className="mt-1 text-sm text-[#8FA0B8]">
+                  Danh sách yêu cầu nhận nuôi mới nhất
+                </p>
               </div>
 
               <Link
@@ -216,17 +208,19 @@ export default function AdoptionDashboard() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[980px] border-collapse text-left text-sm">
                   <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
                     <tr>
                       <th className="px-5 py-4 font-bold">Mã yêu cầu</th>
                       <th className="px-5 py-4 font-bold">Người nhận nuôi</th>
-                      <th className="px-5 py-4 font-bold">Nghề nghiệp</th>
                       <th className="px-5 py-4 font-bold">Ngày tạo</th>
                       <th className="px-5 py-4 font-bold">Thu nhập</th>
+                      <th className="px-5 py-4 font-bold">Quan hệ</th>
                       <th className="px-5 py-4 font-bold">Giấy tờ</th>
                       <th className="px-5 py-4 font-bold">Trạng thái</th>
-                      <th className="px-5 py-4 text-right font-bold">Thao tác</th>
+                      <th className="px-5 py-4 text-right font-bold">
+                        Thao tác
+                      </th>
                     </tr>
                   </thead>
 
@@ -236,8 +230,13 @@ export default function AdoptionDashboard() {
                         key={item.MaYeuCauNhan}
                         className="transition hover:bg-[#F7FAFF]"
                       >
-                        <td className="px-5 py-5 font-bold text-[#0D47A1]">
-                          {item.MaYeuCauNhan}
+                        <td className="px-5 py-5">
+                          <p className="font-extrabold text-[#0D47A1]">
+                            {item.MaYeuCauNhan}
+                          </p>
+                          <p className="mt-1 text-xs text-[#8FA0B8]">
+                            {item.MaNguoiNhan}
+                          </p>
                         </td>
 
                         <td className="px-5 py-5">
@@ -250,10 +249,6 @@ export default function AdoptionDashboard() {
                         </td>
 
                         <td className="px-5 py-5 text-[#6F83A3]">
-                          {item.NgheNghiep}
-                        </td>
-
-                        <td className="px-5 py-5 text-[#6F83A3]">
                           {formatDate(item.NgayTao)}
                         </td>
 
@@ -263,9 +258,16 @@ export default function AdoptionDashboard() {
                           </p>
                         </td>
 
+                        <td className="px-5 py-5 text-[#6F83A3]">
+                          {item.QuanHeVoiTre}
+                        </td>
+
                         <td className="px-5 py-5">
                           <p className="font-bold text-[#26364A]">
-                            {item.SoGiayToHopLe}/{item.SoGiayTo}
+                            Đủ yêu cầu: {formatDocumentCount(item)}
+                          </p>
+                          <p className="mt-1 text-xs text-[#8FA0B8]">
+                            Chờ cán bộ xác minh từng giấy tờ
                           </p>
                         </td>
 
@@ -300,20 +302,17 @@ export default function AdoptionDashboard() {
             )}
           </div>
 
-          {/* Side cards */}
           <div className="space-y-7">
             <div className={`${cardClass} p-7`}>
-              <h2 className="text-xl font-bold text-[#0D47A1]">
-                Quy trình
-              </h2>
+              <h2 className="text-xl font-bold text-[#0D47A1]">Quy trình</h2>
 
               <div className="mt-6 space-y-4">
                 {[
-                  'Kiểm tra yêu cầu',
+                  'Kiểm tra điều kiện sơ bộ',
                   'Xác minh giấy tờ',
+                  'Yêu cầu bổ sung nếu giấy tờ sai',
                   'Ghép trẻ',
-                  'Gặp mặt',
-                  'Lập hồ sơ',
+                  'Chờ trưởng phòng duyệt',
                   'Hoàn tất',
                 ].map((step, index) => (
                   <div key={step} className="flex items-center gap-3">
@@ -330,7 +329,9 @@ export default function AdoptionDashboard() {
               <h2 className="text-xl font-bold">Ghi chú</h2>
 
               <p className="mt-3 text-sm leading-6 text-blue-50">
-                Chỉ lập hồ sơ khi giấy tờ hợp lệ và kết quả gặp mặt phù hợp.
+                “Đủ yêu cầu” chỉ thể hiện người nhận nuôi đã nộp đủ giấy tờ bắt
+                buộc. Cán bộ vẫn cần xác minh thủ công từng giấy tờ trước khi
+                chuyển sang bước ghép trẻ.
               </p>
 
               <div className="mt-5 flex flex-col items-stretch gap-3">

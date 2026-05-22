@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://localhost:44380/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 axiosClient.interceptors.request.use((config) => {
@@ -16,7 +17,9 @@ axiosClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      if (error.config?.url !== '/auth/login' && window.location.pathname !== '/dang-nhap') {
+        window.location.href = '/dang-nhap';
+      }
     }
     return Promise.reject(error.response?.data || error);
   }

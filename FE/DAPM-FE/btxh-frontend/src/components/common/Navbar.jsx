@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES, ROLE_REDIRECT } from '../../utils/constants';
 
@@ -50,11 +50,35 @@ const GUEST_NAV = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const navLinks = user ? (ROLE_NAV[user.role] ?? []) : GUEST_NAV;
 
+  const isDualCitizenRole =
+    user?.roles?.includes('NGGT') && user?.roles?.includes('NGNN');
+
+  const currentRoleLabel =
+    user?.role === ROLES.SENDER ? 'Người gửi trẻ' :
+      user?.role === ROLES.ADOPTER ? 'Người nhận nuôi' :
+        '';
+
+  const switchRoleLabel =
+    user?.role === ROLES.SENDER ? 'Nhận nuôi' :
+      user?.role === ROLES.ADOPTER ? 'Gửi trẻ' :
+        '';
+
+  const handleSwitchRole = () => {
+    if (user?.role === ROLES.SENDER) {
+      updateUser({ role: ROLES.ADOPTER });
+    } else if (user?.role === ROLES.ADOPTER) {
+      updateUser({ role: ROLES.SENDER });
+    }
+
+    setDropdownOpen(false);
+    navigate('/');
+  };
   return (
     <header
       className="sticky top-0 z-40 border-b border-[#bfd4e5] shadow-sm"
@@ -110,6 +134,13 @@ export default function Navbar() {
           <div className="flex items-center gap-3 justify-self-end">
             {user ? (
               <>
+                {isDualCitizenRole && currentRoleLabel && (
+                  <div className="hidden xl:flex flex-col justify-center rounded-2xl bg-white/45 border border-white/60 px-4 py-2 shadow-sm">
+                    <span className="text-[14px] font-bold text-[#0D47A1] leading-none">
+                      {currentRoleLabel}
+                    </span>
+                  </div>
+                )}
                 <button className="relative h-11 w-11 flex items-center justify-center rounded-full hover:bg-white/80 transition">
                   <img
                     src={bellImg}
@@ -121,19 +152,17 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
-                    className="flex items-center gap-3 rounded-2xl bg-white/70 hover:bg-white/85 px-3 py-2.5 transition"
-                  >
+                    className="flex w-[280px] items-center gap-3 rounded-2xl bg-white/70 hover:bg-white/85 px-3 py-2.5 transition"                  >
                     <img
                       src={userImg}
                       alt="Người dùng"
                       className="w-9 h-9 rounded-full object-cover"
                     />
-
-                    <div className="text-left">
-                      <p className="text-[14px] font-semibold leading-none text-[#163b68]">
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="truncate text-[14px] font-semibold leading-none text-[#163b68]">
                         {user.fullName || 'Người dùng'}
                       </p>
-                      <p className="text-[12px] mt-1 text-[#5c7692]">
+                      <p className="mt-1 truncate text-[12px] text-[#5c7692]">
                         {user.email}
                       </p>
                     </div>
@@ -144,21 +173,30 @@ export default function Navbar() {
                       className="w-4 h-4 object-contain opacity-70"
                     />
                   </button>
-
                   {dropdownOpen && (
                     <>
                       <div
                         className="fixed inset-0 z-10"
                         onClick={() => setDropdownOpen(false)}
                       />
-                      <div className="absolute right-0 top-[62px] z-20 w-52 rounded-2xl border border-gray-100 bg-white py-2 shadow-lg">
+                      <div className="absolute right-0 top-[62px] z-20 w-[280px] overflow-hidden rounded-2xl border border-gray-100 bg-white py-2 shadow-lg">                        {isDualCitizenRole && switchRoleLabel && (
+                        <>
+                          <button
+                            onClick={handleSwitchRole}
+                            className="flex w-full items-center justify-center px-4 py-2 text-center text-sm font-semibold text-[#163b68] hover:bg-[#eef7ff] transition"                          >
+                            {switchRoleLabel}
+                          </button>
+
+                          <div className="my-1 h-px bg-gray-100" />
+                        </>
+                      )}
+
                         <button
                           onClick={() => {
                             logout();
                             setDropdownOpen(false);
                           }}
-                          className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50"
-                        >
+                          className="flex w-full items-center justify-center px-4 py-2 text-center text-sm font-semibold text-red-600 hover:bg-red-50 transition">
                           Đăng xuất
                         </button>
                       </div>

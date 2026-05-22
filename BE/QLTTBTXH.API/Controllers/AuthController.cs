@@ -29,8 +29,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login([FromBody] LoginDto req)
     {
+        var emailLower = req.Email.Trim().ToLower();
         var user = await _db.NGUOIDUNG
-            .FirstOrDefaultAsync(u => u.Email == req.Email || u.SDT == req.Email);
+            .FirstOrDefaultAsync(u => (u.Email != null && u.Email.ToLower() == emailLower) || u.SDT == req.Email);
 
         if (user is null || !_pwd.Verify(req.Password, user.MatKhau))
             return Unauthorized(ApiResponse<AuthResponseDto>.Fail("Email hoặc mật khẩu không đúng"));
@@ -57,9 +58,12 @@ public class AuthController : ControllerBase
         if (await _db.NGUOIDUNG.AnyAsync(u => u.SDT == req.SDT))
             return BadRequest(ApiResponse<AuthResponseDto>.Fail("Số điện thoại đã tồn tại"));
 
-        if (!string.IsNullOrWhiteSpace(req.Email) &&
-            await _db.NGUOIDUNG.AnyAsync(u => u.Email == req.Email))
-            return BadRequest(ApiResponse<AuthResponseDto>.Fail("Email đã tồn tại"));
+        if (!string.IsNullOrWhiteSpace(req.Email))
+        {
+            var regEmailLower = req.Email.Trim().ToLower();
+            if (await _db.NGUOIDUNG.AnyAsync(u => u.Email != null && u.Email.ToLower() == regEmailLower))
+                return BadRequest(ApiResponse<AuthResponseDto>.Fail("Email đã tồn tại"));
+        }
 
         if (!string.IsNullOrWhiteSpace(req.CCCD) &&
             await _db.NGUOIDUNG.AnyAsync(u => u.CCCD == req.CCCD))
@@ -75,7 +79,7 @@ public class AuthController : ControllerBase
             GioiTinh = req.GioiTinh,
             CCCD = string.IsNullOrWhiteSpace(req.CCCD) ? null : req.CCCD,
             Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email,
-            MaXaPhuong = string.IsNullOrWhiteSpace(req.MaXaPhuong) ? null : req.MaXaPhuong,
+            MaPhuongXa = string.IsNullOrWhiteSpace(req.MaPhuongXa) ? null : req.MaPhuongXa,
             DiaChiCuThe = req.DiaChiCuThe,
             NgayTao = DateTime.Now,
             TrangThaiTK = true
@@ -102,18 +106,107 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiResponse<UserInfoDto>>> Profile()
     {
         var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(id))
+            return Unauthorized(ApiResponse<UserInfoDto>.Fail("Token không hợp lệ"));
+
+        var user = await _db.NGUOIDUNG
+            .Include(u => u.PhuongXa)
+                .ThenInclude(px => px!.TinhTP)
+            .FirstOrDefaultAsync(u => u.MaNguoiDung == id);
+
+        if (user is null)
+            return NotFound(ApiResponse<UserInfoDto>.Fail("User not found"));
+
+        var roles = await _db.NGUOIDUNG_VAITRO
+            .Where(r => r.MaNguoiDung == id)
+            .Select(r => r.MaVaiTro)
+            .ToListAsync();
+
+        return Ok(ApiResponse<UserInfoDto>.Ok(ToInfo(user, roles)));
+    }
+    /// <summary>Cập nhật thông tin người dùng hiện tại từ JWT.</summary>
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<UserInfoDto>>> UpdateProfile([FromBody] UpdateProfileDto req)
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (string.IsNullOrEmpty(id))
             return Unauthorized(ApiResponse<UserInfoDto>.Fail("Token không hợp lệ"));
 
         var user = await _db.NGUOIDUNG.FirstOrDefaultAsync(u => u.MaNguoiDung == id);
-        if (user is null) return NotFound(ApiResponse<UserInfoDto>.Fail("User not found"));
+
+        if (user is null)
+            return NotFound(ApiResponse<UserInfoDto>.Fail("User not found"));
+
+        var fullName = req.FullName?.Trim();
+        var phone = req.Phone?.Trim();
+        var email = req.Email?.Trim();
+        var cccd = req.CCCD?.Trim();
+
+        if (string.IsNullOrWhiteSpace(fullName))
+            return BadRequest(ApiResponse<UserInfoDto>.Fail("Họ tên không được để trống"));
+
+        if (string.IsNullOrWhiteSpace(phone))
+            return BadRequest(ApiResponse<UserInfoDto>.Fail("Số điện thoại không được để trống"));
+
+        var phoneExists = await _db.NGUOIDUNG.AnyAsync(u =>
+            u.MaNguoiDung != id &&
+            u.SDT == phone
+        );
+
+        if (phoneExists)
+            return BadRequest(ApiResponse<UserInfoDto>.Fail("Số điện thoại đã tồn tại"));
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var emailLower = email.ToLower();
+
+            var emailExists = await _db.NGUOIDUNG.AnyAsync(u =>
+                u.MaNguoiDung != id &&
+                u.Email != null &&
+                u.Email.ToLower() == emailLower
+            );
+
+            if (emailExists)
+                return BadRequest(ApiResponse<UserInfoDto>.Fail("Email đã tồn tại"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(cccd))
+        {
+            var cccdExists = await _db.NGUOIDUNG.AnyAsync(u =>
+                u.MaNguoiDung != id &&
+                u.CCCD == cccd
+            );
+
+            if (cccdExists)
+                return BadRequest(ApiResponse<UserInfoDto>.Fail("CCCD đã tồn tại"));
+        }
+
+        user.HoTen = fullName;
+        user.SDT = phone;
+        user.Email = string.IsNullOrWhiteSpace(email) ? null : email;
+        user.CCCD = string.IsNullOrWhiteSpace(cccd) ? null : cccd;
+        user.GioiTinh = req.GioiTinh;
+        user.NgaySinh = req.NgaySinh;
+        user.MaPhuongXa = string.IsNullOrWhiteSpace(req.MaPhuongXa)
+            ? null
+            : req.MaPhuongXa;
+        user.DiaChiCuThe = req.DiaChiCuThe;
+
+        await _db.SaveChangesAsync();
 
         var roles = await _db.NGUOIDUNG_VAITRO
-            .Where(r => r.MaNguoiDung == id).Select(r => r.MaVaiTro).ToListAsync();
+            .Where(r => r.MaNguoiDung == id)
+            .Select(r => r.MaVaiTro)
+            .ToListAsync();
 
-        return Ok(ApiResponse<UserInfoDto>.Ok(ToInfo(user, roles)));
+        return Ok(ApiResponse<UserInfoDto>.Ok(
+            ToInfo(user, roles),
+            "Cập nhật thông tin thành công"
+        ));
     }
-
     /// <summary>Đổi mật khẩu.</summary>
     [HttpPost("change-password")]
     [Authorize]
@@ -154,6 +247,7 @@ public class AuthController : ControllerBase
     {
         var rolesList = roles.ToList();
         var primary = rolesList.FirstOrDefault() ?? "";
+
         return new UserInfoDto
         {
             Id = u.MaNguoiDung,
@@ -163,7 +257,12 @@ public class AuthController : ControllerBase
             CCCD = u.CCCD,
             GioiTinh = u.GioiTinh,
             NgaySinh = u.NgaySinh,
-            MaXaPhuong = u.MaXaPhuong,
+
+            MaTinhTP = u.PhuongXa?.MaTinhTP,
+            TenTinhTP = u.PhuongXa?.TinhTP?.TenTinhTP,
+            MaPhuongXa = u.MaPhuongXa,
+            TenPhuongXa = u.PhuongXa?.TenPhuongXa,
+
             DiaChiCuThe = u.DiaChiCuThe,
             IsActive = u.TrangThaiTK,
             CreatedAt = u.NgayTao,

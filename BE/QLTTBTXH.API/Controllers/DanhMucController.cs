@@ -83,4 +83,48 @@ public class DanhMucController : ControllerBase
         Ok(ApiResponse<List<string>>.Ok(new List<string> {
             "Chờ xác minh", "Hợp lệ", "Không hợp lệ", "Hết hạn", "Cần bổ sung"
         }));
+
+    /// <summary>Danh sách loại giấy tờ bắt buộc áp dụng cho yêu cầu nhận nuôi.</summary>
+    [HttpGet("loai-giay-to-bat-buoc-nhan-nuoi")]
+    public async Task<IActionResult> GetLoaiGiayToNhanNuoi()
+    {
+        var data = await _db.LOAIGIAYTOBATBUOC
+            .Where(x => x.ApDungYCNN)
+            .OrderByDescending(x => x.BatBuoc)
+            .ThenBy(x => x.TenLoaiGiayTo)
+            .Select(x => new
+            {
+                x.MaLoaiGiayTo,
+                x.TenLoaiGiayTo,
+                x.ApDungYCNN,
+                x.ApDungYCGT,
+                x.BatBuoc,
+                x.MoTa
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(data));
+    }
+
+    /// <summary>Danh sách loại giấy tờ bắt buộc áp dụng cho yêu cầu gửi trẻ.</summary>
+    [HttpGet("loai-giay-to-bat-buoc-gui-tre")]
+    public async Task<IActionResult> GetLoaiGiayToGuiTre()
+    {
+        var data = await _db.LOAIGIAYTOBATBUOC
+            .Where(x => x.ApDungYCGT)
+            .OrderByDescending(x => x.BatBuoc)
+            .ThenBy(x => x.TenLoaiGiayTo)
+            .Select(x => new
+            {
+                x.MaLoaiGiayTo,
+                x.TenLoaiGiayTo,
+                x.ApDungYCNN,
+                x.ApDungYCGT,
+                x.BatBuoc,
+                x.MoTa
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(data));
+    }
 }

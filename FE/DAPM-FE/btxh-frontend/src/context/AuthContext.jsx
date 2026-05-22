@@ -1,50 +1,62 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
-import { MOCK_USERS } from '../api/mockData';
+import authApi from '../api/authApi';
 
 export const AuthContext = createContext(null);
-
-const DEV_PASSWORD = '123456';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('mock_user');
-
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem('mock_user');
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await authApi.getProfile();
+          if (res.success) {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } catch (error) {
+          console.error("Failed to load profile", error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
       }
-    }
+      setLoading(false);
+    };
 
-    setLoading(false);
+    initAuth();
   }, []);
 
-  const login = useCallback(async ({ email, password }) => {
-    await new Promise((r) => setTimeout(r, 400));
-
-    const account = MOCK_USERS.find(
-      (item) => item.email === email && password === DEV_PASSWORD
-    );
-
-    if (!account) {
-      throw new Error('Sai email hoặc mật khẩu');
+  const login = useCallback(async (credentials) => {
+    const res = await authApi.login(credentials);
+    if (!res.success) {
+      throw new Error(res.message || 'Đăng nhập thất bại');
     }
-
-    const { password: _password, ...userData } = account;
-
-    localStorage.setItem('mock_user', JSON.stringify(userData));
+    
+    const { token, user: userData } = res.data;
+    
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
 
     return userData;
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('mock_user');
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
   }, []);
 
   const updateUser = useCallback((payload) => {
@@ -54,20 +66,7 @@ export function AuthProvider({ children }) {
         ...payload,
       };
 
-      localStorage.setItem('mock_user', JSON.stringify(updatedUser));
-
-      const index = MOCK_USERS.findIndex(
-        (item) => item.id === updatedUser.id
-      );
-
-      if (index !== -1) {
-        MOCK_USERS[index] = {
-          ...MOCK_USERS[index],
-          ...updatedUser,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       return updatedUser;
     });
   }, []);
@@ -85,4 +84,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
+}

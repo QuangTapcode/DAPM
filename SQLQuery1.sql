@@ -209,11 +209,10 @@ CREATE TABLE YEUCAUNHANNUOI
     CONSTRAINT CHK_YCNN_HONNHAN CHECK(TinhTrangHonNhan IN(N'Độc thân',N'Đã kết hôn',N'Ly hôn', N'Góa')),
     CONSTRAINT CHK_YCNN_LOAINHA CHECK (LoaiNoiO IN(N'Nhà sở hữu',N'Chung cư sở hữu',N'Nhà thuê dài hạn',N'Ở cùng gia đình')),
     CONSTRAINT CHK_YCNN_QUANHE CHECK (QuanHeVoiTre IN(N'Không',N'Người thân')),
-    CONSTRAINT CHK_YCNN_TRANGTHAI CHECK (TrangThai IN(N'Chờ duyệt',N'Yêu cầu bổ sung',N'Đã duyệt sơ bộ', N'Ghép trẻ',N'Từ chối sơ bộ',N'Đang xác minh',N'Đã duyệt')),
+    CONSTRAINT CHK_YCNN_TRANGTHAI CHECK (TrangThai IN(N'Yêu cầu bổ sung',N'Đã duyệt sơ bộ', N'Ghép trẻ',N'Từ chối sơ bộ',N'Đang xác minh',N'Đã duyệt')),
 	CONSTRAINT CHK_YCNN_GIOITINH CHECK (MongMuonGioiTinh IS NULL OR MongMuonGioiTinh IN (N'Nam', N'Nữ'))
 );
-select *from YEUCAUNHANNUOI
-select *from GIAYTOPHAPLY
+
 
 -- ============================================================
 -- YÊU CẦU & HỒ SƠ GỬI TRẺ
@@ -524,12 +523,12 @@ VALUES
 
 INSERT INTO YEUCAUNHANNUOI (MaYeuCauNhan, MaNguoiNhan, ThuNhapHangThang, SoConDangNuoi, TinhTrangHonNhan, LoaiNoiO, SucKhoeDatYeuCau, QuanHeVoiTre, LyDoNhanNuoi, MongMuonTuoiToiDa, MongMuonGioiTinh, HopLeSoBo, DiemUuTien, LyDoTuChoiSoBo, TrangThai, NgayTao, GhiChu)
 VALUES
-('YCNN0001', 'ND000005', 32000000, 0, N'Đã kết hôn', N'Nhà sở hữu', 1, N'Không', N'Mong muốn xây dựng gia đình', 8, N'Nữ', 0, 0, NULL, N'Chờ duyệt', '2026-03-20 08:30:00', NULL),
-('YCNN0002', 'ND000006', 18000000, 1, N'Đã kết hôn', N'Chung cư sở hữu', 1, N'Người thân', N'Muốn chăm sóc cháu ruột', 6, N'Nam', 0, 0, NULL, N'Chờ duyệt', '2026-03-21 09:10:00', NULL),
-('YCNN0003', 'ND000007', 45000000, 0, N'Độc thân', N'Nhà sở hữu', 1, N'Không', N'Muốn hỗ trợ trẻ khó khăn', NULL, NULL, 0, 0, NULL, N'Chờ duyệt', '2026-03-22 10:20:00', NULL),
-('YCNN0004', 'ND000008', 12000000, 2, N'Đã kết hôn', N'Nhà thuê dài hạn', 1, N'Không', N'Muốn nhận nuôi lâu dài', 10, N'Nữ', 0, 0, NULL, N'Chờ duyệt', '2026-03-23 14:00:00', NULL),
-('YCNN0005', 'ND000009', 28000000, 0, N'Ly hôn', N'Nhà sở hữu', 1, N'Không', N'Muốn chăm sóc trẻ mồ côi', 12, NULL, 0, 0, NULL, N'Chờ duyệt', '2026-03-24 15:15:00', NULL),
-('YCNN0006', 'ND000010', 22000000, 1, N'Độc thân', N'Ở cùng gia đình', 1, N'Người thân', N'Xin nhận nuôi cháu họ', 5, N'Nam', 0, 0, NULL, N'Chờ duyệt', '2026-03-25 16:40:00', NULL);
+('YCNN0001', 'ND000005', 32000000, 0, N'Đã kết hôn', N'Nhà sở hữu', 1, N'Không', N'Mong muốn xây dựng gia đình', 8, N'Nữ', 0, 0, NULL, N'Đã duyệt', '2026-03-20 08:30:00', NULL),
+('YCNN0002', 'ND000006', 18000000, 1, N'Đã kết hôn', N'Chung cư sở hữu', 1, N'Người thân', N'Muốn chăm sóc cháu ruột', 6, N'Nam', 0, 0, NULL, N'Đã duyệt', '2026-03-21 09:10:00', NULL),
+('YCNN0003', 'ND000007', 45000000, 0, N'Độc thân', N'Nhà sở hữu', 1, N'Không', N'Muốn hỗ trợ trẻ khó khăn', NULL, NULL, 0, 0, NULL, N'Đã duyệt', '2026-03-22 10:20:00', NULL),
+('YCNN0004', 'ND000008', 12000000, 2, N'Đã kết hôn', N'Nhà thuê dài hạn', 1, N'Không', N'Muốn nhận nuôi lâu dài', 10, N'Nữ', 0, 0, NULL, N'Đã duyệt', '2026-03-23 14:00:00', NULL),
+('YCNN0005', 'ND000009', 28000000, 0, N'Ly hôn', N'Nhà sở hữu', 1, N'Không', N'Muốn chăm sóc trẻ mồ côi', 12, NULL, 0, 0, NULL, N'Đã duyệt', '2026-03-24 15:15:00', NULL),
+('YCNN0006', 'ND000010', 22000000, 1, N'Độc thân', N'Ở cùng gia đình', 1, N'Người thân', N'Xin nhận nuôi cháu họ', 5, N'Nam', 0, 0, NULL, N'Đã duyệt', '2026-03-25 16:40:00', NULL);
 
 INSERT INTO GIAYTOPHAPLY (MaGiayTo, MaLoaiGiayTo, DuongDanFile, TrangThai, MaYeuCauGuiTre, MaYeuCauNhan, NgayCapNhat)
 VALUES

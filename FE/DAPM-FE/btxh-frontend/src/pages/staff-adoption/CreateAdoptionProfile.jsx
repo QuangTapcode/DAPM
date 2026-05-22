@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDate } from '../../utils/formatDate';
@@ -25,82 +25,18 @@ const primaryButton =
 const secondaryButton =
   'rounded-2xl border border-[#CFE0F5] bg-white px-5 py-3 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400';
 
-const fallbackRequest = {
-  MaYeuCauNhan: 'YCNN0004',
-  MaHoSoNhanNuoi: '',
-  TenNguoiNhan: 'Lê Thanh Mai',
-  SDTNguoiNhan: '0987654321',
-  NgaySinhNguoiNhan: '1988-03-10',
-  NgheNghiep: 'Giáo viên',
-  ThuNhapHangThang: 22000000,
-  LyDoNhanNuoi:
-    'Người nhận nuôi có mong muốn xây dựng gia đình và chăm sóc trẻ lâu dài.',
-  MongMuonVeTre:
-    'Không yêu cầu cụ thể, ưu tiên trẻ phù hợp sau khi trung tâm tư vấn.',
-  TrangThai: 'Chờ ghép trẻ',
-  SoGiayTo: 4,
-  SoGiayToHopLe: 4,
-  GiayTo: [
-    {
-      MaGiayTo: 'GT000009',
-      TenGiayTo: 'Ảnh CCCD người nhận nuôi',
-      LoaiGiayTo: 'Tùy thân',
-      TrangThai: 'Hợp lệ',
-      DuongDanFile: '/uploads/giayto/ycnn0004/cccd.jpg',
-    },
-    {
-      MaGiayTo: 'GT000010',
-      TenGiayTo: 'Giấy khám sức khỏe',
-      LoaiGiayTo: 'Sức khỏe',
-      TrangThai: 'Hợp lệ',
-      DuongDanFile: '/uploads/giayto/ycnn0004/suc-khoe.pdf',
-    },
-    {
-      MaGiayTo: 'GT000011',
-      TenGiayTo: 'Giấy xác nhận tình trạng hôn nhân',
-      LoaiGiayTo: 'Hôn nhân',
-      TrangThai: 'Hợp lệ',
-      DuongDanFile: '/uploads/giayto/ycnn0004/hon-nhan.pdf',
-    },
-    {
-      MaGiayTo: 'GT000012',
-      TenGiayTo: 'Minh chứng thu nhập',
-      LoaiGiayTo: 'Tài chính',
-      TrangThai: 'Hợp lệ',
-      DuongDanFile: '/uploads/giayto/ycnn0004/thu-nhap.pdf',
-    },
-  ],
-};
+function unwrapApiResponse(res) {
+  if (res?.success !== undefined) return res.data;
+  if (res?.data?.success !== undefined) return res.data.data;
+  return res?.data ?? res;
+}
 
-const fallbackChildren = [
-  {
-    MaTre: 'TRE00012',
-    HoTen: 'Bé An',
-    NgaySinh: '2020-04-12',
-    GioiTinh: 'Nam',
-    SucKhoe: 'Ổn định',
-    TrangThai: 'Chờ nhận nuôi',
-    GhiChu: 'Phù hợp với điều kiện chăm sóc hiện tại.',
-  },
-  {
-    MaTre: 'TRE00015',
-    HoTen: 'Bé Minh',
-    NgaySinh: '2019-08-20',
-    GioiTinh: 'Nam',
-    SucKhoe: 'Ổn định',
-    TrangThai: 'Chờ nhận nuôi',
-    GhiChu: 'Phù hợp về độ tuổi và sức khỏe.',
-  },
-  {
-    MaTre: 'TRE00018',
-    HoTen: 'Bé Lan',
-    NgaySinh: '2018-11-02',
-    GioiTinh: 'Nữ',
-    SucKhoe: 'Ổn định',
-    TrangThai: 'Chờ nhận nuôi',
-    GhiChu: 'Cần trao đổi thêm trong buổi gặp mặt.',
-  },
-];
+function getResponseItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.data?.items)) return data.data.items;
+  return [];
+}
 
 function formatCurrency(value) {
   if (value === null || value === undefined || value === '') {
@@ -119,6 +55,8 @@ function getAge(dateString) {
   if (!dateString) return null;
 
   const birth = new Date(dateString);
+  if (Number.isNaN(birth.getTime())) return null;
+
   const today = new Date();
 
   let age = today.getFullYear() - birth.getFullYear();
@@ -143,50 +81,87 @@ function getAgeGap(adopterBirthDate, childBirthDate) {
   return adopterAge - childAge;
 }
 
-function isAtLeast20YearsOlder(adopterBirthDate, childBirthDate) {
-  if (!adopterBirthDate || !childBirthDate) return false;
+function normalizeRequest(req = {}, requestId) {
+  const maxAge = req.mongMuonTuoiToiDa ?? req.MongMuonTuoiToiDa;
+  const gender = req.mongMuonGioiTinh || req.MongMuonGioiTinh;
 
-  const adopterDate = new Date(adopterBirthDate);
-  const childDate = new Date(childBirthDate);
+  const expectedChild = [
+    maxAge ? `Tuổi tối đa: ${maxAge}` : null,
+    gender ? `Giới tính: ${gender}` : 'Không yêu cầu giới tính',
+  ]
+    .filter(Boolean)
+    .join(' • ');
 
-  const minChildBirthDate = new Date(adopterDate);
-  minChildBirthDate.setFullYear(minChildBirthDate.getFullYear() + 20);
+  const giayTos = req.giayTos || req.GiayTos || req.giayTo || req.GiayTo || [];
 
-  return childDate >= minChildBirthDate;
-}
-
-function getFileUrl(path) {
-  if (!path) return '';
-
-  if (
-    path.startsWith('http') ||
-    path.startsWith('blob:') ||
-    path.startsWith('data:')
-  ) {
-    return path;
-  }
-
-  const baseUrl = import.meta.env.VITE_API_URL || '';
-
-  return `${baseUrl}${path}`;
-}
-
-function normalizeRequest(req, requestId) {
   return {
-    MaYeuCauNhan: req.MaYeuCauNhan || req.id || requestId,
-    MaHoSoNhanNuoi: req.MaHoSoNhanNuoi || '',
-    TenNguoiNhan: req.TenNguoiNhan || req.adopterName || '',
-    SDTNguoiNhan: req.SDTNguoiNhan || req.phone || '',
+    MaYeuCauNhan:
+      req.maYeuCauNhan || req.MaYeuCauNhan || req.id || requestId || '',
+    MaHoSoNhanNuoi: req.maHoSoNhanNuoi || req.MaHoSoNhanNuoi || '',
+
+    MaNguoiNhan: req.maNguoiNhan || req.MaNguoiNhan || req.adopterId || '',
+    TenNguoiNhan:
+      req.tenNguoiNhan || req.TenNguoiNhan || req.adopterName || '',
+    SDTNguoiNhan:
+      req.sdtNguoiNhan || req.SDTNguoiNhan || req.phone || '',
+
     NgaySinhNguoiNhan:
-      req.NgaySinhNguoiNhan || req.birthDate || req.dateOfBirth || '',
-    NgheNghiep: req.NgheNghiep || req.job || '',
-    ThuNhapHangThang: req.ThuNhapHangThang ?? req.monthlyIncome,
-    LyDoNhanNuoi: req.LyDoNhanNuoi || req.motivation || '',
-    MongMuonVeTre: req.MongMuonVeTre || req.expectedChild || '',
-    TrangThai: req.TrangThai || req.status || 'Chờ ghép trẻ',
-    SoGiayTo: req.SoGiayTo ?? 4,
-    SoGiayToHopLe: req.SoGiayToHopLe ?? 4,
-    GiayTo: req.GiayTo || req.documents || fallbackRequest.GiayTo,
+      req.ngaySinhNguoiNhan ||
+      req.NgaySinhNguoiNhan ||
+      req.ngaySinh ||
+      req.NgaySinh ||
+      '',
+
+    ThuNhapHangThang:
+      req.thuNhapHangThang ?? req.ThuNhapHangThang ?? req.monthlyIncome ?? '',
+
+    SoConDangNuoi: req.soConDangNuoi ?? req.SoConDangNuoi ?? '',
+    TinhTrangHonNhan:
+      req.tinhTrangHonNhan || req.TinhTrangHonNhan || '',
+    LoaiNoiO: req.loaiNoiO || req.LoaiNoiO || '',
+    SucKhoeDatYeuCau:
+      req.sucKhoeDatYeuCau ?? req.SucKhoeDatYeuCau ?? null,
+    QuanHeVoiTre: req.quanHeVoiTre || req.QuanHeVoiTre || '',
+
+    LyDoNhanNuoi:
+      req.lyDoNhanNuoi || req.LyDoNhanNuoi || req.motivation || '',
+
+    MongMuonVeTre:
+      req.mongMuonVeTre || req.MongMuonVeTre || req.expectedChild || expectedChild,
+
+    MongMuonTuoiToiDa: maxAge ?? '',
+    MongMuonGioiTinh: gender || '',
+
+    TrangThai:
+      req.trangThai || req.TrangThai || req.status || '',
+
+    SoGiayTo: req.soGiayTo ?? req.SoGiayTo ?? giayTos.length ?? 0,
+    SoGiayToHopLe:
+      req.soGiayToHopLe ?? req.SoGiayToHopLe ?? giayTos.length ?? 0,
+
+    GiayTos: Array.isArray(giayTos) ? giayTos : [],
+    GhiChu: req.ghiChu || req.GhiChu || '',
+  };
+}
+
+function normalizeChild(child = {}) {
+  return {
+    MaTre: child.maTre || child.MaTre || child.id || '',
+    HoTen: child.hoTen || child.HoTen || child.name || '',
+    NgaySinh: child.ngaySinh || child.NgaySinh || null,
+    GioiTinh: child.gioiTinh || child.GioiTinh || '',
+    MaPhuongXa: child.maPhuongXa || child.MaPhuongXa || '',
+    TenPhuongXa: child.tenPhuongXa || child.TenPhuongXa || '',
+    DiaChiCuThe: child.diaChiCuThe || child.DiaChiCuThe || '',
+    DanToc: child.danToc || child.DanToc || '',
+    TinhCach: child.tinhCach || child.TinhCach || '',
+    SoThich: child.soThich || child.SoThich || '',
+    DacDiemNhanDang:
+      child.dacDiemNhanDang || child.DacDiemNhanDang || '',
+    TrangThai: child.trangThai || child.TrangThai || '',
+    NgayTiepNhan: child.ngayTiepNhan || child.NgayTiepNhan || null,
+    GhiChu: child.ghiChu || child.GhiChu || '',
+    HinhAnh: child.hinhAnh || child.HinhAnh || '',
   };
 }
 
@@ -236,7 +211,7 @@ function ReadOnlyField({ label, value, strong = false, wide = false }) {
         className={`text-sm leading-7 ${strong ? 'font-bold text-[#0D47A1]' : 'font-semibold text-[#26364A]'
           }`}
       >
-        {value || 'Chưa có'}
+        {value === null || value === undefined || value === '' ? 'Chưa có' : value}
       </p>
     </div>
   );
@@ -262,92 +237,16 @@ function SectionTitle({ number, title, description }) {
   );
 }
 
-function DocumentPreviewModal({ document, onClose }) {
-  if (!document) return null;
-
-  const fileUrl = getFileUrl(document.DuongDanFile);
-  const lowerUrl = String(fileUrl || '').toLowerCase();
-
-  const isImage =
-    lowerUrl.endsWith('.jpg') ||
-    lowerUrl.endsWith('.jpeg') ||
-    lowerUrl.endsWith('.png') ||
-    lowerUrl.endsWith('.webp');
-
-  const isPdf = lowerUrl.endsWith('.pdf');
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
-      <div className="flex max-h-[92vh] w-full max-w-[980px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-[#E4EAF2] px-6 py-5">
-          <div>
-            <h3 className="text-lg font-bold text-[#1F2A3D]">
-              {document.TenGiayTo}
-            </h3>
-            <p className="mt-1 text-sm text-[#7D90AA]">
-              {document.MaGiayTo} · {document.LoaiGiayTo}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-[#D7E1EE] px-4 py-2 text-sm font-bold text-[#5F738F] transition hover:bg-[#F6F8FC]"
-          >
-            Đóng
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-auto bg-[#F6F8FC] p-5">
-          {!fileUrl && (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-[#7D90AA]">
-              Chưa có file giấy tờ để xem.
-            </div>
-          )}
-
-          {fileUrl && isImage && (
-            <div className="flex justify-center">
-              <img
-                src={fileUrl}
-                alt={document.TenGiayTo}
-                className="max-h-[72vh] max-w-full rounded-2xl border border-[#D7E1EE] bg-white object-contain"
-              />
-            </div>
-          )}
-
-          {fileUrl && isPdf && (
-            <iframe
-              src={fileUrl}
-              title={document.TenGiayTo}
-              className="h-[72vh] w-full rounded-2xl border border-[#D7E1EE] bg-white"
-            />
-          )}
-
-          {fileUrl && !isImage && !isPdf && (
-            <div className="rounded-2xl border border-[#D7E1EE] bg-white p-8 text-center">
-              <p className="text-sm text-[#7D90AA]">
-                Định dạng này không xem trực tiếp được trên trình duyệt.
-              </p>
-
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex rounded-xl bg-[#0D47A1] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#083778]"
-              >
-                Mở file trong tab mới
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ChildCard({ child, request, selected, onSelect }) {
   const childAge = getAge(child.NgaySinh);
   const ageGap = getAgeGap(request.NgaySinhNguoiNhan, child.NgaySinh);
+
+  const childDescription =
+    child.GhiChu ||
+    child.DacDiemNhanDang ||
+    child.TinhCach ||
+    child.SoThich ||
+    'Chưa có ghi chú';
 
   return (
     <article
@@ -383,21 +282,29 @@ function ChildCard({ child, request, selected, onSelect }) {
 
         <div className="rounded-2xl bg-[#F6F8FC] px-3 py-2">
           <p className="text-xs text-[#8FA0B8]">Giới tính</p>
-          <p className="font-bold text-[#26364A]">{child.GioiTinh}</p>
+          <p className="font-bold text-[#26364A]">
+            {child.GioiTinh || 'Chưa cập nhật'}
+          </p>
         </div>
 
         <div className="rounded-2xl bg-[#F6F8FC] px-3 py-2">
-          <p className="text-xs text-[#8FA0B8]">Sức khỏe</p>
-          <p className="font-bold text-[#26364A]">{child.SucKhoe}</p>
+          <p className="text-xs text-[#8FA0B8]">Dân tộc</p>
+          <p className="font-bold text-[#26364A]">
+            {child.DanToc || 'Chưa cập nhật'}
+          </p>
         </div>
 
         <div className="rounded-2xl bg-green-50 px-3 py-2">
           <p className="text-xs text-green-700">Chênh tuổi</p>
-          <p className="font-bold text-green-700">{ageGap} tuổi</p>
+          <p className="font-bold text-green-700">
+            {ageGap !== null ? `${ageGap} tuổi` : '—'}
+          </p>
         </div>
       </div>
 
-      <p className="mt-4 text-sm leading-7 text-[#7D90AA]">{child.GhiChu}</p>
+      <p className="mt-4 text-sm leading-7 text-[#7D90AA]">
+        {childDescription}
+      </p>
 
       <button
         type="button"
@@ -420,12 +327,14 @@ function EmptyState({ children }) {
 
 export default function CreateAdoptionProfile() {
   const { requestId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [request, setRequest] = useState(fallbackRequest);
+  const [request, setRequest] = useState(() =>
+    normalizeRequest({}, requestId)
+  );
+  const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
-  const [previewDoc, setPreviewDoc] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [meeting, setMeeting] = useState(null);
   const [meetingForm, setMeetingForm] = useState({
@@ -447,26 +356,55 @@ export default function CreateAdoptionProfile() {
   useEffect(() => {
     if (!requestId) return;
 
-    adoptionApi
-      .getById(requestId)
-      .then((req) => {
-        setRequest(normalizeRequest(req, requestId));
-      })
-      .catch(() => {
+    let active = true;
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        const [requestRes, childrenRes] = await Promise.all([
+          adoptionApi.getById(requestId),
+          adoptionApi.getMatchingChildren(requestId),
+        ]);
+
+        if (!active) return;
+
+        const requestPayload = unwrapApiResponse(requestRes);
+        const childrenPayload = unwrapApiResponse(childrenRes);
+
+        setRequest(normalizeRequest(requestPayload, requestId));
+
+        const normalizedChildren = getResponseItems(childrenPayload).map(
+          normalizeChild
+        );
+
+        setChildren(normalizedChildren);
+      } catch (error) {
+        console.error('Lỗi tải dữ liệu tạo hồ sơ nhận nuôi:', error);
+
+        if (!active) return;
+
         setRequest((prev) => ({
           ...prev,
           MaYeuCauNhan: requestId,
         }));
-      });
+
+        setChildren([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      active = false;
+    };
   }, [requestId]);
 
   const eligibleChildren = useMemo(() => {
-    return fallbackChildren.filter(
-      (child) =>
-        child.TrangThai === 'Chờ nhận nuôi' &&
-        isAtLeast20YearsOlder(request.NgaySinhNguoiNhan, child.NgaySinh)
-    );
-  }, [request]);
+    return children;
+  }, [children]);
 
   const profileStatus = getProfileStatus(
     selectedChild,
@@ -483,7 +421,12 @@ export default function CreateAdoptionProfile() {
     meetingResult.result === 'Phù hợp';
 
   const officerName =
-    user?.HoTen || user?.fullName || user?.TenNguoiDung || 'Cán bộ nhận nuôi';
+    user?.HoTen ||
+    user?.hoTen ||
+    user?.fullName ||
+    user?.TenNguoiDung ||
+    user?.name ||
+    'Cán bộ nhận nuôi';
 
   function handleSelectChild(child) {
     setSelectedChild(child);
@@ -512,26 +455,32 @@ export default function CreateAdoptionProfile() {
     if (!canSubmitProfile) return;
 
     const payload = {
-      MaYeuCauNhan: request.MaYeuCauNhan,
-      MaTre: selectedChild.MaTre,
-      MaCanBoLap:
-        user?.MaNguoiDung || user?.maNguoiDung || user?.id || 'ND000005',
-      NgayLap: new Date().toISOString().split('T')[0],
-      TrangThai: 'Chờ duyệt',
-      GhiChu: staffNote,
+      maYeuCauNhan: request.MaYeuCauNhan,
+      maTre: selectedChild.MaTre,
+      maCanBo:
+        user?.MaNguoiDung ||
+        user?.maNguoiDung ||
+        user?.id ||
+        user?.maNguoiNhan ||
+        '',
+      ngayLap: new Date().toISOString(),
+      trangThai: 'Đang lập',
+      ghiChu: staffNote,
     };
 
-    adoptionApi
-      .update(request.MaYeuCauNhan, {
-        type: 'profile',
-        ...payload,
-      })
-      .catch((error) => {
-        console.error('Tạm thời mock lập hồ sơ:', error);
-      })
-      .finally(() => {
-        navigate('/can-bo-nhan-nuoi/ho-so');
-      });
+    console.log('Payload lập hồ sơ nhận nuôi:', payload);
+
+    alert(
+      'Đã đủ dữ liệu lập hồ sơ. Cần nối payload này với API tạo hồ sơ nhận nuôi.'
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F7FB]">
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#0D47A1]/20 border-t-[#0D47A1]" />
+      </div>
+    );
   }
 
   return (
@@ -549,7 +498,8 @@ export default function CreateAdoptionProfile() {
               </h1>
 
               <ProfileStatusPill status={profileStatus} />
-            </div>          </div>
+            </div>
+          </div>
 
           <Link to="/can-bo-nhan-nuoi/danh-sach" className={secondaryButton}>
             Quay lại danh sách
@@ -563,6 +513,7 @@ export default function CreateAdoptionProfile() {
                 <h2 className="mt-3 text-[28px] font-bold uppercase tracking-wide text-[#0D47A1]">
                   Hồ sơ nhận nuôi
                 </h2>
+
                 <p className="mt-3 text-sm leading-7 text-[#7D90AA]">
                   Mã hồ sơ:{' '}
                   <span className="font-bold text-[#26364A]">
@@ -606,6 +557,11 @@ export default function CreateAdoptionProfile() {
 
                   <div className="mt-5 grid gap-5 md:grid-cols-2">
                     <ReadOnlyField
+                      label="Mã người nhận"
+                      value={request.MaNguoiNhan}
+                    />
+
+                    <ReadOnlyField
                       label="Người nhận nuôi"
                       value={request.TenNguoiNhan}
                       strong
@@ -622,52 +578,69 @@ export default function CreateAdoptionProfile() {
                     />
 
                     <ReadOnlyField
-                      label="Nghề nghiệp"
-                      value={request.NgheNghiep}
-                    />
-
-                    <ReadOnlyField
                       label="Thu nhập hàng tháng"
                       value={formatCurrency(request.ThuNhapHangThang)}
                     />
 
                     <ReadOnlyField
-                      label="Giấy tờ pháp lý"
-                      value={`${request.SoGiayToHopLe}/${request.SoGiayTo} giấy tờ hợp lệ`}
+                      label="Số con đang nuôi"
+                      value={request.SoConDangNuoi}
+                    />
+
+                    <ReadOnlyField
+                      label="Tình trạng hôn nhân"
+                      value={request.TinhTrangHonNhan}
+                    />
+
+                    <ReadOnlyField
+                      label="Loại nơi ở"
+                      value={request.LoaiNoiO}
+                    />
+
+                    <ReadOnlyField
+                      label="Sức khỏe"
+                      value={
+                        request.SucKhoeDatYeuCau === null
+                          ? ''
+                          : request.SucKhoeDatYeuCau
+                            ? 'Đạt yêu cầu'
+                            : 'Không đạt'
+                      }
+                    />
+
+                    <ReadOnlyField
+                      label="Quan hệ với trẻ"
+                      value={request.QuanHeVoiTre}
                     />
                   </div>
                 </section>
 
                 <section>
-                  <SectionTitle number="III" title="Giấy tờ pháp lý đã xác minh" />
+                  <SectionTitle
+                    number="III"
+                    title="Giấy tờ pháp lý đã xác minh"
+                  />
 
                   <div className="mt-5 divide-y divide-[#E6EDF5] overflow-hidden rounded-2xl border border-[#E6EDF5]">
-                    {(request.GiayTo || []).map((doc) => (
+                    {request.GiayTos.length === 0 && (
+                      <div className="bg-[#FAFCFF] px-5 py-6 text-sm font-semibold text-[#7D90AA]">
+                        API hiện chỉ trả số lượng giấy tờ, chưa có danh sách mã giấy tờ.
+                      </div>
+                    )}
+
+                    {request.GiayTos.map((docId) => (
                       <div
-                        key={doc.MaGiayTo}
+                        key={docId}
                         className="flex flex-col justify-between gap-4 bg-[#FAFCFF] px-5 py-4 transition hover:bg-white md:flex-row md:items-center"
                       >
                         <div>
-                          <p className="font-bold text-[#26364A]">
-                            {doc.TenGiayTo}
-                          </p>
+                          <p className="font-bold text-[#26364A]">Giấy tờ</p>
                           <p className="mt-1 text-sm text-[#7D90AA]">
-                            {doc.MaGiayTo} · {doc.LoaiGiayTo}
+                            Mã giấy tờ: {docId}
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <Badge status={doc.TrangThai} size="sm" />
-
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDoc(doc)}
-                            disabled={!doc.DuongDanFile}
-                            className="rounded-xl border border-[#CFE0F5] bg-white px-3 py-2 text-xs font-bold text-[#0D47A1] hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                          >
-                            Xem file
-                          </button>
-                        </div>
+                        <Badge status="Hợp lệ" size="sm" />
                       </div>
                     ))}
                   </div>
@@ -701,8 +674,8 @@ export default function CreateAdoptionProfile() {
                     />
 
                     <ReadOnlyField
-                      label="Sức khỏe"
-                      value={selectedChild?.SucKhoe || ''}
+                      label="Dân tộc"
+                      value={selectedChild?.DanToc || ''}
                     />
 
                     <ReadOnlyField
@@ -715,6 +688,18 @@ export default function CreateAdoptionProfile() {
                           )} tuổi`
                           : ''
                       }
+                    />
+
+                    <ReadOnlyField
+                      label="Đặc điểm"
+                      value={
+                        selectedChild?.DacDiemNhanDang ||
+                        selectedChild?.TinhCach ||
+                        selectedChild?.SoThich ||
+                        selectedChild?.GhiChu ||
+                        ''
+                      }
+                      wide
                     />
                   </div>
                 </section>
@@ -758,7 +743,7 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Khu vực chọn trẻ"
-                description="Chỉ hiển thị trẻ đang chờ nhận nuôi và người nhận nuôi hơn trẻ tối thiểu 20 tuổi."
+                description="Danh sách trẻ phù hợp được lấy từ API ghép trẻ của yêu cầu nhận nuôi."
               />
 
               <div className="mt-5 max-h-[680px] space-y-4 overflow-y-auto pr-1">
@@ -998,7 +983,7 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Gửi hồ sơ duyệt"
-                description="Hồ sơ lưu theo đúng CSDL: mã yêu cầu, mã trẻ, cán bộ lập, ngày lập, trạng thái và ghi chú."
+                description="Sau khi đủ điều kiện, payload lập hồ sơ sẽ gồm mã yêu cầu, mã trẻ, cán bộ lập, ngày lập, trạng thái và ghi chú."
               />
 
               {submitAttempted && !canSubmitProfile && (
@@ -1019,11 +1004,6 @@ export default function CreateAdoptionProfile() {
           </aside>
         </div>
       </div>
-
-      <DocumentPreviewModal
-        document={previewDoc}
-        onClose={() => setPreviewDoc(null)}
-      />
     </div>
   );
 }

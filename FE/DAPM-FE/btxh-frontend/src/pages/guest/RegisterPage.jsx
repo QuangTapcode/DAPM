@@ -19,6 +19,7 @@ export default function RegisterPage() {
   } = useForm({
     defaultValues: {
       identifier: '',
+      phone: '',
       fullName: '',
       password: '',
       confirmPassword: '',
@@ -30,18 +31,20 @@ export default function RegisterPage() {
   const onSubmit = async (data) => {
     try {
       const payload = {
-        username: data.identifier,
+        sdt: data.phone,
         email: data.identifier,
         fullName: data.fullName,
         password: data.password,
-        confirmPassword: data.confirmPassword,
       };
 
-      await authApi.register(payload);
+      const res = await authApi.register(payload);
+      if (!res.success) {
+        throw new Error(res.message || 'Đăng ký thất bại');
+      }
       navigate('/dang-nhap');
     } catch (err) {
       setError('root', {
-        message: err?.message || 'Đăng ký thất bại',
+        message: err?.message || err?.response?.data?.message || 'Đăng ký thất bại',
       });
     }
   };
@@ -89,6 +92,39 @@ export default function RegisterPage() {
 
             {errors.identifier && (
               <p className="mt-2 text-sm text-red-500">{errors.identifier.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-3 block text-[16px] font-semibold text-[#6b7280]">
+              Số điện thoại
+            </label>
+
+            <div className="flex h-[68px] items-center gap-3 rounded-[16px] bg-[#f1f5f9] px-4">
+              <svg
+                className="h-5 w-5 shrink-0 text-[#6b7280]"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+
+              <input
+                type="text"
+                placeholder="Nhập số điện thoại"
+                {...register('phone', {
+                  required: 'Vui lòng nhập số điện thoại',
+                  pattern: {
+                    value: /(84|0[3|5|7|8|9])+([0-9]{8})\b/,
+                    message: 'Vui lòng nhập số điện thoại hợp lệ',
+                  },
+                })}
+                className="h-full w-full bg-transparent text-[18px] text-[#374151] outline-none placeholder:text-[#9ca3af]"
+              />
+            </div>
+
+            {errors.phone && (
+              <p className="mt-2 text-sm text-red-500">{errors.phone.message}</p>
             )}
           </div>
 

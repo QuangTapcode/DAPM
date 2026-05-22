@@ -9,6 +9,8 @@ import {
     Mail,
     CreditCard,
     Camera,
+    Check,
+    ChevronDown,
 } from 'lucide-react';
 
 const inputClass = (disabled) =>
@@ -30,35 +32,159 @@ const cardClass =
 
 function formatDateForInput(value) {
     if (!value) return '';
-    if (typeof value === 'string' && value.includes('-')) return value;
+
+    if (typeof value === 'string') {
+        return value.split('T')[0];
+    }
+
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
     return date.toISOString().split('T')[0];
 }
 
 function formatMemberSince(value) {
     if (!value) return 'Chưa cập nhật';
+
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
     return `Tháng ${date.getMonth() + 1}, ${date.getFullYear()}`;
 }
 
 function getInitialValues(user) {
     return {
-        fullName: user?.fullName || user?.name || '',
-        displayName: user?.displayName || user?.fullName || user?.name || '',
-        nationalId: user?.nationalId || user?.cccd || '',
-        gender: user?.gender || 'Nam',
-        dateOfBirth: formatDateForInput(user?.dateOfBirth || user?.dob),
+        fullName: user?.fullName || '',
+        displayName: user?.fullName || '',
+
+        nationalId: user?.cccd || '',
+        gender: user?.gioiTinh || 'Nam',
+        dateOfBirth: formatDateForInput(user?.ngaySinh),
+
         phone: user?.phone || '',
         email: user?.email || '',
-        province: user?.province || user?.city || 'TP. Đà Nẵng',
-        ward: user?.ward || user?.district || 'Quận Hải Châu',
-        addressDetail: user?.addressDetail || user?.address || '',
+
+        province: user?.maTinhTP || '',
+        ward: user?.maPhuongXa || '',
+
+        addressDetail: user?.diaChiCuThe || '',
+
         avatarUrl: user?.avatarUrl || user?.avatar || '',
         profileStatus: user?.profileStatus || 'Đã xác minh CCCD',
-        memberSince: user?.createdAt || user?.memberSince || '',
+        memberSince: user?.createdAt || '',
     };
+}
+
+function CustomSelect({
+    value,
+    options = [],
+    placeholder = 'Chọn',
+    disabled = false,
+    getValue,
+    getLabel,
+    onChange,
+}) {
+    const [open, setOpen] = useState(false);
+
+    const selectedOption = options.find((item) => getValue(item) === value);
+    const selectedLabel = selectedOption ? getLabel(selectedOption) : placeholder;
+
+    const handleSelect = (item) => {
+        onChange(getValue(item));
+        setOpen(false);
+    };
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                    if (!disabled) setOpen((prev) => !prev);
+                }}
+                className={[
+                    'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-[15px] outline-none transition',
+                    disabled
+                        ? 'border-[#E6EEF8] bg-[#F6FAFF] text-slate-500 cursor-not-allowed'
+                        : open
+                            ? 'border-[#2F80ED] bg-white text-slate-800 ring-4 ring-blue-100'
+                            : 'border-[#D8E6F5] bg-white text-slate-800 hover:border-[#9FC5F8]',
+                ].join(' ')}
+            >
+                <span
+                    className={[
+                        'block truncate',
+                        selectedOption ? 'font-medium text-slate-800' : 'text-slate-400',
+                    ].join(' ')}
+                >
+                    {selectedLabel}
+                </span>
+
+                <ChevronDown
+                    size={18}
+                    className={[
+                        'ml-3 shrink-0 text-[#7DA4D6] transition-transform',
+                        open ? 'rotate-180' : '',
+                    ].join(' ')}
+                />
+            </button>
+
+            {open && !disabled && (
+                <>
+                    <button
+                        type="button"
+                        className="fixed inset-0 z-20 cursor-default"
+                        onClick={() => setOpen(false)}
+                        tabIndex={-1}
+                    />
+
+                    <div className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-2xl border border-[#D8E6F5] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+                        <div className="max-h-60 overflow-y-auto p-2">
+                            {options.length === 0 ? (
+                                <div className="px-4 py-3 text-sm text-slate-400">
+                                    Không có dữ liệu
+                                </div>
+                            ) : (
+                                options.map((item) => {
+                                    const optionValue = getValue(item);
+                                    const optionLabel = getLabel(item);
+                                    const selected = optionValue === value;
+
+                                    return (
+                                        <button
+                                            key={optionValue}
+                                            type="button"
+                                            onClick={() => handleSelect(item)}
+                                            className={[
+                                                'flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-[15px] transition',
+                                                selected
+                                                    ? 'bg-[#E9F2FF] font-semibold text-[#1D5FD6]'
+                                                    : 'text-slate-700 hover:bg-[#F6FAFF]',
+                                            ].join(' ')}
+                                        >
+                                            <span className="truncate">{optionLabel}</span>
+
+                                            {selected && (
+                                                <span className="ml-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2F80ED] text-white">
+                                                    <Check size={14} />
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
 }
 
 export default function ProfileForm({
@@ -67,20 +193,8 @@ export default function ProfileForm({
     description = '',
     formId = 'profile-form',
     onSave,
-    provinceOptions = [
-        'TP. Đà Nẵng',
-        'Quảng Nam',
-        'Thừa Thiên Huế',
-        'TP. Hồ Chí Minh',
-        'Hà Nội',
-    ],
-    wardOptions = [
-        'Quận Hải Châu',
-        'Quận Thanh Khê',
-        'Quận Sơn Trà',
-        'Quận Ngũ Hành Sơn',
-        'Quận Liên Chiểu',
-    ],
+    provinceOptions = [],
+    wardOptions = [],
 }) {
     const [isEditing, setIsEditing] = useState(false);
 
@@ -90,10 +204,23 @@ export default function ProfileForm({
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { isSubmitting },
     } = useForm({
         defaultValues: initialValues,
     });
+
+    const selectedProvince = watch('province');
+    const selectedWard = watch('ward');
+
+    const filteredWardOptions = useMemo(() => {
+        if (!selectedProvince) return [];
+
+        return wardOptions.filter(
+            (item) => item.maTinhTP === selectedProvince
+        );
+    }, [wardOptions, selectedProvince]);
 
     useEffect(() => {
         reset(initialValues);
@@ -101,8 +228,14 @@ export default function ProfileForm({
 
     const onSubmit = async (data) => {
         const payload = {
-            ...data,
-            address: data.addressDetail,
+            fullName: data.fullName,
+            email: data.email,
+            phone: data.phone,
+            cccd: data.nationalId,
+            gioiTinh: data.gender,
+            ngaySinh: data.dateOfBirth || null,
+            maPhuongXa: data.ward,
+            diaChiCuThe: data.addressDetail,
         };
 
         try {
@@ -140,7 +273,10 @@ export default function ProfileForm({
             <div className="mx-auto max-w-7xl">
                 <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                        <h1 className="!text-[36px] font-bold !text-[#0D47A1]">{title}</h1>
+                        <h1 className="!text-[36px] font-bold !text-[#0D47A1]">
+                            {title}
+                        </h1>
+
                         <p className="mt-2 max-w-3xl text-[16px] leading-7 text-slate-500">
                             {description}
                         </p>
@@ -163,6 +299,7 @@ export default function ProfileForm({
                             >
                                 Hủy bỏ
                             </button>
+
                             <button
                                 type="submit"
                                 form={formId}
@@ -185,9 +322,10 @@ export default function ProfileForm({
                             <div className="relative">
                                 <img
                                     src={avatarSrc}
-                                    alt={initialValues.displayName}
+                                    alt={initialValues.displayName || 'User'}
                                     className="h-32 w-32 rounded-[28px] border-4 border-[#EDF5FF] object-cover"
                                 />
+
                                 <button
                                     type="button"
                                     className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#2F80ED] text-white shadow-md"
@@ -207,10 +345,12 @@ export default function ProfileForm({
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
                                         <ShieldCheck size={18} />
                                     </div>
+
                                     <div className="text-left">
                                         <p className="text-[11px] font-bold uppercase tracking-wide text-[#7DA4D6]">
                                             Trạng thái hồ sơ
                                         </p>
+
                                         <p className="mt-1 text-[15px] font-semibold text-slate-800">
                                             {initialValues.profileStatus}
                                         </p>
@@ -223,10 +363,12 @@ export default function ProfileForm({
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
                                         <CalendarDays size={18} />
                                     </div>
+
                                     <div className="text-left">
                                         <p className="text-[11px] font-bold uppercase tracking-wide text-[#7DA4D6]">
                                             Thành viên từ
                                         </p>
+
                                         <p className="mt-1 text-[15px] font-semibold text-slate-800">
                                             {formatMemberSince(initialValues.memberSince)}
                                         </p>
@@ -264,6 +406,7 @@ export default function ProfileForm({
                                             size={18}
                                             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7DA4D6]"
                                         />
+
                                         <input
                                             {...register('nationalId')}
                                             disabled={!isEditing}
@@ -302,6 +445,7 @@ export default function ProfileForm({
                                             size={18}
                                             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7DA4D6]"
                                         />
+
                                         <input
                                             {...register('phone')}
                                             disabled={!isEditing}
@@ -317,6 +461,7 @@ export default function ProfileForm({
                                             size={18}
                                             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#7DA4D6]"
                                         />
+
                                         <input
                                             {...register('email')}
                                             disabled
@@ -340,32 +485,39 @@ export default function ProfileForm({
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <div>
                                     <label className={labelClass}>Tỉnh / Thành phố</label>
-                                    <select
-                                        {...register('province')}
+
+                                    <CustomSelect
+                                        value={selectedProvince}
+                                        options={provinceOptions}
+                                        placeholder="Chọn tỉnh/thành phố"
                                         disabled={!isEditing}
-                                        className={inputClass(!isEditing)}
-                                    >
-                                        {provinceOptions.map((item) => (
-                                            <option key={item} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        getValue={(item) => item.maTinhTP}
+                                        getLabel={(item) => item.tenTinhTP}
+                                        onChange={(value) => {
+                                            setValue('province', value);
+                                            setValue('ward', '');
+                                        }}
+                                    />
                                 </div>
 
                                 <div>
-                                    <label className={labelClass}>Phường / Xã / Quận</label>
-                                    <select
-                                        {...register('ward')}
-                                        disabled={!isEditing}
-                                        className={inputClass(!isEditing)}
-                                    >
-                                        {wardOptions.map((item) => (
-                                            <option key={item} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <label className={labelClass}>Phường / Xã</label>
+
+                                    <CustomSelect
+                                        value={selectedWard}
+                                        options={filteredWardOptions}
+                                        placeholder={
+                                            selectedProvince
+                                                ? 'Chọn phường/xã'
+                                                : 'Chọn tỉnh/thành phố trước'
+                                        }
+                                        disabled={!isEditing || !selectedProvince}
+                                        getValue={(item) => item.maPhuongXa}
+                                        getLabel={(item) => item.tenPhuongXa}
+                                        onChange={(value) => {
+                                            setValue('ward', value);
+                                        }}
+                                    />
                                 </div>
 
                                 <div className="md:col-span-2">

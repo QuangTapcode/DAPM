@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Download, CalendarDays, UserCheck, UserRound, MapPin, Phone, IdCard, Briefcase, } from 'lucide-react';
-import { useFetch } from '../../hooks/useFetch';
+import { Link } from 'react-router-dom';
+import { Download, CalendarDays, UserRound, MapPin, Phone, IdCard, Briefcase, Upload, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import adoptionApi from '../../api/adoptionApi';
+import documentApi from '../../api/documentApi';
+import lookupApi from '../../api/lookupApi';
 import { formatDate } from '../../utils/formatDate';
 
 import { STATUS, getCurrentStep, getProgressWidth } from '../../utils/statusHelpers';
@@ -14,99 +15,223 @@ import LargeField from '../../components/request-status/LargeField';
 import DocumentCard from '../../components/request-status/DocumentCard';
 
 const STEPS = [
-  { key: 1, label: 'ĐÃ NỘP ĐƠN' },
+  { key: 1, label: 'ĐÃ TẠO' },
   { key: 2, label: 'ĐANG XEM XÉT' },
-  { key: 3, label: 'YÊU CẦU BỔ SUNG' },
-  { key: 4, label: 'ĐÃ PHÊ DUYỆT' },
+  { key: 3, label: 'CẦN BỔ SUNG' },
+  { key: 4, label: 'ĐÃ DUYỆT' },
 ];
 
-function getStoredRequest() {
-  try {
-    const raw = sessionStorage.getItem('adoption-request-status');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
+function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
+  const [docTypes, setDocTypes] = useState([]);
+  const [existingDocs, setExistingDocs] = useState([]);
+  const [uploadingId, setUploadingId] = useState(null);
 
-function mapSnapshotToDisplay(snapshot) {
-  if (!snapshot) return null;
-  return {
-    id: snapshot.requestId || 'temp-request',
-    code: snapshot.requestId
-      ? `AD-${String(snapshot.requestId).padStart(6, '0')}`
-      : 'AD-2024-001',
-    title: 'Đơn nhận nuôi',
-    createdAt: snapshot.createdAt || new Date().toISOString(),
-    status: snapshot.status || STATUS.CREATED,
-    approverName: 'Chưa có',
-    desiredChild: snapshot.expectedChild || 'Chưa cập nhật nguyện vọng',
-    formData: {
-      fullName: snapshot.adopterName || '',
-      phone: snapshot.phone || '',
-      nationalId: snapshot.nationalId || '',
-      address: snapshot.address || '',
-      occupation: snapshot.occupation || '',
-      income: snapshot.monthlyIncome || '',
-      reason: snapshot.motivation || '',
-      birthDate: snapshot.birthDate || '',
-      gender: snapshot.gender || '',
-      documents: snapshot.documents || {},
-    },
+  const API_DOMAIN = (import.meta.env.VITE_API_URL || 'https://localhost:44380/api').replace('/api', '');
+
+  const loadData = () => {
+    Promise.all([
+      lookupApi.getGiayToBatBuocNhanNuoi(),
+      documentApi.getDocuments({ maYeuCauNhan: requestId })
+    ]).then(([resDocTypes, resDocs]) => {
+      if (resDocTypes.success) setDocTypes(resDocTypes.data);
+      if (resDocs.success) setExistingDocs(resDocs.data);
+    });
   };
-}
 
+  useEffect(() => {
+    loadData();
+  }, [requestId]);
+
+  const handleUpload = async (file, maLoaiGiayTo) => {
+    if (!file) return;
+    setUploadingId(maLoaiGiayTo);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('maLoaiGiayTo', maLoaiGiayTo);
+      formData.append('maYeuCauNhan', requestId);
+      const res = await documentApi.upload(formData);
+      if (res.success) {
+        alert('Tải lên thành công!');
+        loadData();
+        if (onUploadSuccess) onUploadSuccess();
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    } catch {
+      alert('Lỗi tải lên!');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  if (!docTypes || docTypes.length === 0) return null;
+
+  return (
+    <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-[#F8FAFC] p-5">
+      <h4 className="mb-4 text-[15px] font-bold !text-[#0D47A1]">
+        {readOnly ? 'Tài liệu đính kèm' : 'Cập nhật giấy tờ'}
+      </h4>
+      <div className="flex flex-col gap-3">
+        {docTypes.map((doc) => {
+          const existing = existingDocs.find(d => d.maLoaiGiayTo === doc.maLoaiGiayTo);
+          if (readOnly && !existing) return null;
+          const fileUrl = existing?.duongDanFile ? `${API_DOMAIN}${existing.duongDanFile}` : null;
+          const isImage = fileUrl?.match(/\.(jpeg|jpg|gif|png)$/i) != null;
+
+          return (
+            <div
+              key={doc.maLoaiGiayTo}
+              className="flex items-center justify-between rounded-xl border border-[#E3ECF8] bg-white p-3"
+            >
+              <div className="flex gap-4 items-center">
+                {fileUrl && isImage && (
+                  <div className="w-14 h-14 rounded-lg overflow-hidden border border-[#E3ECF8] bg-slate-50 flex-shrink-0">
+                    <img
+                      src={fileUrl}
+                      alt={doc.tenLoaiGiayTo}
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
+                      onClick={() => window.open(fileUrl, '_blank')}
+                    />
+                  </div>
+                )}
+                {fileUrl && !isImage && (
+                  <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-[#E3ECF8] bg-slate-50 flex-shrink-0">
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#2F80ED] hover:underline">PDF</a>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-[#27406B]">
+                    {doc.tenLoaiGiayTo}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {doc.moTa || 'Giấy tờ bắt buộc'}
+                  </p>
+                  {existing && !readOnly && (
+                    <span className="inline-block mt-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      Đã tải lên
+                    </span>
+                  )}
+                </div>
+              </div>
+              {!readOnly && (
+                <div>
+                  <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#2F80ED] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1f66c9]">
+                    {uploadingId === doc.maLoaiGiayTo ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    {existing ? 'Tải lại' : 'Tải lên'}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleUpload(e.target.files[0], doc.maLoaiGiayTo);
+                          e.target.value = null;
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 function mapApiItemToDisplay(item) {
   if (!item) return null;
 
+  const id = item.maYeuCauNhan || item.id;
+  const status = item.trangThai || item.status;
+
   return {
-    id: item.id,
-    code: item.code || `AD-${String(item.id).padStart(6, '0')}`,
+    id,
+    code: id || 'Chưa có mã',
     title: 'Đơn nhận nuôi',
-    createdAt: item.createdAt,
-    status: item.status,
-    approverName:
-      item.approverName || item.reviewerName || item.approvedBy || 'Chưa có',
-    desiredChild: item.expectedChild || 'Chưa cập nhật',
+    createdAt: item.ngayTao || item.createdAt,
+    status,
+    approverName: 'Chưa có',
+    desiredChild: [
+      item.mongMuonTuoiToiDa
+        ? `Tuổi tối đa: ${item.mongMuonTuoiToiDa}`
+        : null,
+      item.mongMuonGioiTinh
+        ? `Giới tính: ${item.mongMuonGioiTinh}`
+        : 'Không yêu cầu giới tính',
+    ]
+      .filter(Boolean)
+      .join(' • '),
     formData: {
-      fullName: item.adopterName || item.applicantName || '',
+      fullName: item.tenNguoiNhan || item.fullName || '',
       phone: item.phone || '',
-      nationalId: item.nationalId || '',
+      nationalId: item.cccd || item.nationalId || '',
       address: item.address || '',
-      occupation: item.occupation || '',
-      income: item.monthlyIncome || item.income || '',
-      reason: item.motivation || item.reasonText || '',
-      birthDate: item.birthDate || '',
-      gender: item.gender || '',
-      documents: item.documents || {},
+      occupation: '',
+      income:
+        item.thuNhapHangThang !== undefined && item.thuNhapHangThang !== null
+          ? `${Number(item.thuNhapHangThang).toLocaleString('vi-VN')} VNĐ/tháng`
+          : '',
+      reason: item.lyDoNhanNuoi || '',
+      birthDate: '',
+      gender: '',
+      documents: item.giayTos || [],
+      tinhTrangHonNhan: item.tinhTrangHonNhan || '',
+      loaiNoiO: item.loaiNoiO || '',
+      sucKhoeDatYeuCau: item.sucKhoeDatYeuCau ? 'Đạt yêu cầu' : 'Không đạt',
+      quanHeVoiTre: item.quanHeVoiTre || '',
+      ghiChu: item.ghiChu || '',
+      lyDoTuChoiSoBo: item.lyDoTuChoiSoBo || '',
+      diemUuTien: item.diemUuTien ?? '',
     },
   };
 }
 
 export default function AdoptionStatus() {
   const { user } = useAuth();
-  const location = useLocation();
-  const { data, loading } = useFetch(adoptionApi.getAll, { adopterId: user?.id });
 
-  const apiItems = data?.items || [];
-  const tempRequestFromState = location.state?.request || null;
-  const tempRequestFromStorage = getStoredRequest();
+  const [apiItems, setApiItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const loadAdoptions = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const res = await adoptionApi.getAll({
+          adopterId: user.id,
+          page: 1,
+          limit: 20,
+        });
+
+        if (res.success) {
+          setApiItems(res.data?.items || []);
+        } else {
+          setApiItems([]);
+        }
+      } catch (error) {
+        console.error('Lỗi tải danh sách đơn nhận nuôi:', error);
+        setApiItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAdoptions();
+  }, [user?.id]);
   const mergedItems = useMemo(() => {
-    const mappedApiItems = apiItems.map(mapApiItemToDisplay);
-    const tempSource = tempRequestFromState || tempRequestFromStorage;
-    const mappedTemp = mapSnapshotToDisplay(tempSource);
-
-    if (!mappedTemp) return mappedApiItems;
-
-    const existed = mappedApiItems.some(
-      (item) =>
-        String(item.id) === String(mappedTemp.id) ||
-        String(item.code) === String(mappedTemp.code)
-    );
-
-    return existed ? mappedApiItems : [mappedTemp, ...mappedApiItems];
-  }, [apiItems, tempRequestFromState, tempRequestFromStorage]);
+    return apiItems.map(mapApiItemToDisplay);
+  }, [apiItems]);
 
   const [selectedId, setSelectedId] = useState(null);
 
@@ -123,7 +248,10 @@ export default function AdoptionStatus() {
   const canUpdate =
     selectedRequest?.status === STATUS.MISSING_INFO ||
     selectedRequest?.status === 'missing_info' ||
-    selectedRequest?.status === 'MISSING_INFO';
+    selectedRequest?.status === 'MISSING_INFO' ||
+    selectedRequest?.status === 'Yêu cầu bổ sung' ||
+    selectedRequest?.status === 'Cần bổ sung' ||
+    selectedRequest?.status === 'Thiếu thông tin';
   if (loading && mergedItems.length === 0) {
     return (
       <div className="px-4 py-6">
@@ -218,9 +346,8 @@ export default function AdoptionStatus() {
                       icon={<CalendarDays size={16} />}
                     />
                     <DetailField
-                      label="Người duyệt"
-                      value={selectedRequest.approverName}
-                      icon={<UserCheck size={16} />}
+                      label="Trạng thái"
+                      value={selectedRequest.status}
                     />
                   </div>
                 </div>
@@ -237,42 +364,36 @@ export default function AdoptionStatus() {
                     value={selectedRequest.formData?.fullName}
                     icon={<UserRound size={16} />}
                   />
-                  <DetailField
-                    label="Giới tính"
-                    value={selectedRequest.formData?.gender}
-                  />
-                  <DetailField
-                    label="Số điện thoại"
-                    value={selectedRequest.formData?.phone}
-                    icon={<Phone size={16} />}
-                  />
-                  <DetailField
-                    label="Ngày sinh"
-                    value={selectedRequest.formData?.birthDate}
-                    icon={<CalendarDays size={16} />}
-                  />
-                  <DetailField
-                    label="CCCD"
-                    value={selectedRequest.formData?.nationalId}
-                    icon={<IdCard size={16} />}
-                  />
-                  <DetailField
-                    label="Nghề nghiệp"
-                    value={selectedRequest.formData?.occupation}
-                    icon={<Briefcase size={16} />}
-                  />
+
                   <DetailField
                     label="Thu nhập hàng tháng"
                     value={selectedRequest.formData?.income}
                   />
 
-                  <div className="md:col-span-2">
-                    <DetailField
-                      label="Địa chỉ thường trú"
-                      value={selectedRequest.formData?.address}
-                      icon={<MapPin size={16} />}
-                    />
-                  </div>
+                  <DetailField
+                    label="Tình trạng hôn nhân"
+                    value={selectedRequest.formData?.tinhTrangHonNhan}
+                  />
+
+                  <DetailField
+                    label="Loại nơi ở"
+                    value={selectedRequest.formData?.loaiNoiO}
+                  />
+
+                  <DetailField
+                    label="Sức khỏe"
+                    value={selectedRequest.formData?.sucKhoeDatYeuCau}
+                  />
+
+                  <DetailField
+                    label="Quan hệ với trẻ"
+                    value={selectedRequest.formData?.quanHeVoiTre}
+                  />
+
+                  <DetailField
+                    label="Điểm ưu tiên"
+                    value={selectedRequest.formData?.diemUuTien}
+                  />
 
                   <div className="md:col-span-2">
                     <LargeField
@@ -281,60 +402,40 @@ export default function AdoptionStatus() {
                     />
                   </div>
 
+                  {selectedRequest.formData?.lyDoTuChoiSoBo && (
+                    <div className="md:col-span-2">
+                      <LargeField
+                        label="Lý do từ chối sơ bộ"
+                        value={selectedRequest.formData?.lyDoTuChoiSoBo}
+                      />
+                    </div>
+                  )}
+
                   <div className="md:col-span-2">
                     <LargeField
                       label="Mong muốn về trẻ"
                       value={selectedRequest.desiredChild}
                     />
                   </div>
+
+                  {selectedRequest.formData?.ghiChu && (
+                    <div className="md:col-span-2">
+                      <LargeField
+                        label="Ghi chú"
+                        value={selectedRequest.formData?.ghiChu}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {selectedRequest.formData?.documents && (
-                <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-white p-5">
-                  <h4 className="mb-5 text-[15px] font-bold !text-[#0D47A1]">
-                    Tài liệu đã tải lên
-                  </h4>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <DocumentCard
-                      title="Ảnh CCCD"
-                      value={
-                        selectedRequest.formData.documents.idCard?.join(', ') || '-'
-                      }
-                    />
-                    <DocumentCard
-                      title="Giấy khám sức khỏe"
-                      value={
-                        selectedRequest.formData.documents.health?.join(', ') || '-'
-                      }
-                    />
-                    <DocumentCard
-                      title="Tình trạng hôn nhân"
-                      value={
-                        selectedRequest.formData.documents.marriage?.join(', ') || '-'
-                      }
-                    />
-                    <DocumentCard
-                      title="Minh chứng thu nhập"
-                      value={
-                        selectedRequest.formData.documents.income?.join(', ') || '-'
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              {canUpdate && (
-                <div className="mt-8">
-                  <Link
-                    to={`/nhan-nuoi/cap-nhat/${selectedRequest.id}`}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#2F80ED] px-5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(47,128,237,0.22)] transition hover:brightness-105"
-                  >
-                    Cập nhật hồ sơ
-                  </Link>
-                </div>
-              )}
+              <DocumentUploader
+                requestId={selectedRequest.id}
+                readOnly={!canUpdate}
+                onUploadSuccess={() => {
+                  window.location.reload();
+                }}
+              />
             </div>
           )}
         </div>

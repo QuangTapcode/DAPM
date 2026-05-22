@@ -3,8 +3,8 @@ export const ROLES = {
   GUEST: 'guest',
   SENDER: 'sender',
   ADOPTER: 'adopter',
-  STAFF_RECEPTION: 'staff_reception',
-  STAFF_ADOPTION: 'staff_adoption',
+  STAFF_RECEPTION: 'staff-reception',
+  STAFF_ADOPTION: 'staff-adoption',
   MANAGER: 'manager',
 };
 

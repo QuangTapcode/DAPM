@@ -28,8 +28,11 @@ export default function LoginPage() {
       const user = await login(data);
       navigate(ROLE_REDIRECT[user.role] || '/');
     } catch (err) {
+      const errorMessage =
+        err?.message || err?.error || err?.data?.message || 'Sai tài khoản hoặc mật khẩu';
+
       setError('root', {
-        message: err?.message || 'Sai tài khoản hoặc mật khẩu',
+        message: errorMessage,
       });
     }
   };
@@ -49,7 +52,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label className="mb-3 block text-[16px] font-semibold text-[#6b7280]">
-              Email
+              Email hoặc Số điện thoại
             </label>
 
             <div className="flex h-[68px] items-center gap-3 rounded-[16px] bg-[#f1f5f9] px-4">
@@ -62,9 +65,9 @@ export default function LoginPage() {
               </svg>
 
               <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                {...register('email', { required: 'Vui lòng nhập email' })}
+                type="text"
+                placeholder="Nhập email hoặc số điện thoại"
+                {...register('email', { required: 'Vui lòng nhập email hoặc số điện thoại' })}
                 className="h-full w-full bg-transparent text-[18px] text-[#374151] outline-none placeholder:text-[#9ca3af]"
               />
             </div>

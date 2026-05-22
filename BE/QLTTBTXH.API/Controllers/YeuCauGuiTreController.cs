@@ -192,7 +192,7 @@ public class YeuCauGuiTreController : ControllerBase
                 HoTen = y.ThongTinTreTam.TenTre,
                 NgaySinh = y.ThongTinTreTam.NgaySinh,
                 GioiTinh = y.ThongTinTreTam.GioiTinh,
-                MaPhuongXa = y.NguoiGui?.MaXaPhuong,
+                MaPhuongXa = y.NguoiGui?.MaPhuongXa,
                 DiaChiCuThe = y.NguoiGui?.DiaChiCuThe,
                 DanToc = y.ThongTinTreTam.DanToc,
                 TrangThai = "Đang chăm sóc",

@@ -22,9 +22,12 @@ public class QuanLyTTBTContext : DbContext
     public DbSet<YeuCauNhanNuoi> YEUCAUNHANNUOI => Set<YeuCauNhanNuoi>();
     public DbSet<YeuCauGuiTre> YEUCAUGUITRE => Set<YeuCauGuiTre>();
     public DbSet<GiayToPhapLy> GIAYTOPHAPLY => Set<GiayToPhapLy>();
+    public DbSet<LoaiGiayToBatBuoc> LOAIGIAYTOBATBUOC => Set<LoaiGiayToBatBuoc>();
     public DbSet<ThongTinTreTam> THONGTINTRETAM => Set<ThongTinTreTam>();
     public DbSet<HoSoNhanNuoi> HOSONHANNUOI => Set<HoSoNhanNuoi>();
     public DbSet<HoSoTiepNhanTre> HOSOTIEPNHANTRE => Set<HoSoTiepNhanTre>();
+    public DbSet<LichHenGapMatNhanNuoi> LICHHENGAPMATNHANNUOI => Set<LichHenGapMatNhanNuoi>();
+    public DbSet<ChiTietGapMat> CHITIETGAPMAT => Set<ChiTietGapMat>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -36,6 +39,9 @@ public class QuanLyTTBTContext : DbContext
 
         b.Entity<NguoiDungVaiTro>()
             .HasKey(x => new { x.MaNguoiDung, x.MaVaiTro });
+
+        b.Entity<ChiTietGapMat>()
+            .HasKey(x => new { x.MaLichGap, x.MaTre });
 
         // Unique indexes
         b.Entity<NguoiDung>().HasIndex(x => x.CCCD).IsUnique();
