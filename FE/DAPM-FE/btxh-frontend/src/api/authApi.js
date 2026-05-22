@@ -12,6 +12,8 @@ const authApi = {
   refreshToken: () => axiosClient.post('/auth/refresh'),
 
   changePassword: (payload) => axiosClient.post('/auth/change-password', payload),
+
+  updateProfile: (id, payload) => axiosClient.put(`/users/${id}`, payload),
 };
 
 export default authApi;

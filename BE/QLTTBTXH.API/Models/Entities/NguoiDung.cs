@@ -38,9 +38,9 @@ public class NguoiDung
     [MaxLength(254)]
     public string? Email { get; set; }
 
-    [Column("MaXaPhuong", TypeName = "char(6)")]
+    [Column("MaPhuongXa", TypeName = "char(6)")]
     [MaxLength(6)]
-    public string? MaXaPhuong { get; set; }
+    public string? MaPhuongXa { get; set; }
 
     [Column("DiaChiCuThe")]
     [MaxLength(200)]
@@ -52,7 +52,7 @@ public class NguoiDung
     [Column("TrangThaiTK")]
     public bool TrangThaiTK { get; set; } = true;
 
-    [ForeignKey(nameof(MaXaPhuong))]
+    [ForeignKey(nameof(MaPhuongXa))]
     public PhuongXa? PhuongXa { get; set; }
 
     public ICollection<NguoiDungVaiTro> NguoiDungVaiTros { get; set; } = new List<NguoiDungVaiTro>();

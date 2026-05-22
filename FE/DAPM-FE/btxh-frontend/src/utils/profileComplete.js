@@ -20,7 +20,7 @@ const BASE_REQUIRED_FIELDS = [
     },
     {
         label: 'Số CCCD',
-        keys: ['cccd', 'CCCD', 'nationalId', 'identityNumber'],
+        keys: ['cCCD', 'cccd', 'CCCD', 'nationalId', 'identityNumber'],
     },
     {
         label: 'Giới tính',

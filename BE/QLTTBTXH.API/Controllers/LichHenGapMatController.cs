@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QLTTBTXH.API.Data;
 using QLTTBTXH.API.DTOs.Common;
-using QLTTBTXH.API.DTOs.LichHenGapMat;
+using QLTTBTXH.API.DTOs.LichHenGapMatNhanNuoi;
 using QLTTBTXH.API.Models.Entities;
 using QLTTBTXH.API.Services;
 using System.Security.Claims;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace QLTTBTXH.API.Controllers;
 
 [ApiController]
-[Route("api/adoption-meetings")]
+[Route("api/meetings")]
 [Authorize]
 public class LichHenGapMatController : ControllerBase
 {
@@ -20,172 +20,191 @@ public class LichHenGapMatController : ControllerBase
 
     public LichHenGapMatController(QuanLyTTBTContext db, ICodeGenerator code)
     {
-        _db = db; _code = code;
+        _db = db;
+        _code = code;
     }
 
-    private static LichHenGapMatDto Map(LichHenGapMat l) => new()
+    private async Task<LichHenGapMatNhanNuoiDto> MapAsync(LichHenGapMatNhanNuoi l)
     {
-        MaLichGap = l.MaLichGap,
-        MaYeuCauNhan = l.MaYeuCauNhan,
-        MaTre = l.MaTre,
-        TenTre = l.Tre?.HoTen,
-        MaCanBo = l.MaCanBo,
-        TenCanBo = l.CanBo?.HoTen,
-        TenNguoiNhan = l.YeuCauNhanNuoi?.NguoiNhan?.HoTen,
-        SDTNguoiNhan = l.YeuCauNhanNuoi?.NguoiNhan?.SDT,
-        ThoiGian = l.ThoiGian,
-        NgayGapMat = l.NgayGapMat,
-        DiaDiem = l.DiaDiem,
-        TrangThai = l.TrangThai,
-        KetQua = l.KetQua,
-        PhanHoiNguoiNhan = l.PhanHoiNguoiNhan,
-        ThoiGianDeXuatMoi = l.ThoiGianDeXuatMoi,
-        GhiChuCanBo = l.GhiChuCanBo,
-        NgayTao = l.NgayTao,
-        NgayCapNhat = l.NgayCapNhat,
-    };
+        var childDetails = await _db.CHITIETGAPMAT
+            .Include(c => c.Tre)
+            .Where(c => c.MaLichGap == l.MaLichGap)
+            .Select(c => new ChiTietGapMatDto
+            {
+                MaTre = c.MaTre,
+                TenTre = c.Tre != null ? c.Tre.HoTen : null,
+                KetQua = c.KetQua,
+                GhiChuCanBo = c.GhiChuCanBo
+            })
+            .ToListAsync();
+
+        return new LichHenGapMatNhanNuoiDto
+        {
+            MaLichGap = l.MaLichGap,
+            MaYeuCauNhan = l.MaYeuCauNhan,
+            TenNguoiNhan = l.YeuCauNhanNuoi?.NguoiNhan?.HoTen,
+            MaCanBo = l.MaCanBo,
+            TenCanBo = l.CanBo?.HoTen,
+            NgayGapMat = l.NgayGapMat,
+            ThoiGian = l.ThoiGian,
+            DiaDiem = l.DiaDiem,
+            TrangThai = l.TrangThai,
+            PhanHoiNguoiNhan = l.PhanHoiNguoiNhan,
+            ThoiGianDeXuatMoi = l.ThoiGianDeXuatMoi,
+            NgayTao = l.NgayTao,
+            NgayCapNhat = l.NgayCapNhat,
+            Children = childDetails
+        };
+    }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResult<LichHenGapMatDto>>>> GetAll([FromQuery] QueryParams q)
+    public async Task<ActionResult<ApiResponse<PagedResult<LichHenGapMatNhanNuoiDto>>>> GetAll([FromQuery] QueryParams q, [FromQuery] string? maYeuCauNhan = null)
     {
-        var query = _db.LICHHENGAPMAT
-            .Include(l => l.Tre)
+        var query = _db.LICHHENGAPMATNHANNUOI
+            .Include(l => l.YeuCauNhanNuoi).ThenInclude(y => y.NguoiNhan)
             .Include(l => l.CanBo)
-            .Include(l => l.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(q.Status))
+        if (!string.IsNullOrEmpty(maYeuCauNhan))
+            query = query.Where(l => l.MaYeuCauNhan == maYeuCauNhan);
+        if (!string.IsNullOrEmpty(q.Status))
             query = query.Where(l => l.TrangThai == q.Status);
 
         var total = await query.CountAsync();
-        var items = await query.OrderByDescending(l => l.ThoiGian)
-            .Skip((q.Page - 1) * q.Limit).Take(q.Limit)
-            .ToListAsync();
+        var entities = await query.OrderByDescending(l => l.NgayTao)
+            .Skip((q.Page - 1) * q.Limit).Take(q.Limit).ToListAsync();
 
-        return Ok(ApiResponse<PagedResult<LichHenGapMatDto>>.Ok(new PagedResult<LichHenGapMatDto>
+        var items = new List<LichHenGapMatNhanNuoiDto>();
+        foreach (var e in entities)
         {
-            Items = items.Select(Map).ToList(),
-            Total = total, Page = q.Page, Limit = q.Limit,
+            items.Add(await MapAsync(e));
+        }
+
+        return Ok(ApiResponse<PagedResult<LichHenGapMatNhanNuoiDto>>.Ok(new PagedResult<LichHenGapMatNhanNuoiDto>
+        {
+            Items = items,
+            Total = total,
+            Page = q.Page,
+            Limit = q.Limit,
             TotalPages = (int)Math.Ceiling(total / (double)q.Limit)
         }));
     }
 
-    [HttpGet("by-request/{maYeuCauNhan}")]
-    public async Task<ActionResult<ApiResponse<List<LichHenGapMatDto>>>> GetByRequest(string maYeuCauNhan)
-    {
-        var items = await _db.LICHHENGAPMAT
-            .Include(l => l.Tre)
-            .Include(l => l.CanBo)
-            .Include(l => l.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
-            .Where(l => l.MaYeuCauNhan == maYeuCauNhan)
-            .OrderByDescending(l => l.ThoiGian)
-            .ToListAsync();
-
-        return Ok(ApiResponse<List<LichHenGapMatDto>>.Ok(items.Select(Map).ToList()));
-    }
-
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<LichHenGapMatDto>>> GetById(string id)
+    public async Task<ActionResult<ApiResponse<LichHenGapMatNhanNuoiDto>>> GetById(string id)
     {
-        var l = await _db.LICHHENGAPMAT
-            .Include(x => x.Tre)
-            .Include(x => x.CanBo)
-            .Include(x => x.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
+        var l = await _db.LICHHENGAPMATNHANNUOI
+            .Include(l => l.YeuCauNhanNuoi).ThenInclude(y => y.NguoiNhan)
+            .Include(l => l.CanBo)
             .FirstOrDefaultAsync(x => x.MaLichGap == id);
 
-        if (l is null) return NotFound(ApiResponse<LichHenGapMatDto>.Fail("Không tìm thấy lịch hẹn"));
-        return Ok(ApiResponse<LichHenGapMatDto>.Ok(Map(l)));
+        if (l is null) return NotFound(ApiResponse<LichHenGapMatNhanNuoiDto>.Fail("Lịch hẹn không tồn tại"));
+        return Ok(ApiResponse<LichHenGapMatNhanNuoiDto>.Ok(await MapAsync(l)));
     }
 
     [HttpPost]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.NHAN_NUOI + "," + Roles.TRUONG_PHONG)]
-    public async Task<ActionResult<ApiResponse<LichHenGapMatDto>>> Create([FromBody] CreateLichHenDto dto)
+    public async Task<ActionResult<ApiResponse<LichHenGapMatNhanNuoiDto>>> Create([FromBody] CreateLichHenGapMatNhanNuoiDto dto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var currentUser = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var maCanBo = dto.MaCanBo ?? currentUser;
 
-        var l = new LichHenGapMat
+        var ycnn = await _db.YEUCAUNHANNUOI.AnyAsync(y => y.MaYeuCauNhan == dto.MaYeuCauNhan);
+        if (!ycnn) return BadRequest(ApiResponse<LichHenGapMatNhanNuoiDto>.Fail("Yêu cầu nhận nuôi không tồn tại"));
+
+        var nextId = await _code.NextLichHenGapMatNhanNuoiAsync();
+
+        var l = new LichHenGapMatNhanNuoi
         {
-            MaLichGap = await _code.NextLichHenGapMatAsync(),
+            MaLichGap = nextId,
             MaYeuCauNhan = dto.MaYeuCauNhan,
-            MaTre = dto.MaTre,
-            MaCanBo = dto.MaCanBo ?? userId,
+            MaCanBo = maCanBo,
+            NgayGapMat = dto.NgayGapMat,
             ThoiGian = dto.ThoiGian,
             DiaDiem = dto.DiaDiem,
             TrangThai = "Chờ xác nhận",
-            GhiChuCanBo = dto.GhiChuCanBo,
-            NgayTao = DateTime.Now,
+            NgayTao = DateTime.Now
         };
 
-        _db.LICHHENGAPMAT.Add(l);
+        _db.LICHHENGAPMATNHANNUOI.Add(l);
+
+        if (dto.MaTres != null && dto.MaTres.Any())
+        {
+            foreach (var maTre in dto.MaTres.Distinct())
+            {
+                var treExists = await _db.TRE.AnyAsync(t => t.MaTre == maTre);
+                if (!treExists) continue;
+
+                var ct = new ChiTietGapMat
+                {
+                    MaLichGap = nextId,
+                    MaTre = maTre,
+                    KetQua = null,
+                    GhiChuCanBo = null
+                };
+                _db.CHITIETGAPMAT.Add(ct);
+            }
+        }
+
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<LichHenGapMatDto>.Ok(Map(l), "Đã tạo lịch hẹn"));
+
+        var createdMeeting = await _db.LICHHENGAPMATNHANNUOI
+            .Include(m => m.YeuCauNhanNuoi).ThenInclude(y => y.NguoiNhan)
+            .Include(m => m.CanBo)
+            .FirstOrDefaultAsync(x => x.MaLichGap == nextId);
+
+        return Ok(ApiResponse<LichHenGapMatNhanNuoiDto>.Ok(await MapAsync(createdMeeting!), "Đã lên lịch hẹn gặp mặt"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.NHAN_NUOI + "," + Roles.TRUONG_PHONG)]
-    public async Task<ActionResult<ApiResponse<LichHenGapMatDto>>> Update(string id, [FromBody] UpdateLichHenDto dto)
+    public async Task<ActionResult<ApiResponse<LichHenGapMatNhanNuoiDto>>> Update(string id, [FromBody] UpdateLichHenGapMatNhanNuoiDto dto)
     {
-        var l = await _db.LICHHENGAPMAT.FirstOrDefaultAsync(x => x.MaLichGap == id);
-        if (l is null) return NotFound(ApiResponse<LichHenGapMatDto>.Fail("Không tìm thấy lịch hẹn"));
+        var l = await _db.LICHHENGAPMATNHANNUOI
+            .Include(x => x.YeuCauNhanNuoi).ThenInclude(y => y.NguoiNhan)
+            .Include(x => x.CanBo)
+            .FirstOrDefaultAsync(x => x.MaLichGap == id);
 
+        if (l is null) return NotFound(ApiResponse<LichHenGapMatNhanNuoiDto>.Fail("Lịch hẹn không tồn tại"));
+
+        if (dto.NgayGapMat.HasValue) l.NgayGapMat = dto.NgayGapMat;
         if (dto.ThoiGian.HasValue) l.ThoiGian = dto.ThoiGian.Value;
         if (dto.DiaDiem != null) l.DiaDiem = dto.DiaDiem;
         if (dto.TrangThai != null) l.TrangThai = dto.TrangThai;
-        if (dto.KetQua != null) l.KetQua = dto.KetQua;
         if (dto.PhanHoiNguoiNhan != null) l.PhanHoiNguoiNhan = dto.PhanHoiNguoiNhan;
         if (dto.ThoiGianDeXuatMoi.HasValue) l.ThoiGianDeXuatMoi = dto.ThoiGianDeXuatMoi;
-        if (dto.GhiChuCanBo != null) l.GhiChuCanBo = dto.GhiChuCanBo;
-        if (dto.NgayGapMat.HasValue) l.NgayGapMat = dto.NgayGapMat;
+
         l.NgayCapNhat = DateTime.Now;
 
-        await _db.SaveChangesAsync();
-        return Ok(ApiResponse<LichHenGapMatDto>.Ok(Map(l), "Đã cập nhật"));
-    }
+        // Cập nhật kết quả đánh giá cho từng trẻ (nếu có)
+        if (dto.Children != null && dto.Children.Any())
+        {
+            foreach (var item in dto.Children)
+            {
+                var ct = await _db.CHITIETGAPMAT.FirstOrDefaultAsync(x => x.MaLichGap == id && x.MaTre == item.MaTre);
+                if (ct != null)
+                {
+                    if (item.KetQua != null) ct.KetQua = item.KetQua;
+                    if (item.GhiChuCanBo != null) ct.GhiChuCanBo = item.GhiChuCanBo;
+                }
+            }
+        }
 
-    /// <summary>Xác nhận lịch hẹn → TrangThai = "Đã xác nhận"</summary>
-    [HttpPost("{id}/confirm")]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.NHAN_NUOI + "," + Roles.TRUONG_PHONG)]
-    public async Task<ActionResult<ApiResponse<bool>>> Confirm(string id)
-    {
-        var l = await _db.LICHHENGAPMAT.FirstOrDefaultAsync(x => x.MaLichGap == id);
-        if (l is null) return NotFound(ApiResponse<bool>.Fail("Không tìm thấy"));
-        l.TrangThai = "Đã xác nhận";
-        l.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<bool>.Ok(true, "Đã xác nhận lịch hẹn"));
-    }
-
-    /// <summary>Ghi nhận kết quả gặp mặt → TrangThai = "Đã gặp mặt", lưu KetQua + NgayGapMat</summary>
-    [HttpPost("{id}/result")]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.NHAN_NUOI + "," + Roles.TRUONG_PHONG)]
-    public async Task<ActionResult<ApiResponse<bool>>> RecordResult(string id, [FromBody] RecordResultDto dto)
-    {
-        var l = await _db.LICHHENGAPMAT.FirstOrDefaultAsync(x => x.MaLichGap == id);
-        if (l is null) return NotFound(ApiResponse<bool>.Fail("Không tìm thấy"));
-        l.TrangThai = "Đã gặp mặt";
-        l.KetQua = dto.KetQua;
-        l.NgayGapMat = dto.NgayGapMat ?? DateTime.Today;
-        if (dto.GhiChu != null) l.GhiChuCanBo = dto.GhiChu;
-        l.NgayCapNhat = DateTime.Now;
-        await _db.SaveChangesAsync();
-        return Ok(ApiResponse<bool>.Ok(true, "Đã ghi nhận kết quả"));
+        return Ok(ApiResponse<LichHenGapMatNhanNuoiDto>.Ok(await MapAsync(l), "Đã cập nhật lịch hẹn"));
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.TRUONG_PHONG)]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(string id)
     {
-        var l = await _db.LICHHENGAPMAT.FirstOrDefaultAsync(x => x.MaLichGap == id);
-        if (l is null) return NotFound(ApiResponse<bool>.Fail("Không tìm thấy"));
-        _db.LICHHENGAPMAT.Remove(l);
-        await _db.SaveChangesAsync();
-        return Ok(ApiResponse<bool>.Ok(true, "Đã xóa"));
-    }
-}
+        var l = await _db.LICHHENGAPMATNHANNUOI.FirstOrDefaultAsync(x => x.MaLichGap == id);
+        if (l is null) return NotFound(ApiResponse<bool>.Fail("Lịch hẹn không tồn tại"));
 
-public class RecordResultDto
-{
-    public string? KetQua { get; set; }
-    public DateTime? NgayGapMat { get; set; }
-    public string? GhiChu { get; set; }
+        // Xóa chi tiết liên quan trước
+        var details = await _db.CHITIETGAPMAT.Where(x => x.MaLichGap == id).ToListAsync();
+        _db.CHITIETGAPMAT.RemoveRange(details);
+
+        _db.LICHHENGAPMATNHANNUOI.Remove(l);
+        await _db.SaveChangesAsync();
+
+        return Ok(ApiResponse<bool>.Ok(true, "Đã xóa lịch hẹn thành công"));
+    }
 }

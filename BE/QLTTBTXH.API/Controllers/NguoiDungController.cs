@@ -32,7 +32,7 @@ public class NguoiDungController : ControllerBase
         CCCD = u.CCCD,
         GioiTinh = u.GioiTinh,
         NgaySinh = u.NgaySinh,
-        MaXaPhuong = u.MaXaPhuong,
+        MaXaPhuong = u.MaPhuongXa,
         DiaChiCuThe = u.DiaChiCuThe,
         NgayTao = u.NgayTao,
         TrangThaiTK = u.TrangThaiTK,
@@ -118,7 +118,7 @@ public class NguoiDungController : ControllerBase
             CCCD = string.IsNullOrWhiteSpace(dto.CCCD) ? null : dto.CCCD,
             GioiTinh = dto.GioiTinh,
             NgaySinh = dto.NgaySinh,
-            MaXaPhuong = string.IsNullOrWhiteSpace(dto.MaXaPhuong) ? null : dto.MaXaPhuong,
+            MaPhuongXa = string.IsNullOrWhiteSpace(dto.MaXaPhuong) ? null : dto.MaXaPhuong,
             DiaChiCuThe = dto.DiaChiCuThe,
             NgayTao = DateTime.Now,
             TrangThaiTK = true
@@ -145,7 +145,7 @@ public class NguoiDungController : ControllerBase
         if (dto.CCCD != null) u.CCCD = string.IsNullOrWhiteSpace(dto.CCCD) ? null : dto.CCCD;
         if (dto.GioiTinh != null) u.GioiTinh = dto.GioiTinh;
         if (dto.NgaySinh.HasValue) u.NgaySinh = dto.NgaySinh;
-        if (dto.MaXaPhuong != null) u.MaXaPhuong = string.IsNullOrWhiteSpace(dto.MaXaPhuong) ? null : dto.MaXaPhuong;
+        if (dto.MaXaPhuong != null) u.MaPhuongXa = string.IsNullOrWhiteSpace(dto.MaXaPhuong) ? null : dto.MaXaPhuong;
         if (dto.DiaChiCuThe != null) u.DiaChiCuThe = dto.DiaChiCuThe;
         if (dto.TrangThaiTK.HasValue) u.TrangThaiTK = dto.TrangThaiTK.Value;
 

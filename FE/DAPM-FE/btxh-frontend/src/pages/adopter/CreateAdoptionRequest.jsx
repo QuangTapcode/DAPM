@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import CustomSelect from '../../components/common/CustomSelect';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import authApi from '../../api/authApi';
 import adoptionApi from '../../api/adoptionApi';
+import lookupApi from '../../api/lookupApi';
 import FileUpload from '../../components/common/FileUpload';
-import user from '../../assets/user.png';
-import document from '../../assets/document.png';
+import userIcon from '../../assets/user.png';
+import documentIcon from '../../assets/document.png';
 import family from '../../assets/adoption_family.jpg';
 
 const labelClass =
@@ -13,12 +16,43 @@ const labelClass =
 const inputClass =
   'w-full rounded-xl border border-[#e6edf7] bg-[#f7fbff] px-4 py-3 text-sm text-[#334155] outline-none transition focus:border-[#93c5fd] focus:ring-2 focus:ring-[#bfdbfe]';
 
+const readOnlyInputClass =
+  'w-full cursor-not-allowed rounded-xl border border-[#e6edf7] bg-[#f7fbff] px-4 py-3 text-sm text-[#334155] outline-none';
+
 const textareaClass =
   'w-full rounded-xl border border-[#e6edf7] bg-[#f7fbff] px-4 py-3 text-sm text-[#334155] outline-none transition resize-none focus:border-[#93c5fd] focus:ring-2 focus:ring-[#bfdbfe]';
 
 const errorClass = 'mt-1 text-xs text-red-500';
 
-const REQUIRED_FILE_KEYS = ['idCard', 'health', 'marriage', 'income'];
+const marriageOptions = [
+  { value: 'Độc thân', label: 'Độc thân' },
+  { value: 'Đã kết hôn', label: 'Đã kết hôn' },
+  { value: 'Ly hôn', label: 'Ly hôn' },
+  { value: 'Góa', label: 'Góa' },
+];
+
+const housingOptions = [
+  { value: 'Nhà sở hữu', label: 'Nhà sở hữu' },
+  { value: 'Chung cư sở hữu', label: 'Chung cư sở hữu' },
+  { value: 'Nhà thuê dài hạn', label: 'Nhà thuê dài hạn' },
+  { value: 'Ở cùng gia đình', label: 'Ở cùng gia đình' },
+];
+
+const healthOptions = [
+  { value: 'true', label: 'Đạt yêu cầu' },
+  { value: 'false', label: 'Không đạt yêu cầu' },
+];
+
+const relationshipOptions = [
+  { value: 'Không', label: 'Không' },
+  { value: 'Người thân', label: 'Người thân' },
+];
+
+const childGenderOptions = [
+  { value: '', label: 'Không yêu cầu' },
+  { value: 'Nam', label: 'Nam' },
+  { value: 'Nữ', label: 'Nữ' },
+];
 
 function FieldError({ message }) {
   if (!message) return null;
@@ -40,204 +74,443 @@ function PageHeader() {
   );
 }
 
-function ApplicantSection({ register, errors }) {
+function formatDate(value) {
+  if (!value) return '';
+
+  if (typeof value === 'string') {
+    return value.split('T')[0];
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString().split('T')[0];
+}
+
+function formatDisplayDate(value) {
+  const dateValue = formatDate(value);
+
+  if (!dateValue) return '';
+
+  const [year, month, day] = dateValue.split('-');
+
+  return `${day}/${month}/${year}`;
+}
+
+function buildAddress(profile) {
+  return [profile?.diaChiCuThe, profile?.tenPhuongXa, profile?.tenTinhTP]
+    .filter(Boolean)
+    .join(', ');
+}
+
+function ReadOnlyField({ label, value, className = '' }) {
+  return (
+    <div className={className}>
+      <label className={labelClass}>{label}</label>
+      <input value={value || ''} readOnly className={readOnlyInputClass} />
+    </div>
+  );
+}
+
+function ApplicantSection({ profile }) {
   return (
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-start gap-2 mb-5">
         <img
-          src={user}
+          src={userIcon}
           alt="User icon"
-          className="w-4 h-4 object-contain"
+          className="w-4 h-4 object-contain mt-1"
         />
-        <h2 className="text-[15px] font-bold !text-[#0D47A1]">
-          Thông tin người nhận nuôi
-        </h2>
+
+        <div>
+          <h2 className="text-[15px] font-bold !text-[#0D47A1]">
+            Thông tin người nhận nuôi
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Thông tin này lấy từ hồ sơ tài khoản và không thể chỉnh sửa tại đơn nhận nuôi.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Họ và tên</label>
-          <input
-            {...register('adopterName', { required: 'Vui lòng nhập họ tên.' })}
-            className={inputClass}
-          />
-          <FieldError message={errors.adopterName?.message} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Số điện thoại</label>
-          <input
-            {...register('phone', { required: 'Vui lòng nhập số điện thoại.' })}
-            className={inputClass}
-          />
-          <FieldError message={errors.phone?.message} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Giới tính</label>
-          <select {...register('gender')} className={inputClass}>
-            <option value="Nam">Nam</option>
-            <option value="Nữ">Nữ</option>
-            <option value="Khác">Khác</option>
-          </select>
-        </div>
-
-        <div>
-          <label className={labelClass}>Số CCCD</label>
-          <input
-            {...register('nationalId', { required: 'Vui lòng nhập CCCD.' })}
-            className={inputClass}
-          />
-          <FieldError message={errors.nationalId?.message} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Ngày sinh</label>
-          <input
-            type="date"
-            {...register('birthDate', { required: 'Vui lòng chọn ngày sinh.' })}
-            className={inputClass}
-          />
-          <FieldError message={errors.birthDate?.message} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Địa chỉ thường trú</label>
-          <input
-            {...register('address', { required: 'Vui lòng nhập địa chỉ.' })}
-            className={inputClass}
-          />
-          <FieldError message={errors.address?.message} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Nghề nghiệp</label>
-          <input {...register('occupation')} className={inputClass} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Thu nhập hàng tháng</label>
-          <input
-            type="number" min="0" step="100000" placeholder="Ví dụ: 15000000"
-            {...register('monthlyIncome', {
-              required: 'Vui lòng nhập thu nhập hàng tháng',
-              min: { value: 0, message: 'Thu nhập không được nhỏ hơn 0', },
-              valueAsNumber: true,
-            })}
-            className={inputClass}
-          />
-          <p className="mt-1 text-xs text-gray-500">Nhập số tiền theo VNĐ/tháng, ví dụ 15000000 tương ứng 15 triệu đồng.</p>
-          {errors.monthlyIncome && (
-            <p className="mt-1 text-sm text-red-500">{errors.monthlyIncome.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <label className={labelClass}>Lý do nhận nuôi</label>
-        <textarea
-          {...register('motivation', {
-            required: 'Vui lòng nhập lý do nhận nuôi.',
-          })}
-          rows={4}
-          className={textareaClass}
-          placeholder="Hãy chia sẻ lý do bạn mong muốn nhận nuôi trẻ..."
+        <ReadOnlyField label="Họ và tên" value={profile?.fullName} />
+        <ReadOnlyField label="Số điện thoại" value={profile?.phone} />
+        <ReadOnlyField label="Giới tính" value={profile?.gioiTinh} />
+        <ReadOnlyField label="Số CCCD" value={profile?.cccd} />
+        <ReadOnlyField
+          label="Ngày sinh"
+          value={formatDisplayDate(profile?.ngaySinh)}
         />
-        <FieldError message={errors.motivation?.message} />
-      </div>
-
-      <div className="mt-4">
-        <label className={labelClass}>Mong muốn về trẻ</label>
-        <textarea
-          {...register('expectedChild')}
-          rows={4}
-          className={textareaClass}
-          placeholder="Nhập mong muốn về độ tuổi, giới tính, tình trạng sức khỏe của trẻ..."
+        <ReadOnlyField label="Email" value={profile?.email} />
+        <ReadOnlyField
+          label="Địa chỉ thường trú"
+          value={buildAddress(profile)}
+          className="md:col-span-2"
         />
       </div>
     </section>
   );
 }
 
-function DocumentsSection({ files, setFiles, showMissingDocsWarning }) {
+function AdoptionInfoSection({ register, errors, watch, setValue }) {
+  const tinhTrangHonNhan = watch('tinhTrangHonNhan');
+  const loaiNoiO = watch('loaiNoiO');
+  const sucKhoeDatYeuCau = watch('sucKhoeDatYeuCau');
+  const quanHeVoiTre = watch('quanHeVoiTre');
+
+  return (
+    <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#1976D2] text-xs">
+          ✓
+        </span>
+        <h2 className="text-[15px] font-bold !text-[#0D47A1]">
+          Thông tin điều kiện nhận nuôi
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Thu nhập hàng tháng</label>
+          <input
+            type="number"
+            min="0"
+            step="100000"
+            placeholder="Ví dụ: 15000000"
+            {...register('thuNhapHangThang', {
+              required: 'Vui lòng nhập thu nhập hàng tháng.',
+              min: {
+                value: 0,
+                message: 'Thu nhập không được nhỏ hơn 0.',
+              },
+              valueAsNumber: true,
+            })}
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Nhập số tiền theo VNĐ/tháng.
+          </p>
+          <FieldError message={errors.thuNhapHangThang?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Số con đang nuôi</label>
+          <input
+            type="number"
+            min="0"
+            {...register('soConDangNuoi', {
+              required: 'Vui lòng nhập số con đang nuôi.',
+              min: {
+                value: 0,
+                message: 'Số con không được nhỏ hơn 0.',
+              },
+              valueAsNumber: true,
+            })}
+            className={inputClass}
+          />
+          <FieldError message={errors.soConDangNuoi?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Tình trạng hôn nhân</label>
+          <input
+            type="hidden"
+            {...register('tinhTrangHonNhan', {
+              required: 'Vui lòng chọn tình trạng hôn nhân.',
+            })}
+          />
+
+          <CustomSelect
+            value={tinhTrangHonNhan}
+            options={marriageOptions}
+            placeholder="Chọn tình trạng hôn nhân"
+            error={!!errors.tinhTrangHonNhan}
+            onChange={(value) => {
+              setValue('tinhTrangHonNhan', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+          />
+
+          <FieldError message={errors.tinhTrangHonNhan?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Loại nơi ở</label>
+          <input
+            type="hidden"
+            {...register('loaiNoiO', {
+              required: 'Vui lòng chọn loại nơi ở.',
+            })}
+          />
+
+          <CustomSelect
+            value={loaiNoiO}
+            options={housingOptions}
+            placeholder="Chọn loại nơi ở"
+            error={!!errors.loaiNoiO}
+            onChange={(value) => {
+              setValue('loaiNoiO', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+          />
+
+          <FieldError message={errors.loaiNoiO?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Sức khỏe đạt yêu cầu</label>
+          <input
+            type="hidden"
+            {...register('sucKhoeDatYeuCau', {
+              required: 'Vui lòng chọn tình trạng sức khỏe.',
+            })}
+          />
+
+          <CustomSelect
+            value={String(sucKhoeDatYeuCau)}
+            options={healthOptions}
+            placeholder="Chọn tình trạng sức khỏe"
+            error={!!errors.sucKhoeDatYeuCau}
+            onChange={(value) => {
+              setValue('sucKhoeDatYeuCau', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+          />
+
+          <FieldError message={errors.sucKhoeDatYeuCau?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Quan hệ với trẻ</label>
+          <input
+            type="hidden"
+            {...register('quanHeVoiTre', {
+              required: 'Vui lòng chọn quan hệ với trẻ.',
+            })}
+          />
+
+          <CustomSelect
+            value={quanHeVoiTre}
+            options={relationshipOptions}
+            placeholder="Chọn quan hệ"
+            error={!!errors.quanHeVoiTre}
+            onChange={(value) => {
+              setValue('quanHeVoiTre', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+          />
+
+          <FieldError message={errors.quanHeVoiTre?.message} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ExpectationSection({ register, errors, watch, setValue }) {
+  const mongMuonGioiTinh = watch('mongMuonGioiTinh');
+
+  return (
+    <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#1976D2] text-xs">
+          ♥
+        </span>
+        <h2 className="text-[15px] font-bold !text-[#0D47A1]">
+          Mong muốn nhận nuôi
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Mong muốn tuổi tối đa</label>
+          <input
+            type="number"
+            min="0"
+            placeholder="Ví dụ: 6"
+            {...register('mongMuonTuoiToiDa', {
+              min: {
+                value: 0,
+                message: 'Tuổi tối đa không được nhỏ hơn 0.',
+              },
+              valueAsNumber: true,
+            })}
+            className={inputClass}
+          />
+          <FieldError message={errors.mongMuonTuoiToiDa?.message} />
+        </div>
+
+        <div>
+          <label className={labelClass}>Mong muốn giới tính</label>
+          <input type="hidden" {...register('mongMuonGioiTinh')} />
+
+          <CustomSelect
+            value={mongMuonGioiTinh}
+            options={childGenderOptions}
+            placeholder="Không yêu cầu"
+            onChange={(value) => {
+              setValue('mongMuonGioiTinh', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelClass}>Lý do nhận nuôi</label>
+          <textarea
+            {...register('lyDoNhanNuoi', {
+              required: 'Vui lòng nhập lý do nhận nuôi.',
+            })}
+            rows={4}
+            className={textareaClass}
+            placeholder="Hãy chia sẻ lý do bạn mong muốn nhận nuôi trẻ..."
+          />
+          <FieldError message={errors.lyDoNhanNuoi?.message} />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelClass}>Ghi chú</label>
+          <textarea
+            {...register('ghiChu')}
+            rows={3}
+            className={textareaClass}
+            placeholder="Nhập ghi chú nếu có..."
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function isRelationshipProofDocument(doc) {
+  const code = String(doc.maLoaiGiayTo || '').trim().toUpperCase();
+  const name = String(doc.tenLoaiGiayTo || '').toLowerCase();
+
+  return (
+    code === 'GT0005' ||
+    name.includes('quan hệ') ||
+    name.includes('người thân')
+  );
+}
+
+function isDocumentRequired(doc, formValues) {
+  if (doc.batBuoc) return true;
+
+  if (
+    formValues.quanHeVoiTre === 'Người thân' &&
+    isRelationshipProofDocument(doc)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function DocumentsSection({
+  documentTypes,
+  files,
+  setFiles,
+  formValues,
+  missingDocuments,
+  submitAttempted,
+}) {
   const titleClass =
     'text-[11px] font-semibold uppercase tracking-wide text-[#7f8c9b] mb-3';
 
   return (
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-start gap-2 mb-5">
         <img
-          src={document}
+          src={documentIcon}
           alt="Document icon"
-          className="w-4 h-4 object-contain"
+          className="w-4 h-4 object-contain mt-1"
         />
-        <h2 className="text-[15px] font-bold !text-[#0D47A1]">
-          Tài liệu giấy tờ cần thiết
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <p className={titleClass}>
-            Ảnh CCCD <span className="text-red-500">*</span>
-          </p>
-          <FileUpload
-            label="Tải ảnh trước & sau"
-            accept=".pdf,.jpg,.jpeg,.png"
-            files={files.idCard}
-            onChange={(newFiles) =>
-              setFiles((prev) => ({ ...prev, idCard: newFiles }))
-            }
-          />
-        </div>
 
         <div>
-          <p className={titleClass}>
-            Giấy khám sức khỏe <span className="text-red-500">*</span>
+          <h2 className="text-[15px] font-bold !text-[#0D47A1]">
+            Tài liệu giấy tờ cần thiết
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Danh sách giấy tờ được lấy từ hệ thống. Giấy tờ có dấu * là bắt buộc.
           </p>
-          <FileUpload
-            label="Hồ sơ sức khỏe"
-            accept=".pdf,.jpg,.jpeg,.png"
-            files={files.health}
-            onChange={(newFiles) =>
-              setFiles((prev) => ({ ...prev, health: newFiles }))
-            }
-          />
-        </div>
-
-        <div>
-          <p className={titleClass}>
-            Tình trạng hôn nhân <span className="text-red-500">*</span>
-          </p>
-          <FileUpload
-            label="Giấy xác nhận"
-            accept=".pdf,.jpg,.jpeg,.png"
-            files={files.marriage}
-            onChange={(newFiles) =>
-              setFiles((prev) => ({ ...prev, marriage: newFiles }))
-            }
-          />
-        </div>
-
-        <div className="md:col-span-1">
-          <p className={titleClass}>
-            Minh chứng thu nhập <span className="text-red-500">*</span>
-          </p>
-          <FileUpload
-            label="Chọn file PDF/JPG"
-            accept=".pdf,.jpg,.jpeg,.png"
-            files={files.income}
-            onChange={(newFiles) =>
-              setFiles((prev) => ({ ...prev, income: newFiles }))
-            }
-          />
         </div>
       </div>
 
-      {showMissingDocsWarning && (
-        <p className="mt-4 text-sm text-red-500 leading-6">
-          Vui lòng tải đầy đủ các giấy tờ bắt buộc trước khi gửi hồ sơ.
+      {documentTypes.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          Chưa có danh mục giấy tờ nhận nuôi.
         </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {documentTypes.map((doc) => {
+            const required = isDocumentRequired(doc, formValues);
+            const fileList = files[doc.maLoaiGiayTo] || [];
+            const missing = missingDocuments.some(
+              (item) => item.maLoaiGiayTo === doc.maLoaiGiayTo
+            );
+
+            return (
+              <div
+                key={doc.maLoaiGiayTo}
+                className={[
+                  'rounded-2xl border p-4 transition',
+                  submitAttempted && missing
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-[#edf2f7] bg-[#f7fbff]',
+                ].join(' ')}
+              >
+                <p className={titleClass}>
+                  {doc.tenLoaiGiayTo}
+                  {required && <span className="ml-1 text-red-500">*</span>}
+                </p>
+
+                {doc.moTa && (
+                  <p className="mb-3 text-xs leading-5 text-slate-500">
+                    {doc.moTa}
+                  </p>
+                )}
+
+                <FileUpload
+                  label="Chọn file PDF/JPG"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  files={fileList}
+                  onChange={(newFiles) =>
+                    setFiles((prev) => ({
+                      ...prev,
+                      [doc.maLoaiGiayTo]: newFiles,
+                    }))
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {submitAttempted && missingDocuments.length > 0 && (
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-600">
+            Vui lòng tải đầy đủ các giấy tờ bắt buộc:
+          </p>
+          <ul className="mt-2 list-disc pl-5 text-sm text-red-600">
+            {missingDocuments.map((doc) => (
+              <li key={doc.maLoaiGiayTo}>{doc.tenLoaiGiayTo}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );
@@ -246,7 +519,7 @@ function DocumentsSection({ files, setFiles, showMissingDocsWarning }) {
 function NotesCard() {
   const notes = [
     'Mọi thông tin cung cấp phải chính xác 100% theo quy định pháp luật.',
-    'Hồ sơ của bạn được bảo mật tuyệt đối tại hệ thống Sanctuary.',
+    'Người đứng tên nhận nuôi phải là chủ tài khoản đang đăng nhập.',
     'Thời gian xem xét dự kiến từ 7–14 ngày làm việc.',
   ];
 
@@ -311,137 +584,218 @@ function ImageCard() {
   );
 }
 
-function buildRequestSnapshot(data, files, response) {
+function buildRequestSnapshot(data, profile, files, response) {
   return {
-    requestId: response?.data?.id || response?.data?.requestId || '',
-    childId: data.childId || '',
-    adopterName: data.adopterName || '',
-    phone: data.phone || '',
-    gender: data.gender || 'Nam',
-    nationalId: data.nationalId || '',
-    birthDate: data.birthDate || '',
-    address: data.address || '',
-    occupation: data.occupation || '',
-    monthlyIncome: data.monthlyIncome || '',
-    motivation: data.motivation || '',
-    expectedChild: data.expectedChild || '',
-    status: 'created',
-    statusLabel: 'Tạo đơn',
+    requestId:
+      response?.data?.maYeuCauNhan ||
+      response?.data?.id ||
+      response?.data?.requestId ||
+      '',
+    maYeuCauNhan: response?.data?.maYeuCauNhan || response?.data?.id || '',
+    fullName: profile?.fullName || '',
+    phone: profile?.phone || '',
+    cccd: profile?.cccd || '',
+    status: response?.data?.trangThai || response?.data?.status || '',
+    statusLabel: response?.data?.trangThai || response?.data?.status || '',
     createdAt: new Date().toISOString(),
-    documents: {
-      idCard: files.idCard.map((file) => file.name),
-      health: files.health.map((file) => file.name),
-      marriage: files.marriage.map((file) => file.name),
-      income: files.income.map((file) => file.name),
-    },
+    payload: data,
+    documents: Object.entries(files).reduce((result, [maLoaiGiayTo, fileList]) => {
+      result[maLoaiGiayTo] = (fileList || []).map((file) => file.name);
+      return result;
+    }, {}),
   };
 }
 
 export default function CreateAdoptionRequest() {
   const [searchParams] = useSearchParams();
-  const [files, setFiles] = useState({
-    idCard: [],
-    health: [],
-    marriage: [],
-    income: [],
-  });
+  const [profile, setProfile] = useState(null);
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [files, setFiles] = useState({});
+  const [loading, setLoading] = useState(true);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const navigate = useNavigate();
 
-  const missingRequiredDocs = REQUIRED_FILE_KEYS.filter(
-    (key) => !files[key] || files[key].length === 0
-  );
-
-  const canSubmit = missingRequiredDocs.length === 0;
-  const showMissingDocsWarning = submitAttempted && !canSubmit;
-
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
       childId: searchParams.get('childId') || '',
-      adopterName: user?.fullName || '',
-      phone: user?.phone || '',
-      gender: user?.gender || 'Nam',
-      nationalId: user?.nationalId || '',
-      birthDate: user?.dateOfBirth || user?.birthDate || '',
-      address: [
-        user?.addressDetail,
-        user?.wardName,
-        user?.provinceName,
-      ]
-        .filter(Boolean)
-        .join(', '),
-      occupation: user?.occupation || '',
-      monthlyIncome: user?.monthlyIncome || '',
-      motivation: '',
-      expectedChild: '',
+      thuNhapHangThang: '',
+      soConDangNuoi: 0,
+      tinhTrangHonNhan: '',
+      loaiNoiO: '',
+      sucKhoeDatYeuCau: 'true',
+      quanHeVoiTre: '',
+      lyDoNhanNuoi: '',
+      mongMuonTuoiToiDa: '',
+      mongMuonGioiTinh: '',
+      ghiChu: '',
     },
   });
 
+  const formValues = watch();
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [profileRes, documentTypeRes] = await Promise.all([
+          authApi.getProfile(),
+          lookupApi.getGiayToBatBuocNhanNuoi(),
+        ]);
+
+        if (profileRes.success) {
+          setProfile(profileRes.data);
+        }
+
+        if (documentTypeRes.success) {
+          setDocumentTypes(documentTypeRes.data);
+        }
+      } catch (error) {
+        console.error('Lỗi tải dữ liệu tạo đơn nhận nuôi:', error);
+        alert(error?.message || 'Không thể tải dữ liệu tạo đơn');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const missingDocuments = useMemo(() => {
+    return documentTypes.filter((doc) => {
+      const required = isDocumentRequired(doc, formValues);
+      const uploadedFiles = files[doc.maLoaiGiayTo] || [];
+
+      return required && uploadedFiles.length === 0;
+    });
+  }, [documentTypes, formValues, files]);
+
+  const buildSubmitFormData = (data) => {
+    const formData = new FormData();
+
+    formData.append('thuNhapHangThang', Number(data.thuNhapHangThang));
+    formData.append('soConDangNuoi', Number(data.soConDangNuoi));
+    formData.append('tinhTrangHonNhan', data.tinhTrangHonNhan);
+    formData.append('loaiNoiO', data.loaiNoiO);
+    formData.append(
+      'sucKhoeDatYeuCau',
+      data.sucKhoeDatYeuCau === true || data.sucKhoeDatYeuCau === 'true'
+    );
+    formData.append('quanHeVoiTre', data.quanHeVoiTre);
+    formData.append('lyDoNhanNuoi', data.lyDoNhanNuoi || '');
+    formData.append('ghiChu', data.ghiChu || '');
+
+    if (data.mongMuonTuoiToiDa !== '' && data.mongMuonTuoiToiDa !== null && data.mongMuonTuoiToiDa !== undefined) {
+      formData.append('mongMuonTuoiToiDa', Number(data.mongMuonTuoiToiDa));
+    }
+
+    if (data.mongMuonGioiTinh) {
+      formData.append('mongMuonGioiTinh', data.mongMuonGioiTinh);
+    }
+
+    Object.entries(files).forEach(([maLoaiGiayTo, fileList]) => {
+      (fileList || []).forEach((file) => {
+        formData.append('maLoaiGiayTos', maLoaiGiayTo);
+        formData.append('files', file);
+      });
+    });
+
+    return formData;
+  };
+
   const onSubmit = async (data) => {
-    if (!canSubmit) {
-      setSubmitAttempted(true);
+    setSubmitAttempted(true);
+
+    if (missingDocuments.length > 0) {
       return;
     }
 
     try {
-      setSubmitAttempted(false);
+      const formData = buildSubmitFormData(data);
+      const response = await adoptionApi.submitWithDocuments(formData);
 
-      const formData = new FormData();
+      if (!response.success) {
+        alert(response.message || 'Gửi đơn nhận nuôi thất bại');
+        return;
+      }
 
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value ?? '');
-      });
-
-      [
-        ...files.idCard,
-        ...files.health,
-        ...files.marriage,
-        ...files.income,
-      ].forEach((file) => formData.append('documents', file));
-
-      const response = await adoptionApi.create(formData);
-
-      const requestSnapshot = buildRequestSnapshot(data, files, response);
+      const requestSnapshot = buildRequestSnapshot(data, profile, files, response);
 
       sessionStorage.setItem(
         'adoption-request-status',
         JSON.stringify(requestSnapshot)
       );
 
+      if (response.data?.trangThai === 'Từ chối sơ bộ') {
+        alert(response.data?.lyDoTuChoiSoBo || 'Hồ sơ bị từ chối sơ bộ');
+      } else {
+        alert('Đã gửi yêu cầu nhận nuôi thành công');
+      }
+
       navigate('/nhan-nuoi/trang-thai', {
         state: { request: requestSnapshot },
       });
     } catch (error) {
-      console.error('Lỗi tạo đơn nhận nuôi:', error);
+      console.error('Lỗi gửi đơn nhận nuôi:', error);
+      alert(error?.message || 'Gửi đơn nhận nuôi thất bại');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="w-full bg-[#f6f8fc] min-h-screen flex items-center justify-center">
+        <p className="text-sm text-slate-500">Đang tải dữ liệu tạo đơn...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-[#f6f8fc] min-h-screen">
       <div className="max-w-[1500px] mx-auto px-3 lg:px-4 py-8">
         <PageHeader />
+
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             <div className="lg:col-span-8 space-y-5">
-              <ApplicantSection register={register} errors={errors} />
+              <ApplicantSection profile={profile} />
+
+              <AdoptionInfoSection
+                register={register}
+                errors={errors}
+                watch={watch}
+                setValue={setValue}
+              />
+
+              <ExpectationSection
+                register={register}
+                errors={errors}
+                watch={watch}
+                setValue={setValue}
+              />
+
               <DocumentsSection
+                documentTypes={documentTypes}
                 files={files}
                 setFiles={setFiles}
-                showMissingDocsWarning={showMissingDocsWarning}
+                formValues={formValues}
+                missingDocuments={missingDocuments}
+                submitAttempted={submitAttempted}
               />
             </div>
 
             <div className="lg:col-span-4 space-y-5">
               <NotesCard />
+
               <SubmitCard
                 isSubmitting={isSubmitting}
                 onCancel={() => navigate(-1)}
               />
+
               <ImageCard />
             </div>
           </div>

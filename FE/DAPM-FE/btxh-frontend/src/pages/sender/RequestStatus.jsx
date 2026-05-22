@@ -42,7 +42,8 @@ function getStoredRequest() {
 }
 
 function getSenderTypeLabel(code) {
-  return SENDER_TYPE_LABELS[code] || code || 'Chưa cập nhật';
+  if (!code) return 'Chưa cập nhật';
+  return SENDER_TYPE_LABELS[code] || code;
 }
 
 function getReasonLabel(reason) {
@@ -114,15 +115,7 @@ function mapGiayToArrayToGroups(giayTo = []) {
 function mapSnapshotToDisplay(snapshot) {
   if (!snapshot) return null;
 
-  const documents =
-    snapshot.documents && !Array.isArray(snapshot.documents)
-      ? {
-        birthCert: mapDocumentArrayToText(snapshot.documents.birthCert),
-        senderID: mapDocumentArrayToText(snapshot.documents.senderID),
-        healthCert: mapDocumentArrayToText(snapshot.documents.healthCert),
-        otherDocs: mapDocumentArrayToText(snapshot.documents.otherDocs),
-      }
-      : mapGiayToArrayToGroups(snapshot.giayTo);
+  const tre = snapshot.thongTinTre || {};
 
   return {
     id: snapshot.requestId || 'temp-request',
@@ -131,36 +124,34 @@ function mapSnapshotToDisplay(snapshot) {
       : 'GT-2024-001',
     title: 'Yêu cầu gửi trẻ',
     createdAt: snapshot.createdAt || new Date().toISOString(),
-    status: snapshot.status || STATUS.CREATED,
+    status: snapshot.status || 'Chờ xử lý',
     approverName: 'Chưa có',
     formData: {
-      senderName: snapshot.senderName || snapshot.nguoiGui?.hoTen || '',
-      senderTypeCode:
-        snapshot.senderTypeCode || snapshot.nguoiGui?.maLoaiNguoiGui || '',
-      senderNationalId:
-        snapshot.senderNationalId || snapshot.nguoiGui?.soCCCD || '',
-      senderPhone: snapshot.phone || snapshot.nguoiGui?.soDienThoai || '',
+      senderName: snapshot.senderName || '',
+      senderTypeCode: snapshot.senderTypeCode || '',
+      senderNationalId: snapshot.senderNationalId || '',
+      senderPhone: snapshot.senderPhone || '',
       senderAddress: joinAddress(
-        snapshot.senderAddressDetail || snapshot.nguoiGui?.diaChiCuThe,
+        snapshot.senderAddressDetail,
         snapshot.senderWardName,
         snapshot.senderProvinceName
       ),
 
-      childName: snapshot.childName || snapshot.tre?.hoTen || '',
-      childDob: snapshot.childDob || snapshot.tre?.ngaySinh || '',
-      childGender: snapshot.childGender || snapshot.tre?.gioiTinh || '',
-      ethnicity: snapshot.ethnicity || snapshot.tre?.danToc || '',
+      childName: tre.tenTre || '',
+      childDob: tre.ngaySinh || '',
+      childGender: tre.gioiTinh || '',
+      ethnicity: tre.danToc || '',
       childAddress: joinAddress(
-        snapshot.childAddressDetail || snapshot.tre?.diaChiCuThe,
+        snapshot.childAddressDetail,
         snapshot.childWardName,
         snapshot.childProvinceName
       ),
-      healthStatus: snapshot.healthStatus || snapshot.tre?.tinhTrangSucKhoe || '',
+      healthStatus: snapshot.healthStatus || '',
 
-      reason: snapshot.reason || snapshot.lyDo?.maLyDo || '',
-      reasonDetail: snapshot.reasonDetail || snapshot.lyDo?.moTaChiTiet || '',
+      reason: snapshot.reason || '',
+      reasonDetail: snapshot.reasonDetail || '',
 
-      documents,
+      documents: mapGiayToArrayToGroups(snapshot.giayTo || []),
     },
   };
 }
@@ -168,54 +159,34 @@ function mapSnapshotToDisplay(snapshot) {
 function mapApiItemToDisplay(item) {
   if (!item) return null;
 
-  const nestedDocuments =
-    item.documents && !Array.isArray(item.documents)
-      ? {
-        birthCert: mapDocumentArrayToText(item.documents.birthCert),
-        senderID: mapDocumentArrayToText(item.documents.senderID),
-        healthCert: mapDocumentArrayToText(item.documents.healthCert),
-        otherDocs: mapDocumentArrayToText(item.documents.otherDocs),
-      }
-      : mapGiayToArrayToGroups(item.giayTo);
+  const tre = item.thongTinTre || {};
+  const id = item.id || item.maYeuCauGuiTre;
 
   return {
-    id: item.id,
-    code: item.code || `GT-${String(item.id).padStart(6, '0')}`,
+    id,
+    code: `GT-${String(id).padStart(6, '0')}`,
     title: 'Yêu cầu gửi trẻ',
-    createdAt: item.createdAt,
-    status: item.status,
-    approverName:
-      item.approverName || item.reviewerName || item.approvedBy || 'Chưa có',
+    createdAt: item.createdAt || item.ngayTao,
+    status: item.status || item.trangThaiYC,
+    approverName: 'Chưa có',
     formData: {
-      senderName:
-        item.senderName || item.nguoiGui?.hoTen || item.applicantName || '',
-      senderTypeCode:
-        item.senderTypeCode || item.nguoiGui?.maLoaiNguoiGui || '',
-      senderNationalId:
-        item.senderNationalId || item.nguoiGui?.soCCCD || '',
-      senderPhone:
-        item.senderPhone || item.phone || item.nguoiGui?.soDienThoai || '',
-      senderAddress: joinAddress(
-        item.senderAddressDetail || item.nguoiGui?.diaChiCuThe || item.address,
-        item.senderWardName,
-        item.senderProvinceName
-      ),
+      senderName: item.tenNguoiGui || '',
+      senderTypeCode: item.tenLoaiNguoiGui || item.maLoaiNguoiGui || '',
+      senderNationalId: '',
+      senderPhone: '',
+      senderAddress: 'Chưa cập nhật',
 
-      childName: item.childName || item.tre?.hoTen || '',
-      childDob: item.childDob || item.tre?.ngaySinh || '',
-      childGender: item.childGender || item.tre?.gioiTinh || '',
-      ethnicity: item.ethnicity || item.tre?.danToc || '',
-      childAddress: joinAddress(
-        item.childAddressDetail || item.tre?.diaChiCuThe,
-        item.childWardName,
-        item.childProvinceName
-      ),
-      healthStatus: item.healthStatus || item.tre?.tinhTrangSucKhoe || '',
+      childName: tre.tenTre || '',
+      childDob: tre.ngaySinh || '',
+      childGender: tre.gioiTinh || '',
+      ethnicity: tre.danToc || '',
+      childAddress: 'Chưa cập nhật',
+      healthStatus: item.ghiChu || '',
 
-      reason: item.reason || item.lyDo?.maLyDo || '',
-      reasonDetail: item.reasonDetail || item.lyDo?.moTaChiTiet || '',
+      reason: item.lyDoGui || '',
+      reasonDetail: '',
 
-      documents: nestedDocuments,
+      documents: { birthCert: '-', senderID: '-', healthCert: '-', otherDocs: '-' },
     },
   };
 }
@@ -228,7 +199,7 @@ export default function RequestStatus() {
     senderId: user?.id,
   });
 
-  const apiItems = data?.items || [];
+  const apiItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
   const tempRequestFromState = location.state?.request || null;
   const tempRequestFromStorage = getStoredRequest();
 
@@ -239,13 +210,34 @@ export default function RequestStatus() {
 
     if (!mappedTemp) return mappedApiItems;
 
-    const existed = mappedApiItems.some(
+    const existedIndex = mappedApiItems.findIndex(
       (item) =>
         String(item.id) === String(mappedTemp.id) ||
         String(item.code) === String(mappedTemp.code)
     );
 
-    return existed ? mappedApiItems : [mappedTemp, ...mappedApiItems];
+    if (existedIndex !== -1) {
+      // Merge: giữ status/approver từ API, lấy form data từ snapshot
+      const merged = [...mappedApiItems];
+      merged[existedIndex] = {
+        ...merged[existedIndex],
+        formData: {
+          ...merged[existedIndex].formData,
+          // Ưu tiên snapshot cho các trường BE không lưu
+          senderNationalId: mappedTemp.formData.senderNationalId || merged[existedIndex].formData.senderNationalId,
+          senderPhone: mappedTemp.formData.senderPhone || merged[existedIndex].formData.senderPhone,
+          senderAddress: mappedTemp.formData.senderAddress || merged[existedIndex].formData.senderAddress,
+          childAddress: mappedTemp.formData.childAddress || merged[existedIndex].formData.childAddress,
+          reasonDetail: mappedTemp.formData.reasonDetail || merged[existedIndex].formData.reasonDetail,
+          reason: mappedTemp.formData.reason || merged[existedIndex].formData.reason,
+          healthStatus: mappedTemp.formData.healthStatus || merged[existedIndex].formData.healthStatus,
+          documents: mappedTemp.formData.documents,
+        },
+      };
+      return merged;
+    }
+
+    return [mappedTemp, ...mappedApiItems];
   }, [apiItems, tempRequestFromState, tempRequestFromStorage]);
 
   const [selectedId, setSelectedId] = useState(null);

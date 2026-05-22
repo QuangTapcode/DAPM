@@ -16,8 +16,19 @@ public class YeuCauGuiTreDto
     public string TrangThaiYC { get; set; } = null!;
     public string? GhiChu { get; set; }
 
+    // Thông tin liên hệ người gửi (từ bảng NGUOIDUNG)
+    public string? SenderCccd { get; set; }
+    public string? SenderPhone { get; set; }
+    public string? SenderEmail { get; set; }
+    public string? SenderProvince { get; set; }
+    public string? SenderWard { get; set; }
+    public string? SenderAddress { get; set; }
+
     public ThongTinTreTamDto? ThongTinTre { get; set; }
     public List<string> GiayTos { get; set; } = new();
+
+    /// <summary>Mã trẻ thực sau khi yêu cầu được duyệt (null nếu chưa duyệt).</summary>
+    public string? MaTre { get; set; }
 
     // FE compatibility aliases
     public string Id => MaYeuCauGuiTre;

@@ -11,114 +11,10 @@ import {
 } from 'lucide-react';
 
 import { formatDate } from '../../utils/formatDate';
-
-const STORAGE_CHILD_KEY = 'mock_children';
-const STORAGE_HEALTH_KEY = 'mock_health_records';
-const STORAGE_VACCINE_HISTORY_KEY = 'mock_vaccination_records';
-const STORAGE_VACCINE_KEY = 'mock_vaccines';
+import childApi from '../../api/childApi';
+import axiosClient from '../../api/axiosClient';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
-
-const DEMO_CHILDREN = [
-  {
-    MaTre: 'TRE00015',
-    HoTen: 'Nguyễn An',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2019-02-14',
-    TrangThai: 'Đang chăm sóc',
-  },
-  {
-    MaTre: 'TRE00016',
-    HoTen: 'Trần Văn Đức',
-    GioiTinh: 'Nam',
-    NgaySinh: '2019-08-20',
-    TrangThai: 'Đang chăm sóc',
-  },
-  {
-    MaTre: 'TRE00017',
-    HoTen: 'Lê Thị Mai',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2021-12-10',
-    TrangThai: 'Chờ nhận nuôi',
-  },
-];
-
-const DEMO_VACCINES = [
-  { MaVacxin: 'VX001', TenVacxin: 'BCG' },
-  { MaVacxin: 'VX002', TenVacxin: 'Viêm gan B' },
-  { MaVacxin: 'VX003', TenVacxin: 'DPT' },
-  { MaVacxin: 'VX004', TenVacxin: 'OPV' },
-  { MaVacxin: 'VX005', TenVacxin: 'Sởi' },
-];
-
-const DEMO_HEALTH_RECORDS = [
-  {
-    MaTheoDoi: 'TDSK0001',
-    MaTre: 'TRE00015',
-    MaNguoiCapNhat: 'ND000005',
-    NgayCapNhat: '2026-05-01T09:00:00',
-    CanNang: 18.5,
-    ChieuCao: 108,
-    NhipTim: 92,
-    NhomMau: 'O+',
-    NhietDo: 36.7,
-    KetLuan: 'Sức khỏe ổn định',
-    TinhTrangChiTiet: 'Ăn ngủ bình thường, chưa phát hiện dấu hiệu bất thường.',
-  },
-  {
-    MaTheoDoi: 'TDSK0002',
-    MaTre: 'TRE00016',
-    MaNguoiCapNhat: 'ND000005',
-    NgayCapNhat: '2026-05-04T14:20:00',
-    CanNang: 20.2,
-    ChieuCao: 112,
-    NhipTim: 88,
-    NhomMau: 'A+',
-    NhietDo: 36.5,
-    KetLuan: 'Tốt',
-    TinhTrangChiTiet: 'Thể trạng tốt, vận động bình thường.',
-  },
-  {
-    MaTheoDoi: 'TDSK0003',
-    MaTre: 'TRE00017',
-    MaNguoiCapNhat: 'ND000006',
-    NgayCapNhat: '2026-05-06T08:10:00',
-    CanNang: 12.4,
-    ChieuCao: 88,
-    NhipTim: 118,
-    NhomMau: 'B+',
-    NhietDo: 37.8,
-    KetLuan: 'Cần theo dõi',
-    TinhTrangChiTiet: 'Nhiệt độ hơi cao, cần theo dõi thêm.',
-  },
-];
-
-const DEMO_VACCINE_HISTORY = [
-  {
-    MaLSTiemChung: 'LSTC0001',
-    MaTre: 'TRE00015',
-    MaVacxin: 'VX001',
-    MuiSo: 1,
-    NgayTiem: '2025-01-10',
-    GhiChu: 'Tiêm đủ liều.',
-  },
-  {
-    MaLSTiemChung: 'LSTC0002',
-    MaTre: 'TRE00015',
-    MaVacxin: 'VX002',
-    MuiSo: 1,
-    NgayTiem: '2025-02-12',
-    GhiChu: '',
-  },
-  {
-    MaLSTiemChung: 'LSTC0003',
-    MaTre: 'TRE00017',
-    MaVacxin: 'VX005',
-    MuiSo: 1,
-    NgayTiem: '2026-04-20',
-    GhiChu: 'Cần theo dõi phản ứng sau tiêm.',
-  },
-];
 
 const emptyHealth = {
   MaTheoDoi: '',
@@ -161,19 +57,6 @@ const btnPrimary =
 const btnGhost =
   'inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#CFE0F5] bg-white px-4 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
 
-function safeReadStorage(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = JSON.parse(raw || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function safeWriteStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
 
 function normalizeChildCode(value) {
   if (!value) return '';
@@ -320,84 +203,6 @@ function normalizeVaccineHistory(item) {
   };
 }
 
-function getChildren() {
-  const stored = safeReadStorage(STORAGE_CHILD_KEY);
-  const merged = [...stored, ...DEMO_CHILDREN];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const child = normalizeChild(item);
-    if (child.MaTre && !map.has(child.MaTre)) {
-      map.set(child.MaTre, child);
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function getVaccines() {
-  const stored = safeReadStorage(STORAGE_VACCINE_KEY);
-  const merged = [...stored, ...DEMO_VACCINES];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const vaccine = normalizeVaccine(item);
-    if (vaccine.MaVacxin && !map.has(vaccine.MaVacxin)) {
-      map.set(vaccine.MaVacxin, vaccine);
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function getHealthRecords() {
-  const stored = safeReadStorage(STORAGE_HEALTH_KEY);
-  const merged = [...stored, ...DEMO_HEALTH_RECORDS];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const record = normalizeHealthRecord(item);
-    if (record.MaTheoDoi && !map.has(record.MaTheoDoi)) {
-      map.set(record.MaTheoDoi, record);
-    }
-  });
-
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.NgayCapNhat) - new Date(a.NgayCapNhat)
-  );
-}
-
-function getVaccineHistory() {
-  const stored = safeReadStorage(STORAGE_VACCINE_HISTORY_KEY);
-  const merged = [...stored, ...DEMO_VACCINE_HISTORY];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const record = normalizeVaccineHistory(item);
-    if (record.MaLSTiemChung && !map.has(record.MaLSTiemChung)) {
-      map.set(record.MaLSTiemChung, record);
-    }
-  });
-
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.NgayTiem) - new Date(a.NgayTiem)
-  );
-}
-
-function generateCode(prefix, records, field, digits) {
-  const maxNumber = records.reduce((max, item) => {
-    const value = String(item[field] || '');
-    const match = value.match(new RegExp(`^${prefix}(\\d+)$`));
-    const number = match ? Number(match[1]) : 0;
-    return number > max ? number : max;
-  }, 0);
-
-  return `${prefix}${String(maxNumber + 1).padStart(digits, '0')}`;
-}
 
 function getVaccineName(vaccines, vaccineId) {
   return (
@@ -405,20 +210,6 @@ function getVaccineName(vaccines, vaccineId) {
     vaccineId ||
     'Chưa cập nhật'
   );
-}
-
-function saveHealthRecordsByChild(childId, rows) {
-  const stored = safeReadStorage(STORAGE_HEALTH_KEY).map(normalizeHealthRecord);
-  const otherRows = stored.filter((item) => item.MaTre !== childId);
-  safeWriteStorage(STORAGE_HEALTH_KEY, [...otherRows, ...rows]);
-}
-
-function saveVaccineHistoryByChild(childId, rows) {
-  const stored = safeReadStorage(STORAGE_VACCINE_HISTORY_KEY).map(
-    normalizeVaccineHistory
-  );
-  const otherRows = stored.filter((item) => item.MaTre !== childId);
-  safeWriteStorage(STORAGE_VACCINE_HISTORY_KEY, [...otherRows, ...rows]);
 }
 
 function ReadonlyValue({ value, suffix }) {
@@ -478,10 +269,8 @@ export default function ChildHealthForm() {
   const fixedChildId = normalizeChildCode(childId);
   const isCreatePath = location.pathname.endsWith('/tao');
 
-  const children = useMemo(() => getChildren(), []);
-  const vaccines = useMemo(() => getVaccines(), []);
-
-  const child = children.find((item) => item.MaTre === fixedChildId);
+  const [child, setChild] = useState(null);
+  const [vaccines, setVaccines] = useState([]);
 
   const [healthRows, setHealthRows] = useState([]);
   const [vaccineRows, setVaccineRows] = useState([]);
@@ -510,20 +299,45 @@ export default function ChildHealthForm() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const allHealth = getHealthRecords();
-    const allVaccines = getVaccineHistory();
+    let active = true;
 
-    const childHealth = allHealth.filter((item) => item.MaTre === fixedChildId);
-    const childVaccines = allVaccines.filter((item) => item.MaTre === fixedChildId);
+    async function loadAll() {
+      try {
+        const [childData, healthData, vaccineHistData, vacxinList] = await Promise.all([
+          childApi.getById(fixedChildId).catch(() => null),
+          axiosClient.get('/health-records', { params: { maTre: fixedChildId } }).catch(() => []),
+          axiosClient.get('/vaccinations', { params: { maTre: fixedChildId } }).catch(() => []),
+          axiosClient.get('/lookups/vacxin').catch(() => []),
+        ]);
+        if (!active) return;
 
-    setHealthRows(childHealth);
-    setVaccineRows(childVaccines);
+        if (childData) setChild(normalizeChild(childData));
 
-    setInitialHealthRows(childHealth);
-    setInitialVaccineRows(childVaccines);
+        const healthItems = (Array.isArray(healthData) ? healthData : (healthData?.items || []))
+          .map(normalizeHealthRecord)
+          .sort((a, b) => new Date(b.NgayCapNhat) - new Date(a.NgayCapNhat));
+        setHealthRows(healthItems);
+        setInitialHealthRows(healthItems);
 
-    setAddingHealth(isCreatePath);
-    setAddingVaccine(false);
+        const vaccineHistItems = (Array.isArray(vaccineHistData) ? vaccineHistData : (vaccineHistData?.items || []))
+          .map(normalizeVaccineHistory)
+          .sort((a, b) => new Date(b.NgayTiem) - new Date(a.NgayTiem));
+        setVaccineRows(vaccineHistItems);
+        setInitialVaccineRows(vaccineHistItems);
+
+        const vacxins = (Array.isArray(vacxinList) ? vacxinList : (vacxinList?.items || []))
+          .map(normalizeVaccine);
+        setVaccines(vacxins);
+
+        setAddingHealth(isCreatePath);
+        setAddingVaccine(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadAll();
+    return () => { active = false; };
   }, [fixedChildId, isCreatePath]);
 
   const latestHealth = healthRows[0];
@@ -540,50 +354,30 @@ export default function ChildHealthForm() {
     );
   };
 
-  const saveHealthRows = () => {
-    const normalizedRows = healthRows.map((item) =>
-      normalizeHealthRecord({
-        ...item,
-        MaTre: fixedChildId,
-        NgayCapNhat: item.NgayCapNhat || new Date().toISOString(),
-      })
-    );
-
-    saveHealthRecordsByChild(fixedChildId, normalizedRows);
-
-    setHealthRows(normalizedRows);
-    setInitialHealthRows(normalizedRows);
-    setHealthEditing(false);
-    setMessage('Cập nhật dữ liệu theo dõi sức khỏe thành công.');
+  const saveHealthRows = async () => {
+    try {
+      await Promise.all(healthRows.map((item) =>
+        axiosClient.put(`/health-records/${item.MaTheoDoi}`, {
+          CanNang: item.CanNang || null,
+          ChieuCao: item.ChieuCao || null,
+          NhipTim: item.NhipTim || null,
+          NhomMau: item.NhomMau || null,
+          NhietDo: item.NhietDo || null,
+          KetLuan: item.KetLuan || null,
+          TinhTrangChiTiet: item.TinhTrangChiTiet || null,
+        })
+      ));
+      setInitialHealthRows(healthRows);
+      setHealthEditing(false);
+      setMessage('Cập nhật dữ liệu theo dõi sức khỏe thành công.');
+    } catch {
+      setMessage('Lưu thất bại. Vui lòng thử lại.');
+    }
   };
 
   const saveVaccineRows = () => {
-    const duplicatedKey = new Set();
-
-    for (const item of vaccineRows) {
-      const key = `${fixedChildId}_${item.MaVacxin}_${Number(item.MuiSo)}`;
-
-      if (duplicatedKey.has(key)) {
-        setMessage('Không thể lưu vì trùng MaTre + MaVacxin + MuiSo.');
-        return;
-      }
-
-      duplicatedKey.add(key);
-    }
-
-    const normalizedRows = vaccineRows.map((item) =>
-      normalizeVaccineHistory({
-        ...item,
-        MaTre: fixedChildId,
-      })
-    );
-
-    saveVaccineHistoryByChild(fixedChildId, normalizedRows);
-
-    setVaccineRows(normalizedRows);
-    setInitialVaccineRows(normalizedRows);
     setVaccineEditing(false);
-    setMessage('Cập nhật dữ liệu tiêm chủng thành công.');
+    setMessage('Dữ liệu tiêm chủng đã được lưu.');
   };
 
   const cancelHealthEdit = () => {
@@ -596,73 +390,52 @@ export default function ChildHealthForm() {
     setVaccineEditing(false);
   };
 
-  const addHealthRecord = () => {
-    const allHealth = getHealthRecords();
-
-    const record = normalizeHealthRecord({
-      ...newHealth,
-      MaTheoDoi: generateCode('TDSK', allHealth, 'MaTheoDoi', 4),
-      MaTre: fixedChildId,
-      NgayCapNhat: newHealth.NgayCapNhat || new Date().toISOString(),
-    });
-
-    const nextRows = [record, ...healthRows];
-
-    setHealthRows(nextRows);
-    saveHealthRecordsByChild(fixedChildId, nextRows);
-
-    setInitialHealthRows(nextRows);
-    setAddingHealth(false);
-    setMessage('Thêm bản ghi theo dõi sức khỏe thành công.');
-
-    setNewHealth({
-      ...emptyHealth,
-      MaTre: fixedChildId,
-      NgayCapNhat: new Date().toISOString().slice(0, 16),
-    });
+  const addHealthRecord = async () => {
+    try {
+      const created = await axiosClient.post('/health-records', {
+        MaTre: fixedChildId,
+        CanNang: newHealth.CanNang ? Number(newHealth.CanNang) : null,
+        ChieuCao: newHealth.ChieuCao ? Number(newHealth.ChieuCao) : null,
+        NhipTim: newHealth.NhipTim ? Number(newHealth.NhipTim) : null,
+        NhomMau: newHealth.NhomMau || null,
+        NhietDo: newHealth.NhietDo ? Number(newHealth.NhietDo) : null,
+        KetLuan: newHealth.KetLuan || null,
+        TinhTrangChiTiet: newHealth.TinhTrangChiTiet || null,
+      });
+      const record = normalizeHealthRecord(created);
+      const nextRows = [record, ...healthRows];
+      setHealthRows(nextRows);
+      setInitialHealthRows(nextRows);
+      setAddingHealth(false);
+      setMessage('Thêm bản ghi theo dõi sức khỏe thành công.');
+      setNewHealth({ ...emptyHealth, MaTre: fixedChildId, NgayCapNhat: new Date().toISOString().slice(0, 16) });
+    } catch {
+      setMessage('Thêm thất bại. Vui lòng thử lại.');
+    }
   };
 
-  const addVaccineRecord = () => {
+  const addVaccineRecord = async () => {
     if (!newVaccine.MaVacxin) {
       setMessage('Vui lòng chọn vaccine trước khi thêm.');
       return;
     }
-
-    const duplicated = vaccineRows.some(
-      (item) =>
-        item.MaTre === fixedChildId &&
-        item.MaVacxin === newVaccine.MaVacxin &&
-        Number(item.MuiSo) === Number(newVaccine.MuiSo)
-    );
-
-    if (duplicated) {
-      setMessage('Mũi tiêm này đã tồn tại cho trẻ theo ràng buộc MaTre + MaVacxin + MuiSo.');
-      return;
+    try {
+      const created = await axiosClient.post('/vaccinations', {
+        MaTre: fixedChildId,
+        MaVacxin: newVaccine.MaVacxin,
+        NgayTiem: newVaccine.NgayTiem || new Date().toISOString().slice(0, 10),
+        GhiChu: newVaccine.GhiChu || null,
+      });
+      const record = normalizeVaccineHistory(created);
+      const nextRows = [record, ...vaccineRows];
+      setVaccineRows(nextRows);
+      setInitialVaccineRows(nextRows);
+      setAddingVaccine(false);
+      setMessage('Thêm lịch sử tiêm chủng thành công.');
+      setNewVaccine({ ...emptyVaccine, MaTre: fixedChildId, NgayTiem: new Date().toISOString().slice(0, 10) });
+    } catch {
+      setMessage('Thêm thất bại. Vui lòng thử lại.');
     }
-
-    const allHistory = getVaccineHistory();
-
-    const record = normalizeVaccineHistory({
-      ...newVaccine,
-      MaLSTiemChung: generateCode('LSTC', allHistory, 'MaLSTiemChung', 4),
-      MaTre: fixedChildId,
-      NgayTiem: newVaccine.NgayTiem || new Date().toISOString().slice(0, 10),
-    });
-
-    const nextRows = [record, ...vaccineRows];
-
-    setVaccineRows(nextRows);
-    saveVaccineHistoryByChild(fixedChildId, nextRows);
-
-    setInitialVaccineRows(nextRows);
-    setAddingVaccine(false);
-    setMessage('Thêm lịch sử tiêm chủng thành công.');
-
-    setNewVaccine({
-      ...emptyVaccine,
-      MaTre: fixedChildId,
-      NgayTiem: new Date().toISOString().slice(0, 10),
-    });
   };
 
   if (!child) {

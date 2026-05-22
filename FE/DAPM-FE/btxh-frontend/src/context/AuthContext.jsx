@@ -8,40 +8,80 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await authApi.getProfile();
+          if (res.success) {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } catch (error) {
+          console.error("Failed to load profile", error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
       setLoading(false);
-      return;
-    }
-    authApi.getProfile()
-      .then((profile) => setUser(profile))
-      .catch(() => {
-        localStorage.removeItem('token');
-      })
-      .finally(() => setLoading(false));
+    };
+
+    initAuth();
   }, []);
 
-  const login = useCallback(async ({ email, password }) => {
-    // authApi.login trả { token, user } sau khi axiosClient unwrap data
-    const result = await authApi.login({ email, password });
-    localStorage.setItem('token', result.token);
-    setUser(result.user);
-    return result.user;
+  const login = useCallback(async (credentials) => {
+    const res = await authApi.login(credentials);
+    if (!res.success) {
+      throw new Error(res.message || 'Đăng nhập thất bại');
+    }
+    
+    const { token, user: userData } = res.data;
+    
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+
+    return userData;
   }, []);
 
   const logout = useCallback(async () => {
-    try { await authApi.logout(); } catch { /* stateless — ignore */ }
-    localStorage.removeItem('token');
-    setUser(null);
+    try {
+      await authApi.logout();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
   }, []);
 
   const updateUser = useCallback((payload) => {
-    setUser((prev) => ({ ...prev, ...payload }));
+    setUser((prev) => {
+      const updatedUser = {
+        ...prev,
+        ...payload,
+      };
+
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+}

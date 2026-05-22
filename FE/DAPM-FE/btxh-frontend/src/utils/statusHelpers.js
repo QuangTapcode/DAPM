@@ -43,6 +43,14 @@ export function normalizeStatus(status) {
         REJECTED: 'rejected',
         PROCESSING: 'processing',
         COMPLETED: 'completed',
+
+        // Vietnamese status values from BE
+        'Chờ xử lý': 'pending',
+        'Đang xem xét': 'reviewing',
+        'Yêu cầu bổ sung': 'missing_info',
+        'Đã tiếp nhận': 'approved',
+        'Từ chối': 'rejected',
+        'Đã hủy': 'rejected',
     };
 
     return statusMap[status] || status;

@@ -48,4 +48,6 @@ public class YeuCauGuiTre
     public LoaiNguoiGuiTre? LoaiNguoiGui { get; set; }
 
     public ThongTinTreTam? ThongTinTreTam { get; set; }
+
+    public HoSoTiepNhanTre? HoSoTiepNhan { get; set; }
 }

@@ -5,69 +5,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { ROLE_REDIRECT } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import hide_yey from '../../assets/hide.png';
-
-// Hiện khi user có cả 2 quyền NGGT + NGNN
-function RoleSelectScreen({ onSelect }) {
-  return (
-    <div className="min-h-screen bg-[#f5f7fb] flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[560px] rounded-[28px] bg-white px-8 py-10 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:px-10">
-        <div className="mb-8">
-          <h1 className="text-[34px] font-extrabold leading-tight tracking-[-0.02em] text-[#1f2937]">
-            Bạn muốn sử dụng với tư cách nào?
-          </h1>
-          <p className="mt-3 text-[18px] text-[#6b7280]">
-            Tài khoản của bạn có thể sử dụng cả hai chức năng. Vui lòng chọn một để tiếp tục.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => onSelect('sender')}
-            className="flex items-center gap-5 rounded-[18px] border-2 border-[#e5e7eb] bg-white px-6 py-5 text-left transition hover:border-[var(--c-primary)] hover:bg-[#f0f7ff]"
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-100">
-              <svg className="h-7 w-7 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6A4.5 4.5 0 0 0 12 3a4.5 4.5 0 0 0-4.5 3" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 19.5h18" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-[19px] font-bold text-[#1f2937]">Người gửi trẻ</p>
-              <p className="mt-1 text-[15px] text-[#6b7280]">
-                Gửi yêu cầu, theo dõi trạng thái và thông tin trẻ đã gửi
-              </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => onSelect('adopter')}
-            className="flex items-center gap-5 rounded-[18px] border-2 border-[#e5e7eb] bg-white px-6 py-5 text-left transition hover:border-[var(--c-primary)] hover:bg-[#f0f7ff]"
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-100">
-              <svg className="h-7 w-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657 13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-[19px] font-bold text-[#1f2937]">Người nhận nuôi</p>
-              <p className="mt-1 text-[15px] text-[#6b7280]">
-                Tạo đơn nhận nuôi, theo dõi quá trình xét duyệt
-              </p>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function LoginPage() {
-  const { login, updateUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [pendingUser, setPendingUser] = useState(null);
 
   const {
     register,
@@ -85,34 +26,16 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     try {
       const user = await login(data);
-
-      // User có cả quyền gửi lẫn nhận nuôi → hiện màn chọn vai trò
-      const hasBothRoles =
-        Array.isArray(user.roles) &&
-        user.roles.includes('NGGT') &&
-        user.roles.includes('NGNN');
-
-      if (hasBothRoles) {
-        setPendingUser(user);
-        return;
-      }
-
       navigate(ROLE_REDIRECT[user.role] || '/');
     } catch (err) {
+      const errorMessage =
+        err?.message || err?.error || err?.data?.message || 'Sai tài khoản hoặc mật khẩu';
+
       setError('root', {
-        message: err?.message || 'Sai tài khoản hoặc mật khẩu',
+        message: errorMessage,
       });
     }
   };
-
-  const handleRoleSelect = (chosenRole) => {
-    updateUser({ role: chosenRole });
-    navigate(ROLE_REDIRECT[chosenRole] || '/');
-  };
-
-  if (pendingUser) {
-    return <RoleSelectScreen onSelect={handleRoleSelect} />;
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f7fb] flex items-center justify-center px-4 py-10">
@@ -129,7 +52,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label className="mb-3 block text-[16px] font-semibold text-[#6b7280]">
-              Email
+              Email hoặc Số điện thoại
             </label>
 
             <div className="flex h-[68px] items-center gap-3 rounded-[16px] bg-[#f1f5f9] px-4">
@@ -142,9 +65,9 @@ export default function LoginPage() {
               </svg>
 
               <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                {...register('email', { required: 'Vui lòng nhập email' })}
+                type="text"
+                placeholder="Nhập email hoặc số điện thoại"
+                {...register('email', { required: 'Vui lòng nhập email hoặc số điện thoại' })}
                 className="h-full w-full bg-transparent text-[18px] text-[#374151] outline-none placeholder:text-[#9ca3af]"
               />
             </div>

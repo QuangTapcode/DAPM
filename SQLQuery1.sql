@@ -66,17 +66,16 @@ CREATE TABLE NGUOIDUNG (
     GioiTinh        NVARCHAR(5)    NOT NULL,
     CCCD            CHAR(12)       NULL UNIQUE,
     Email           VARCHAR(254)   NULL UNIQUE,
-    MaXaPhuong      CHAR(6)        NULL,
+    MaPhuongXa      CHAR(6)        NULL,
     DiaChiCuThe     NVARCHAR(200)  NULL,
     NgayTao         DATETIME       NOT NULL DEFAULT GETDATE(),
     TrangThaiTK     BIT            NOT NULL DEFAULT 1,
     CONSTRAINT PK_NGUOIDUNG PRIMARY KEY (MaNguoiDung),
-    CONSTRAINT FK_ND_PHUONGXA FOREIGN KEY (MaXaPhuong)
+    CONSTRAINT FK_ND_PHUONGXA FOREIGN KEY (MaPhuongXa)
         REFERENCES PHUONG_XA(MaPhuongXa),
     CONSTRAINT CHK_ND_GIOITINH CHECK (GioiTinh IN (N'Nam', N'Nữ', N'Khác')),
     CONSTRAINT CHK_ND_SDT CHECK (SDT NOT LIKE '%[^0-9+() -]%' AND LEN(SDT) BETWEEN 9 AND 15)
 );
-
 CREATE TABLE NGUOIDUNG_VAITRO (
     MaNguoiDung CHAR(8) NOT NULL,
     MaVaiTro    CHAR(4) NOT NULL,
@@ -179,24 +178,41 @@ CREATE TABLE THEODOISUCKHOE (
 -- YÊU CẦU & HỒ SƠ NHẬN NUÔI
 -- ============================================================
 
-CREATE TABLE YEUCAUNHANNUOI (
-    MaYeuCauNhan        CHAR(8)        NOT NULL,
-    MaNguoiNhan         CHAR(8)        NOT NULL,
-    LyDoNhanNuoi        NVARCHAR(200)  NULL,
-    MongMuonVeTre       NVARCHAR(200)  NULL,
-    ThuNhapHangThang    DECIMAL(12,2)  NULL,
-    NgheNghiep          NVARCHAR(100)  NULL,
-    NgayTao             DATETIME       NOT NULL DEFAULT GETDATE(),
-    NgayCapNhat         DATETIME       NULL,
-    TrangThai           NVARCHAR(20)   NOT NULL,
-    NguoiDuyet          CHAR(8)        NULL,
-    CONSTRAINT PK_YEUCAUNHANNUOI  PRIMARY KEY (MaYeuCauNhan),
-    CONSTRAINT FK_YCNN_NGUOIDUNG  FOREIGN KEY (MaNguoiNhan) REFERENCES NGUOIDUNG(MaNguoiDung),
-    CONSTRAINT FK_YCNN_NGUOIDUYET FOREIGN KEY (NguoiDuyet)  REFERENCES NGUOIDUNG(MaNguoiDung),
-    CONSTRAINT CHK_YCNN_TRANGTHAI CHECK (TrangThai IN (
-        N'Chờ xử lý', N'Đang xem xét', N'Chờ ghép trẻ', N'Đã duyệt', N'Từ chối')),
-    CONSTRAINT CHK_YCNN_THUNHAP   CHECK (ThuNhapHangThang IS NULL OR ThuNhapHangThang >= 0)
+CREATE TABLE YEUCAUNHANNUOI
+(
+    MaYeuCauNhan         CHAR(8)        NOT NULL,
+    MaNguoiNhan          CHAR(8)        NOT NULL,
+    ThuNhapHangThang      DECIMAL(18,2) NOT NULL DEFAULT 0,
+    SoConDangNuoi         INT            NOT NULL DEFAULT 0,
+    TinhTrangHonNhan      NVARCHAR(30)  NOT NULL  DEFAULT N'Độc thân',
+    LoaiNoiO              NVARCHAR(50)  NOT NULL DEFAULT N'Nhà sở hữu',
+    SucKhoeDatYeuCau      BIT           NOT NULL DEFAULT 1,
+    QuanHeVoiTre          NVARCHAR(50)  NOT NULL DEFAULT N'Không',
+	LyDoNhanNuoi NVARCHAR(60),
+	MongMuonTuoiToiDa INT NULL,
+    MongMuonGioiTinh NVARCHAR(5) NULL,
+    HopLeSoBo             BIT           NOT NULL DEFAULT 0,
+    DiemUuTien            DECIMAL(4,1)  NOT NULL DEFAULT 0,
+    LyDoTuChoiSoBo        NVARCHAR(500) NULL,
+    TrangThai             NVARCHAR(30)  NOT NULL DEFAULT N'Chờ duyệt',
+    NgayTao               DATETIME2(0)  NOT NULL DEFAULT GETDATE(),
+    GhiChu                NVARCHAR(300) NULL,
+    CONSTRAINT PK_YEUCAUNHANNUOI
+        PRIMARY KEY (MaYeuCauNhan),
+    CONSTRAINT FK_YCNN_NGUOINHAN
+        FOREIGN KEY (MaNguoiNhan)
+        REFERENCES NGUOIDUNG(MaNguoiDung),
+    CONSTRAINT CHK_YCNN_THUNHAP
+        CHECK (ThuNhapHangThang >= 0),
+    CONSTRAINT CHK_YCNN_SOCON
+        CHECK (SoConDangNuoi >= 0),
+    CONSTRAINT CHK_YCNN_HONNHAN CHECK(TinhTrangHonNhan IN(N'Độc thân',N'Đã kết hôn',N'Ly hôn', N'Góa')),
+    CONSTRAINT CHK_YCNN_LOAINHA CHECK (LoaiNoiO IN(N'Nhà sở hữu',N'Chung cư sở hữu',N'Nhà thuê dài hạn',N'Ở cùng gia đình')),
+    CONSTRAINT CHK_YCNN_QUANHE CHECK (QuanHeVoiTre IN(N'Không',N'Người thân')),
+    CONSTRAINT CHK_YCNN_TRANGTHAI CHECK (TrangThai IN(N'Yêu cầu bổ sung',N'Đã duyệt sơ bộ', N'Ghép trẻ',N'Từ chối sơ bộ',N'Đang xác minh',N'Đã duyệt')),
+	CONSTRAINT CHK_YCNN_GIOITINH CHECK (MongMuonGioiTinh IS NULL OR MongMuonGioiTinh IN (N'Nam', N'Nữ'))
 );
+
 
 -- ============================================================
 -- YÊU CẦU & HỒ SƠ GỬI TRẺ
@@ -219,6 +235,21 @@ CREATE TABLE YEUCAUGUITRE (
         N'Chờ xử lý', N'Đang xem xét', N'Đã tiếp nhận', N'Từ chối', N'Đã hủy'
     ))
 );
+-- ============================================================
+-- DANH MỤC LOẠI GIẤY TỜ BẮT BUỘC
+-- ============================================================
+
+CREATE TABLE LOAIGIAYTOBATBUOC (
+    MaLoaiGiayTo    CHAR(6)        NOT NULL,
+    TenLoaiGiayTo   NVARCHAR(100)  NOT NULL,
+    ApDungYCNN      BIT            NOT NULL DEFAULT 0,
+    ApDungYCGT      BIT            NOT NULL DEFAULT 0,
+    BatBuoc         BIT            NOT NULL DEFAULT 1,
+    MoTa            NVARCHAR(200)  NULL,
+
+    CONSTRAINT PK_LOAIGIAYTOBATBUOC
+        PRIMARY KEY (MaLoaiGiayTo)
+);
 
 -- ============================================================
 -- GIẤY TỜ PHÁP LÝ
@@ -226,8 +257,7 @@ CREATE TABLE YEUCAUGUITRE (
 
 CREATE TABLE GIAYTOPHAPLY (
     MaGiayTo        CHAR(8)        NOT NULL,
-    TenGiayTo       NVARCHAR(150)  NOT NULL,
-    LoaiGiayTo      NVARCHAR(50)   NOT NULL,
+    MaLoaiGiayTo CHAR(6) NOT NULL,
     DuongDanFile    NVARCHAR(255)  NULL,
     TrangThai       NVARCHAR(20)   NOT NULL DEFAULT N'Chờ xác minh',
     MaYeuCauGuiTre  CHAR(8)        NULL,
@@ -243,11 +273,12 @@ CREATE TABLE GIAYTOPHAPLY (
         OR
         (MaYeuCauGuiTre IS NULL AND MaYeuCauNhan IS NOT NULL)
     ),
+	CONSTRAINT FK_GTPL_LOAIGIAYTO FOREIGN KEY (MaLoaiGiayTo)
+		REFERENCES LOAIGIAYTOBATBUOC(MaLoaiGiayTo),
     CONSTRAINT CHK_GTPL_TRANGTHAI CHECK (TrangThai IN (
         N'Chờ xác minh', N'Hợp lệ', N'Không hợp lệ', N'Hết hạn', N'Cần bổ sung'
     ))
 );
-
 -- ============================================================
 -- THÔNG TIN TRẺ TẠM (trước khi tiếp nhận chính thức)
 -- ============================================================
@@ -290,24 +321,29 @@ CREATE TABLE HOSONHANNUOI (
 CREATE TABLE LICHHENGAPMATNHANNUOI (
     MaLichGap           CHAR(8)        NOT NULL,
     MaYeuCauNhan        CHAR(8)        NOT NULL,
-    MaTre               CHAR(8)        NOT NULL,
     MaCanBo             CHAR(8)        NOT NULL,
 	NgayGapMat     DATETIME       NULL,
     ThoiGian      DATETIME       NOT NULL,
     DiaDiem             NVARCHAR(200)  NULL,
     TrangThai           NVARCHAR(30)   NOT NULL,
-    KetQua              NVARCHAR(30)   NULL,
     PhanHoiNguoiNhan    NVARCHAR(200)  NULL,
     ThoiGianDeXuatMoi   DATETIME       NULL,
-    GhiChuCanBo         NVARCHAR(200)  NULL,
     NgayTao             DATETIME       NOT NULL DEFAULT GETDATE(),
     NgayCapNhat         DATETIME       NULL,
     CONSTRAINT PK_LICHHENGAPMATNHANNUOI PRIMARY KEY (MaLichGap),
     CONSTRAINT FK_LHGM_YEUCAUNHAN FOREIGN KEY (MaYeuCauNhan) REFERENCES YEUCAUNHANNUOI(MaYeuCauNhan),
-    CONSTRAINT FK_LHGM_TRE FOREIGN KEY (MaTre) REFERENCES TRE(MaTre),
     CONSTRAINT FK_LHGM_CANBO FOREIGN KEY (MaCanBo) REFERENCES NGUOIDUNG(MaNguoiDung),
     CONSTRAINT CK_LHGM_TRANGTHAI CHECK (TrangThai IN (N'Chờ xác nhận',N'Đã xác nhận',N'Yêu cầu đổi lịch',N'Đã đổi lịch',N'Đã gặp mặt',N'Đã hủy')),
-    CONSTRAINT CK_LHGM_KETQUA CHECK (KetQua IS NULL OR KetQua IN (N'Phù hợp',N'Không phù hợp',N'Cần gặp lại'))
+);
+CREATE TABLE CHITIETGAPMAT (
+    MaLichGap           CHAR(8)        NOT NULL,
+    MaTre               CHAR(8)        NOT NULL,
+    KetQua              NVARCHAR(30)   NULL, -- N'Phù hợp', N'Không phù hợp', N'Cần gặp lại'
+    GhiChuCanBo         NVARCHAR(200)  NULL,
+    CONSTRAINT PK_CHITIETGAPMAT PRIMARY KEY (MaLichGap, MaTre),
+    CONSTRAINT FK_CTGM_LICHGAP FOREIGN KEY (MaLichGap) REFERENCES LICHHENGAPMATNHANNUOI(MaLichGap),
+    CONSTRAINT FK_CTGM_TRE FOREIGN KEY (MaTre)REFERENCES TRE(MaTre),
+    CONSTRAINT CK_CTGM_KETQUA CHECK (KetQua IS NULL OR KetQua IN (N'Phù hợp',N'Không phù hợp',N'Cần gặp lại'))
 );
 -- ============================================================
 -- HỒ SƠ TIẾP NHẬN TRẺ
@@ -330,7 +366,6 @@ CREATE TABLE HOSOTIEPNHANTRE (
     )),
     CONSTRAINT CHK_HSTN_NGAY CHECK (NgayDuyet IS NULL OR NgayDuyet >= NgayTiepNhan)
 );
-GO
 
 INSERT INTO TINH_TP (MaTinhTP, TenTinhTP)
 VALUES
@@ -391,7 +426,7 @@ VALUES
 ('Q005', 'TPQL'),
 ('Q006', 'TPQL');
 
-INSERT INTO NGUOIDUNG (MaNguoiDung, SDT, MatKhau, HoTen, NgaySinh, GioiTinh, CCCD, Email, MaXaPhuong, DiaChiCuThe, NgayTao, TrangThaiTK)
+INSERT INTO NGUOIDUNG (MaNguoiDung, SDT, MatKhau, HoTen, NgaySinh, GioiTinh, CCCD, Email, MaPhuongXa, DiaChiCuThe, NgayTao, TrangThaiTK)
 VALUES
 ('ND000001', '0905123001', '123456', N'Lê Thị Minh Châu', '1988-03-12', N'Nữ', '048188001201', 'admin@ttbt.vn', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-01 08:00:00', 1),
 ('ND000002', '0905123002', '123456', N'Trần Văn Phúc', '1986-07-21', N'Nam', '048186001202', 'tiepnhan@ttbt.vn', 'HKHN01', N'Khu Đà Sơn', '2026-03-01 08:10:00', 1),
@@ -399,39 +434,43 @@ VALUES
 ('ND000004', '0905123004', '123456', N'Phạm Thị Hồng Nhung', '1995-05-14', N'Nữ', '048195001204', 'nguoigui1@gmail.com', 'HKHN01', N'Khu dân cư Hòa Khánh Nam', '2026-03-02 09:00:00', 1),
 ('ND000005', '0905123005', '123456', N'Đặng Quốc Huy', '1989-01-25', N'Nam', '046189001205', 'nguoinhan1@gmail.com', 'ANXU01', N'Đường Trần Cao Vân', '2026-03-02 09:05:00', 1),
 ('ND000006', '0905123006', '123456', N'Võ Thị Mỹ Linh', '1993-08-17', N'Nữ', '046193001206', 'nguoigui2@gmail.com', 'ANTH01', N'Khu dân cư Xuân Phú', '2026-03-02 09:10:00', 1),
-('ND000015', '0905123015', '123456', N'Nguyễn Hải Yến', '1998-06-21', N'Nữ', '048198001215', 'haiyen15@gmail.com', 'HKHN01', N'Khu dân cư Hòa Khánh Nam', '2026-03-18 08:10:00', 1),
-('ND000016', '0905123016', '123456', N'Trương Minh Đức', '1992-04-03', N'Nam', '046192001216', 'minhduc16@gmail.com', 'ANXU01', N'Đường Trần Cao Vân', '2026-03-18 08:20:00', 1),
-('ND000017', '0905123017', '123456', N'Phan Ngọc Trâm', '1996-12-15', N'Nữ', '048196001217', 'ngoctram17@gmail.com', 'HHAC01', N'Khu ven biển Hòa Hải', '2026-03-18 08:30:00', 1),
-('ND000018', '0905123018', '123456', N'Lý Quốc Thịnh', '1987-09-09', N'Nam', '046187001218', 'quocthinh18@gmail.com', 'ANTH01', N'Đường Xuân Phú', '2026-03-18 08:40:00', 1),
-('ND000019', '0905123019', '123456', N'Đào Thu Phương', '1994-11-27', N'Nữ', '048194001219', 'thuphuong19@gmail.com', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-18 08:50:00', 1),
-('ND000020', '0905123020', '123456', N'Đinh Gia Huy', '1991-02-14', N'Nam', '046191001220', 'giahuy20@gmail.com', 'ANXU01', N'Khu dân cư Thanh Khê', '2026-03-18 09:00:00', 1),
-('ND000007', '0905123007', '123456', N'Nguyễn Văn Tùng', '1982-04-15', N'Nam', '048182001207', 'truongphong@ttbt.vn', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-01 08:30:00', 1);
-
+('ND000007', '0905123015', '123456', N'Nguyễn Hải Yến', '1998-06-21', N'Nữ', '048198001215', 'haiyen15@gmail.com', 'HKHN01', N'Khu dân cư Hòa Khánh Nam', '2026-03-18 08:10:00', 1),
+('ND000008', '0905123016', '123456', N'Trương Minh Đức', '1992-04-03', N'Nam', '046192001216', 'minhduc16@gmail.com', 'ANXU01', N'Đường Trần Cao Vân', '2026-03-18 08:20:00', 1),
+('ND000009', '0905123017', '123456', N'Phan Ngọc Trâm', '1996-12-15', N'Nữ', '048196001217', 'ngoctram17@gmail.com', 'HHAC01', N'Khu ven biển Hòa Hải', '2026-03-18 08:30:00', 1),
+('ND000010', '0905123018', '123456', N'Lý Quốc Thịnh', '1987-09-09', N'Nam', '046187001218', 'quocthinh18@gmail.com', 'ANTH01', N'Đường Xuân Phú', '2026-03-18 08:40:00', 1),
+('ND000011', '0905123019', '123456', N'Đào Thu Phương', '1994-11-27', N'Nữ', '048194001219', 'thuphuong19@gmail.com', 'HKHN01', N'Tổ 8 Đà Sơn', '2026-03-18 08:50:00', 1),
+('ND000012', '0905123020', '123456', N'Đinh Gia Huy', '1991-02-14', N'Nam', '046191001220', 'giahuy20@gmail.com', 'ANXU01', N'Khu dân cư Thanh Khê', '2026-03-18 09:00:00', 1),
+('ND000013', '0905123011', '123456', N'Trần Trưởng Phòng', '1986-07-21', N'Nam', '048126001202', 'truongphong@ttbt.vn', 'HKHN01', N'Khu Đà Sơn', '2026-03-01 08:10:00', 1);
+select *from YEUCAUGUITRE
+select *from YEUCAUNHANNUOI
+select *from LOAIGIAYTOBATBUOC
+select *from GIAYTOPHAPLY
+select *from NGUOIDUNG
+select *from PHUONG_XA
 INSERT INTO NGUOIDUNG_VAITRO (MaNguoiDung, MaVaiTro)
 VALUES
 ('ND000001', 'ADMI'),
 ('ND000002', 'QLNT'),
 ('ND000003', 'QLNN'),
-('ND000003', 'TPQL'),
-('ND000007', 'TPQL'),
+('ND000013', 'TPQL'),
 ('ND000004', 'NGGT'),
 ('ND000004', 'NGNN'),
 ('ND000005', 'NGGT'),
 ('ND000005', 'NGNN'),
 ('ND000006', 'NGGT'),
 ('ND000006', 'NGNN'),
-('ND000015', 'NGGT'),
-('ND000015', 'NGNN'),
-('ND000016', 'NGGT'),
-('ND000016', 'NGNN'),
-('ND000017', 'NGGT'),
-('ND000017', 'NGNN'),
-('ND000018', 'NGGT'),
-('ND000018', 'NGNN'),
-('ND000019', 'NGGT'),
-('ND000019', 'NGNN'),
-('ND000020', 'NGGT'),
-('ND000020', 'NGNN');
+('ND000007', 'NGGT'),
+('ND000007', 'NGNN'),
+('ND000008', 'NGGT'),
+('ND000008', 'NGNN'),
+('ND000009', 'NGGT'),
+('ND000009', 'NGNN'),
+('ND000010', 'NGGT'),
+('ND000010', 'NGNN'),
+('ND000011', 'NGGT'),
+('ND000011', 'NGNN'),
+('ND000012', 'NGGT'),
+('ND000012', 'NGNN');
 
 INSERT INTO LOAINGUOIGUITRE (MaLoaiNguoiGui, TenLoaiNguoiGui, BatBuocGiayTo, MoTa)
 VALUES
@@ -451,14 +490,27 @@ VALUES
 ('DPT',   N'Vắc xin bạch hầu - ho gà - uốn ván', N'Tiêm nhắc phòng bạch hầu, ho gà, uốn ván'),
 ('JEV',   N'Vắc xin viêm não Nhật Bản',         N'Phòng bệnh viêm não Nhật Bản');
 
+INSERT INTO LOAIGIAYTOBATBUOC
+    (MaLoaiGiayTo, TenLoaiGiayTo, ApDungYCNN, ApDungYCGT, BatBuoc)
+VALUES
+('CCCDN', N'Ảnh CCCD người nhận nuôi',              1, 0, 1),
+('HONNH', N'Giấy tờ hôn nhân / độc thân',           1, 0, 1),
+('SKYTE', N'Giấy khám sức khỏe',                    1, 1, 1),
+('THUNHP',N'Giấy xác nhận thu nhập',                1, 0, 1),
+('QUANHE', N'Giấy tờ chứng minh quan hệ',	1, 1, 0),
+('CCCDG', N'Ảnh CCCD người gửi trẻ',                0, 1, 1),
+('KHAISI',N'Giấy khai sinh của trẻ',                0, 1, 1),
+
+('KHAC',  N'Giấy tờ khác',                          1, 1, 0);
+
 INSERT INTO YEUCAUGUITRE (MaYeuCauGuiTre, MaNguoiGui, MaLoaiNguoiGui, QuanHeVoiTre, LyDoGui, NgayTao, NgayCapNhat, TrangThaiYC, GhiChu)
 VALUES
-('YCGT0001', 'ND000004', 'CME', N'Mẹ ruột',  N'Hoàn cảnh kinh tế khó khăn, chưa đủ điều kiện chăm sóc trẻ ổn định',              '2026-03-05 09:00:00', '2026-03-06 10:15:00', N'Đã duyệt',      N'Hồ sơ đã được kiểm tra, tiếp nhận và duyệt'),
-('YCGT0002', 'ND000006', 'NTH', N'Cô ruột',  N'Gia đình không còn khả năng chăm sóc lâu dài cho trẻ',                             '2026-03-08 14:20:00', '2026-03-09 09:40:00', N'Đang xem xét', N'Đang chờ bổ sung xác nhận cư trú'),
-('YCGT0003', 'ND000004', 'CME', N'Mẹ ruột',  N'Mẹ đơn thân, đang điều trị bệnh dài ngày',                                         '2026-03-12 08:30:00', '2026-03-12 15:20:00', N'Chờ xử lý',   N'Hồ sơ mới tạo, chờ cán bộ tiếp nhận xử lý'),
-('YCGT0004', 'ND000015', 'CME', N'Mẹ ruột',  N'Hoàn cảnh kinh tế khó khăn, cần hỗ trợ chăm sóc trẻ trong thời gian ngắn',        '2026-03-18 09:15:00', '2026-03-19 10:00:00', N'Đang xem xét', N'Đã tiếp nhận hồ sơ và đang kiểm tra giấy tờ'),
-('YCGT0005', 'ND000017', 'NTH', N'Bà ngoại', N'Người giám hộ hiện tại không còn đủ sức khỏe để chăm sóc trẻ',                     '2026-03-18 10:20:00', '2026-03-19 14:20:00', N'Đã duyệt',      N'Hồ sơ đã được duyệt tiếp nhận'),
-('YCGT0006', 'ND000019', 'CME', N'Mẹ ruột',  N'Mẹ đang điều trị bệnh dài ngày, chưa thể trực tiếp nuôi dưỡng trẻ',               '2026-03-19 08:45:00', '2026-03-20 09:30:00', N'Từ chối',      N'Hồ sơ thiếu giấy xác nhận tình trạng hiện tại');
+('YCGT0001', 'ND000004', 'CME', N'Mẹ ruột', N'Hoàn cảnh kinh tế khó khăn, chưa đủ điều kiện chăm sóc trẻ ổn định', '2026-03-05 09:00:00', '2026-03-06 10:15:00', N'Đã tiếp nhận', N'Hồ sơ đã được kiểm tra và tiếp nhận ban đầu'),
+('YCGT0002', 'ND000006', 'NTH', N'Cô ruột', N'Gia đình không còn khả năng chăm sóc lâu dài cho trẻ', '2026-03-08 14:20:00', '2026-03-09 09:40:00', N'Đang xem xét', N'Đang chờ bổ sung xác nhận cư trú'),
+('YCGT0003', 'ND000004', 'CME', N'Mẹ ruột', N'Mẹ đơn thân, đang điều trị bệnh dài ngày', '2026-03-12 08:30:00', '2026-03-12 15:20:00', N'Chờ xử lý', N'Hồ sơ mới tạo trên hệ thống'),
+('YCGT0004', 'ND000009', 'CME', N'Mẹ ruột', N'Hoàn cảnh kinh tế khó khăn, cần hỗ trợ chăm sóc trẻ trong thời gian ngắn', '2026-03-18 09:15:00', '2026-03-19 10:00:00', N'Đang xem xét', N'Đã tiếp nhận hồ sơ và đang kiểm tra giấy tờ'),
+('YCGT0005', 'ND000008', 'NTH', N'Bà ngoại', N'Người giám hộ hiện tại không còn đủ sức khỏe để chăm sóc trẻ', '2026-03-18 10:20:00', '2026-03-19 14:20:00', N'Đã tiếp nhận', N'Hồ sơ đã được duyệt tiếp nhận'),
+('YCGT0006', 'ND000006', 'CME', N'Mẹ ruột', N'Mẹ đang điều trị bệnh dài ngày, chưa thể trực tiếp nuôi dưỡng trẻ', '2026-03-19 08:45:00', '2026-03-20 09:30:00', N'Từ chối', N'Hồ sơ thiếu giấy xác nhận tình trạng hiện tại');
 
 INSERT INTO THONGTINTRETAM (MaThongTin, MaYeuCauGuiTre, TenTre, NgaySinh, GioiTinh, DanToc)
 VALUES
@@ -469,53 +521,36 @@ VALUES
 ('TTTT0005', 'YCGT0005', N'Phan An Nhi', '2021-07-23', N'Nữ', N'Kinh'),
 ('TTTT0006', 'YCGT0006', N'Đào Khôi Nguyên', '2020-03-05', N'Nam', N'Kinh');
 
-INSERT INTO YEUCAUNHANNUOI (MaYeuCauNhan, MaNguoiNhan, LyDoNhanNuoi, MongMuonVeTre, ThuNhapHangThang, NgheNghiep, NgayTao, NgayCapNhat, TrangThai, NguoiDuyet)
+INSERT INTO YEUCAUNHANNUOI (MaYeuCauNhan, MaNguoiNhan, ThuNhapHangThang, SoConDangNuoi, TinhTrangHonNhan, LoaiNoiO, SucKhoeDatYeuCau, QuanHeVoiTre, LyDoNhanNuoi, MongMuonTuoiToiDa, MongMuonGioiTinh, HopLeSoBo, DiemUuTien, LyDoTuChoiSoBo, TrangThai, NgayTao, GhiChu)
 VALUES
-('YCNN0001', 'ND000005', N'Mong muốn chăm sóc và nuôi dạy một trẻ nhỏ trong môi trường gia đình ổn định', N'Trẻ dưới 7 tuổi, sức khỏe ổn định',  32000000, N'Kỹ sư xây dựng',    '2026-03-10 09:00:00', '2026-03-12 15:00:00', N'Chờ ghép trẻ',  'ND000003'),
-('YCNN0002', 'ND000005', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ hồ sơ pháp lý',                     N'Trẻ từ 5 đến 8 tuổi, hòa đồng',       32000000, N'Kỹ sư xây dựng',    '2026-03-14 08:45:00', '2026-03-15 16:10:00', N'Chờ ghép trẻ',  'ND000003'),
-('YCNN0003', 'ND000016', N'Mong muốn nhận nuôi trẻ để chăm sóc lâu dài trong môi trường gia đình ổn định', N'Trẻ dưới 6 tuổi, sức khỏe tốt',       28000000, N'Nhân viên kỹ thuật', '2026-03-18 13:20:00', '2026-03-25 10:00:00', N'Chờ ghép trẻ',  'ND000003'),
-('YCNN0004', 'ND000018', N'Gia đình mong muốn nhận nuôi trẻ nam đã đủ điều kiện pháp lý',                 N'Trẻ nam từ 4 đến 8 tuổi, hòa đồng',   35000000, N'Chủ hộ kinh doanh', '2026-03-19 08:40:00', '2026-03-20 10:00:00', N'Chờ ghép trẻ',  'ND000003'),
-('YCNN0005', 'ND000020', N'Mong muốn nhận nuôi trẻ nữ và tạo điều kiện học tập ổn định',                  N'Trẻ nữ từ 3 đến 7 tuổi',              30000000, N'Giáo viên',          '2026-03-19 15:10:00', '2026-03-20 11:30:00', N'Đang xem xét',  'ND000003');
+('YCNN0001', 'ND000005', 32000000, 0, N'Đã kết hôn', N'Nhà sở hữu', 1, N'Không', N'Mong muốn xây dựng gia đình', 8, N'Nữ', 0, 0, NULL, N'Đã duyệt', '2026-03-20 08:30:00', NULL),
+('YCNN0002', 'ND000006', 18000000, 1, N'Đã kết hôn', N'Chung cư sở hữu', 1, N'Người thân', N'Muốn chăm sóc cháu ruột', 6, N'Nam', 0, 0, NULL, N'Đã duyệt', '2026-03-21 09:10:00', NULL),
+('YCNN0003', 'ND000007', 45000000, 0, N'Độc thân', N'Nhà sở hữu', 1, N'Không', N'Muốn hỗ trợ trẻ khó khăn', NULL, NULL, 0, 0, NULL, N'Đã duyệt', '2026-03-22 10:20:00', NULL),
+('YCNN0004', 'ND000008', 12000000, 2, N'Đã kết hôn', N'Nhà thuê dài hạn', 1, N'Không', N'Muốn nhận nuôi lâu dài', 10, N'Nữ', 0, 0, NULL, N'Đã duyệt', '2026-03-23 14:00:00', NULL),
+('YCNN0005', 'ND000009', 28000000, 0, N'Ly hôn', N'Nhà sở hữu', 1, N'Không', N'Muốn chăm sóc trẻ mồ côi', 12, NULL, 0, 0, NULL, N'Đã duyệt', '2026-03-24 15:15:00', NULL),
+('YCNN0006', 'ND000010', 22000000, 1, N'Độc thân', N'Ở cùng gia đình', 1, N'Người thân', N'Xin nhận nuôi cháu họ', 5, N'Nam', 0, 0, NULL, N'Đã duyệt', '2026-03-25 16:40:00', NULL);
 
-INSERT INTO GIAYTOPHAPLY (MaGiayTo, TenGiayTo, LoaiGiayTo, DuongDanFile, TrangThai, MaYeuCauGuiTre, MaYeuCauNhan, NgayCapNhat)
+INSERT INTO GIAYTOPHAPLY (MaGiayTo, MaLoaiGiayTo, DuongDanFile, TrangThai, MaYeuCauGuiTre, MaYeuCauNhan, NgayCapNhat)
 VALUES
-('GT000007', N'Ảnh CCCD người nhận nuôi', N'Tùy thân', N'/uploads/giayto/ycnn0001/anh-cccd.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:05:00'),
-('GT000008', N'Giấy khám sức khỏe', N'Y tế', N'/uploads/giayto/ycnn0001/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:10:00'),
-('GT000009', N'Giấy xác nhận tình trạng hôn nhân', N'Hộ tịch', N'/uploads/giayto/ycnn0001/tinh-trang-hon-nhan.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:12:00'),
-('GT000010', N'Minh chứng thu nhập', N'Tài chính', N'/uploads/giayto/ycnn0001/minh-chung-thu-nhap.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:15:00'),
+('GT000007', 'CCCDN', N'/uploads/giayto/ycnn0001/anh-cccd.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:05:00'),
+('GT000008', 'SKYTE', N'/uploads/giayto/ycnn0001/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:10:00'),
+('GT000009', 'HONNH', N'/uploads/giayto/ycnn0001/tinh-trang-hon-nhan.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:12:00'),
+('GT000010', 'THUNHP', N'/uploads/giayto/ycnn0001/minh-chung-thu-nhap.pdf', N'Hợp lệ', NULL, 'YCNN0001', '2026-03-12 15:15:00'),
 
-('GT000011', N'Ảnh CCCD người nhận nuôi', N'Tùy thân', N'/uploads/giayto/ycnn0002/anh-cccd.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:15:00'),
-('GT000012', N'Giấy khám sức khỏe', N'Y tế', N'/uploads/giayto/ycnn0002/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:18:00'),
-('GT000013', N'Giấy xác nhận tình trạng hôn nhân', N'Hộ tịch', N'/uploads/giayto/ycnn0002/tinh-trang-hon-nhan.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:20:00'),
-('GT000014', N'Minh chứng thu nhập', N'Tài chính', N'/uploads/giayto/ycnn0002/minh-chung-thu-nhap.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:22:00'),
+('GT000011', 'CCCDN', N'/uploads/giayto/ycnn0002/anh-cccd.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:15:00'),
+('GT000012', 'SKYTE', N'/uploads/giayto/ycnn0002/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:18:00'),
+('GT000013', 'HONNH', N'/uploads/giayto/ycnn0002/tinh-trang-hon-nhan.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:20:00'),
+('GT000014', 'THUNHP', N'/uploads/giayto/ycnn0002/minh-chung-thu-nhap.pdf', N'Hợp lệ', NULL, 'YCNN0002', '2026-03-15 16:22:00'),
 
-('GT000001', N'Ảnh CCCD người gửi trẻ', N'Tùy thân', N'/uploads/giayto/ycgt0001/anh-cccd.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:20:00'),
-('GT000002', N'Giấy khai sinh của trẻ', N'Hộ tịch', N'/uploads/giayto/ycgt0001/giay-khai-sinh.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:25:00'),
-('GT000003', N'Sổ hộ khẩu', N'Cư trú', N'/uploads/giayto/ycgt0001/so-ho-khau.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:30:00'),
-('GT000004', N'Giấy tờ khác', N'Khác', N'/uploads/giayto/ycgt0001/giay-to-khac.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:32:00'),
+('GT000001', 'CCCDG', N'/uploads/giayto/ycgt0001/anh-cccd.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:20:00'),
+('GT000002', 'KHAISI', N'/uploads/giayto/ycgt0001/giay-khai-sinh.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:25:00'),
+('GT000003', 'SKYTE', N'/uploads/giayto/ycgt0001/sk1.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:30:00'),
+('GT000004', 'KHAC', N'/uploads/giayto/ycgt0001/giay-to-khac.pdf', N'Hợp lệ', 'YCGT0001', NULL, '2026-03-06 10:32:00'),
 
-('GT000005', N'Ảnh CCCD người gửi trẻ', N'Tùy thân', N'/uploads/giayto/ycgt0002/anh-cccd.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:45:00'),
-('GT000006', N'Giấy khai sinh của trẻ', N'Hộ tịch', N'/uploads/giayto/ycgt0002/giay-khai-sinh.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:50:00'),
-('GT000015', N'Sổ hộ khẩu',          N'Cư trú',   N'/uploads/giayto/ycgt0002/so-ho-khau.pdf',          N'Cần bổ sung', 'YCGT0002', NULL,       '2026-03-09 09:52:00'),
-('GT000016', N'Giấy tờ khác',       N'Khác',     N'/uploads/giayto/ycgt0002/giay-to-khac.pdf',        N'Hợp lệ',      'YCGT0002', NULL,       '2026-03-09 09:55:00'),
-
--- Giấy tờ YCNN0003
-('GT000017', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0003/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:00:00'),
-('GT000018', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0003/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:05:00'),
-('GT000019', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0003/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:08:00'),
-('GT000020', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0003/minh-chung-thu-nhap.pdf',N'Hợp lệ', NULL, 'YCNN0003', '2026-03-19 10:10:00'),
-
--- Giấy tờ YCNN0004
-('GT000021', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0004/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:05:00'),
-('GT000022', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0004/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:08:00'),
-('GT000023', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0004/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:10:00'),
-('GT000024', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0004/minh-chung-thu-nhap.pdf',N'Hợp lệ', NULL, 'YCNN0004', '2026-03-20 10:12:00'),
-
--- Giấy tờ YCNN0005
-('GT000025', N'Ảnh CCCD người nhận nuôi',              N'Tùy thân', N'/uploads/giayto/ycnn0005/anh-cccd.pdf',           N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:35:00'),
-('GT000026', N'Giấy khám sức khỏe',                   N'Y tế',     N'/uploads/giayto/ycnn0005/giay-kham-suc-khoe.pdf', N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:38:00'),
-('GT000027', N'Giấy xác nhận tình trạng hôn nhân',    N'Hộ tịch',  N'/uploads/giayto/ycnn0005/tinh-trang-hon-nhan.pdf',N'Hợp lệ', NULL, 'YCNN0005', '2026-03-20 11:40:00'),
-('GT000028', N'Minh chứng thu nhập',                  N'Tài chính',N'/uploads/giayto/ycnn0005/minh-chung-thu-nhap.pdf',N'Cần bổ sung', NULL, 'YCNN0005', '2026-03-20 11:42:00');
+('GT000005', 'CCCDG', N'/uploads/giayto/ycgt0002/anh-cccd.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:45:00'),
+('GT000006', 'KHAISI', N'/uploads/giayto/ycgt0002/giay-khai-sinh.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:50:00'),
+('GT000015', 'SKYTE', N'/uploads/giayto/ycgt0002/sk2.pdf', N'Cần bổ sung', 'YCGT0002', NULL, '2026-03-09 09:52:00'),
+('GT000016', 'KHAC', N'/uploads/giayto/ycgt0002/giay-to-khac.pdf', N'Hợp lệ', 'YCGT0002', NULL, '2026-03-09 09:55:00');
 
 INSERT INTO TRE (MaTre, HoTen, NgaySinh, GioiTinh, MaPhuongXa, DiaChiCuThe, DanToc, TinhCach, SoThich, DacDiemNhanDang, TrangThai, NgayTiepNhan, NgayCapNhat, NgayNhanNuoi, GhiChu, MaNguoiCapNhat, HinhAnh)
 VALUES
@@ -525,19 +560,39 @@ VALUES
 ('TRE00004', N'Hoàng Nhật Nam', '2018-06-02', N'Nam', 'ANTH01', N'Tiếp nhận từ hồ sơ chuyển tuyến tại Huế', N'Kinh', N'Tự lập, lễ phép', N'Đọc truyện tranh, tô tượng', N'Vết bớt nhỏ sau gáy', N'Đã nhận nuôi', '2025-10-10', '2026-02-20 09:15:00', '2026-03-18', N'Đã hoàn tất hồ sơ nhận nuôi', 'ND000003', N'/images/tre/hoang-nhat-nam.jpg'),
 ('TRE00005', N'Phan An Nhi', '2021-07-23', N'Nữ', 'HHAC01', N'Tiếp nhận từ hồ sơ được duyệt tại Hòa Hải', N'Kinh', N'Hiền, dễ gần', N'Tô màu, ghép hình', N'Nốt ruồi nhỏ ở má trái', N'Đang chăm sóc', '2026-03-19', '2026-03-19 15:10:00', NULL, N'Trẻ được tạo từ yêu cầu gửi trẻ đã tiếp nhận', 'ND000002', N'/images/tre/phan-an-nhi.jpg'),
 ('TRE00006', N'Đặng Minh Phúc', '2020-10-30', N'Nam', 'ANTH01', N'Trẻ đang được chăm sóc tại cơ sở Huế', N'Kinh', N'Nhanh nhẹn, hòa đồng', N'Xếp lego, nghe kể chuyện', N'Không', N'Chờ nhận nuôi', '2026-02-15', '2026-03-18 11:20:00', NULL, N'Đủ điều kiện xem xét ghép hồ sơ nhận nuôi', 'ND000003', N'/images/tre/dang-minh-phuc.jpg'),
-('TRE00007', N'Ngô Gia Linh',    '2019-05-18', N'Nữ', 'HKHN01', N'Trẻ đang được chăm sóc tại Đà Sơn',                     N'Kinh', N'Ngoan, ít nói',        N'Nghe nhạc, tô tượng',         N'Vết bớt nhỏ ở cánh tay phải', N'Đang chăm sóc', '2025-11-20', '2026-03-18 14:00:00', NULL, N'Đang theo dõi phát triển thể chất',                  'ND000002', N'/images/tre/ngo-gia-linh.jpg'),
--- Trẻ từ yêu cầu gửi YCGT0002 (Võ Nhật Minh)
-('TRE00008', N'Võ Nhật Minh',   '2020-12-03', N'Nam', 'ANTH01', N'Tiếp nhận từ yêu cầu gửi trẻ YCGT0002',                 N'Kinh', N'Hiếu động, dễ gần',  N'Chơi lego, nghe nhạc thiếu nhi',N'Không',                        N'Đang chăm sóc', '2026-03-12', '2026-03-12 11:00:00', NULL, N'Hồ sơ tiếp nhận đã hoàn tất',                        'ND000002', N'/images/tre/vo-nhat-minh.jpg'),
--- Trẻ từ yêu cầu gửi YCGT0004 (Trần Gia Bảo)
-('TRE00009', N'Trần Gia Bảo',   '2022-09-11', N'Nam', 'HKHN01', N'Tiếp nhận từ yêu cầu gửi trẻ YCGT0004',                 N'Kinh', N'Nhút nhát, cần quan tâm', N'Tô màu, xem hoạt hình',      N'Nốt ruồi nhỏ ở lưng',          N'Đang chăm sóc', '2026-03-21', '2026-03-21 09:00:00', NULL, N'Trẻ mới tiếp nhận, đang theo dõi thích nghi môi trường', 'ND000002', N'/images/tre/tran-gia-bao.jpg');
+('TRE00007', N'Ngô Gia Linh', '2019-05-18', N'Nữ', 'HKHN01', N'Trẻ đang được chăm sóc tại Đà Sơn', N'Kinh', N'Ngoan, ít nói', N'Nghe nhạc, tô tượng', N'Vết bớt nhỏ ở cánh tay phải', N'Đang chăm sóc', '2025-11-20', '2026-03-18 14:00:00', NULL, N'Đang theo dõi phát triển thể chất', 'ND000002', N'/images/tre/ngo-gia-linh.jpg');
 
+INSERT INTO LICHHENGAPMATNHANNUOI (MaLichGap, MaYeuCauNhan, MaCanBo, NgayGapMat, ThoiGian, DiaDiem, TrangThai, PhanHoiNguoiNhan, ThoiGianDeXuatMoi, NgayTao, NgayCapNhat)
+VALUES
+('LGM00001', 'YCNN0001', 'ND000003', '2026-04-01', '09:00:00', N'Phòng tư vấn số 1', N'Đã xác nhận', N'Tôi sẽ tham gia đúng giờ', NULL,'2026-03-26 08:00:00', NULL),
+('LGM00002', 'YCNN0002', 'ND000003', '2026-04-02', '14:00:00', N'Khu sinh hoạt trẻ', N'Đã gặp mặt', N'Đã tham gia gặp mặt', NULL,'2026-03-26 09:00:00', '2026-04-02 16:00:00'),
+('LGM00003', 'YCNN0003', 'ND000003', '2026-04-03', '10:30:00', N'Phòng tư vấn số 2', N'Chờ xác nhận', NULL, NULL,  '2026-03-27 08:30:00', NULL),
+('LGM00004', 'YCNN0004', 'ND000003', '2026-04-05', '15:00:00', N'Khu vui chơi trẻ em', N'Yêu cầu đổi lịch', N'Xin đổi sang ngày khác', '2026-04-07 09:00:00','2026-03-27 09:20:00', '2026-04-05 16:10:00'),
+('LGM00005', 'YCNN0005', 'ND000003', '2026-04-06', '08:30:00', N'Phòng gặp mặt số 3', N'Đã gặp mặt', N'Buổi gặp tích cực', NULL, '2026-03-28 10:00:00', '2026-04-06 11:30:00'),
+('LGM00006', 'YCNN0006', 'ND000003', '2026-04-08', '13:30:00', N'Khu sinh hoạt chung', N'Đã xác nhận', N'Sẽ đến đúng lịch', NULL, '2026-03-29 08:45:00', NULL);
+INSERT INTO CHITIETGAPMAT (MaLichGap, MaTre, KetQua, GhiChuCanBo)
+VALUES
+('LGM00001', 'TRE00001', N'Phù hợp', N'Trẻ thân thiện và hợp tác tốt'),
+('LGM00001', 'TRE00003', N'Cần gặp lại', N'Cần thêm thời gian tương tác'),
+
+('LGM00002', 'TRE00002', N'Phù hợp', N'Người nhận nuôi tương tác tốt với trẻ'),
+
+('LGM00003', 'TRE00006', NULL, NULL),
+
+('LGM00004', 'TRE00005', N'Không phù hợp', N'Trẻ còn e dè khi tiếp xúc'),
+('LGM00004', 'TRE00007', N'Cần gặp lại', N'Cần theo dõi thêm khả năng hòa hợp'),
+
+('LGM00005', 'TRE00001', N'Phù hợp', N'Trẻ có phản ứng tích cực'),
+('LGM00005', 'TRE00006', N'Cần gặp lại', N'Cần đánh giá thêm khả năng hòa hợp'),
+
+('LGM00006', 'TRE00002', N'Phù hợp', N'Trẻ chủ động giao tiếp'),
+('LGM00006', 'TRE00004', N'Không phù hợp', N'Trẻ chưa sẵn sàng tiếp xúc');
 INSERT INTO HOSOTIEPNHANTRE (MaHSTiepNhan, MaYeuCauGuiTre, MaTre, MaCanBoTiepNhan, NgayTiepNhan, TrangThai, NgayDuyet, GhiChu)
 VALUES
-('HSTN0001', 'YCGT0001', 'TRE00001', 'ND000002', '2026-03-07', N'Đã duyệt',    '2026-03-07', N'Đã hoàn tất tiếp nhận trẻ vào hồ sơ chính thức'),
-('HSTN0002', 'YCGT0002', 'TRE00008', 'ND000002', '2026-03-12', N'Đã duyệt',    '2026-03-12', N'Đã bổ sung đủ giấy tờ, hoàn tất tiếp nhận trẻ'),
-('HSTN0003', 'YCGT0005', 'TRE00005', 'ND000002', '2026-03-19', N'Đã duyệt',    '2026-03-19', N'Đã tiếp nhận và tạo hồ sơ trẻ chính thức'),
-('HSTN0004', 'YCGT0004', 'TRE00009', 'ND000002', '2026-03-19', N'Chờ duyệt',   NULL,         N'Đang chờ trưởng phòng duyệt hồ sơ tiếp nhận'),
-('HSTN0005', 'YCGT0003', 'TRE00003', 'ND000002', '2026-03-13', N'Chờ duyệt',   NULL,         N'Hồ sơ đã lập, chờ trưởng phòng phê duyệt tiếp nhận');
+('HSTN0001', 'YCGT0001', 'TRE00001', 'ND000002', '2026-03-07', N'Đã duyệt', '2026-03-07', N'Đã hoàn tất tiếp nhận trẻ vào hồ sơ chính thức'),
+('HSTN0002', 'YCGT0002', NULL, 'ND000002', '2026-03-09', N'Đang xử lý', NULL, N'Đang chờ bổ sung giấy tờ còn thiếu'),
+('HSTN0003', 'YCGT0005', 'TRE00005', 'ND000002', '2026-03-19', N'Đã duyệt', '2026-03-19', N'Đã tiếp nhận và tạo hồ sơ trẻ chính thức'),
+('HSTN0004', 'YCGT0004', NULL, 'ND000002', '2026-03-19', N'Đang xử lý', NULL, N'Đang chờ hoàn tất xác minh hồ sơ');
 
 INSERT INTO THEODOISUCKHOE (MaTheoDoi, MaTre, MaNguoiCapNhat, NgayCapNhat, CanNang, ChieuCao, NhipTim, NhomMau, NhietDo, KetLuan, TinhTrangChiTiet)
 VALUES
@@ -547,9 +602,7 @@ VALUES
 ('TDSK0004', 'TRE00004', 'ND000003', '2026-03-16 10:20:00', 23.10, 118.00, 88, 'O+', 36.60, N'Sức khỏe tốt', N'Đủ điều kiện bàn giao hồ sơ sau nhận nuôi'),
 ('TDSK0005', 'TRE00005', 'ND000002', '2026-03-20 08:15:00', 14.30, 96.00, 97, 'A+', 36.70, N'Sức khỏe ổn định', N'Trẻ ăn ngủ tốt, thích nghi nhanh với môi trường mới'),
 ('TDSK0006', 'TRE00006', 'ND000003', '2026-03-20 09:10:00', 17.80, 104.50, 93, 'O+', 36.80, N'Phát triển bình thường', N'Đủ điều kiện tham gia sinh hoạt nhóm'),
-('TDSK0007', 'TRE00007', 'ND000002', '2026-03-20 10:25:00', 18.20, 107.00, 91, 'B+', 36.60, N'Cần theo dõi thêm', N'Khuyến nghị bổ sung dinh dưỡng và tái khám định kỳ'),
-('TDSK0008', 'TRE00008', 'ND000002', '2026-03-13 09:00:00', 13.50, 86.00, 97, 'O+', 36.80, N'Sức khỏe ổn định', N'Trẻ tiếp nhận tốt, ăn ngủ bình thường'),
-('TDSK0009', 'TRE00009', 'ND000002', '2026-03-22 08:30:00', 11.80, 83.00, 99, 'A+', 36.90, N'Cần theo dõi dinh dưỡng', N'Trẻ mới nhập, hơi gầy so với độ tuổi, cần bổ sung dinh dưỡng');
+('TDSK0007', 'TRE00007', 'ND000002', '2026-03-20 10:25:00', 18.20, 107.00, 91, 'B+', 36.60, N'Cần theo dõi thêm', N'Khuyến nghị bổ sung dinh dưỡng và tái khám định kỳ');
 
 INSERT INTO LICHSUTIEMCHUNG (MaLSTiemChung, MaTre, MaVacxin, MuiSo, NgayTiem, GhiChu)
 VALUES
@@ -612,53 +665,12 @@ VALUES
 
 ('LSTC0052', 'TRE00007', 'MV',    1, '2020-06-25', N'Sởi mũi 1'),
 ('LSTC0053', 'TRE00007', 'MR',    1, '2021-03-25', N'Sởi - Rubella mũi 1'),
-('LSTC0054', 'TRE00007', 'DPT',   4, '2021-03-25', N'DPT mũi nhắc'),
-
--- TRE00008 (Võ Nhật Minh, sinh 2020-12-03)
-('LSTC0055', 'TRE00008', 'HBV',   0, '2020-12-10', N'Viêm gan B mũi sơ sinh'),
-('LSTC0056', 'TRE00008', 'BCG',   1, '2020-12-10', N'BCG mũi 1'),
-('LSTC0057', 'TRE00008', 'PENTA', 1, '2021-02-10', N'5 trong 1 mũi 1'),
-('LSTC0058', 'TRE00008', 'OPV',   1, '2021-02-10', N'Bại liệt uống mũi 1'),
-('LSTC0059', 'TRE00008', 'PENTA', 2, '2021-03-10', N'5 trong 1 mũi 2'),
-('LSTC0060', 'TRE00008', 'OPV',   2, '2021-03-10', N'Bại liệt uống mũi 2'),
-('LSTC0061', 'TRE00008', 'MV',    1, '2021-09-10', N'Sởi mũi 1'),
-('LSTC0062', 'TRE00008', 'MR',    1, '2022-06-10', N'Sởi - Rubella mũi 1'),
-
--- TRE00009 (Trần Gia Bảo, sinh 2022-09-11)
-('LSTC0063', 'TRE00009', 'HBV',   0, '2022-09-18', N'Viêm gan B mũi sơ sinh'),
-('LSTC0064', 'TRE00009', 'BCG',   1, '2022-09-18', N'BCG mũi 1'),
-('LSTC0065', 'TRE00009', 'PENTA', 1, '2022-11-18', N'5 trong 1 mũi 1'),
-('LSTC0066', 'TRE00009', 'OPV',   1, '2022-11-18', N'Bại liệt uống mũi 1'),
-('LSTC0067', 'TRE00009', 'PENTA', 2, '2022-12-18', N'5 trong 1 mũi 2'),
-('LSTC0068', 'TRE00009', 'OPV',   2, '2022-12-18', N'Bại liệt uống mũi 2');
+('LSTC0054', 'TRE00007', 'DPT',   4, '2021-03-25', N'DPT mũi nhắc');
 
 INSERT INTO HOSONHANNUOI (MaHSNhanNuoi, MaYeuCauNhan, MaTre, MaCanBo, NgayLap, NgayDuyet, TrangThai, GhiChu)
 VALUES
-('HSNN0001', 'YCNN0002', 'TRE00002', 'ND000003', '2026-03-16', NULL,          N'Chờ duyệt', N'Đã lập hồ sơ, chờ trưởng phòng duyệt'),
-('HSNN0002', 'YCNN0004', 'TRE00006', 'ND000003', '2026-03-20', NULL,          N'Chờ duyệt', N'Đã lập hồ sơ, chờ trưởng phòng duyệt'),
-('HSNN0003', 'YCNN0003', 'TRE00003', 'ND000003', '2026-03-26', '2026-03-28', N'Đã duyệt',  N'Hồ sơ đã được trưởng phòng phê duyệt, trẻ chuẩn bị bàn giao');
-
-INSERT INTO LICHHENGAPMATNHANNUOI (MaLichGap, MaYeuCauNhan, MaTre, MaCanBo, NgayGapMat, ThoiGian, DiaDiem, TrangThai, KetQua, PhanHoiNguoiNhan, ThoiGianDeXuatMoi, GhiChuCanBo, NgayTao, NgayCapNhat)
-VALUES
-('LHGM0001', 'YCNN0001', 'TRE00002', 'ND000003', NULL,
- '2026-03-25 09:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Chờ xác nhận', NULL, NULL, NULL,
- N'Lịch gặp mặt lần đầu giữa gia đình và trẻ TRE00002', '2026-03-22 08:00:00', NULL),
-
-('LHGM0002', 'YCNN0002', 'TRE00002', 'ND000003', NULL,
- '2026-03-22 14:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã xác nhận', NULL, NULL, NULL,
- N'Buổi gặp mặt thứ hai để hoàn thiện hồ sơ', '2026-03-18 10:00:00', '2026-03-20 09:00:00'),
-
-('LHGM0003', 'YCNN0005', 'TRE00007', 'ND000003', '2026-03-20 08:30:00',
- '2026-03-20 08:30:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã gặp mặt', N'Cần gặp lại', N'Gia đình cần thêm thời gian suy nghĩ', NULL,
- N'Kết quả gặp mặt: Cần sắp xếp thêm buổi gặp', '2026-03-17 07:30:00', '2026-03-20 10:00:00'),
-
-('LHGM0004', 'YCNN0004', 'TRE00006', 'ND000003', NULL,
- '2026-04-02 10:00:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Chờ xác nhận', NULL, NULL, NULL,
- N'Lịch gặp mặt để gia đình tìm hiểu thông tin trẻ TRE00006', '2026-03-28 08:30:00', NULL),
-
-('LHGM0005', 'YCNN0003', 'TRE00003', 'ND000003', '2026-03-25 09:30:00',
- '2026-03-25 09:30:00', N'Phòng tư vấn nhận nuôi - Trung tâm', N'Đã gặp mặt', N'Phù hợp', N'Gia đình rất hài lòng và mong muốn tiến hành thủ tục nhận nuôi', NULL,
- N'Kết quả gặp mặt: Phù hợp, tiến hành lập hồ sơ nhận nuôi', '2026-03-22 08:00:00', '2026-03-25 11:00:00');
+('HSNN0001', 'YCNN0002', 'TRE00002', 'ND000004', '2026-03-16', NULL, N'Đang lập', N'Đang hoàn thiện hồ sơ ghép trẻ phù hợp'),
+('HSNN0002', 'YCNN0004', 'TRE00006', 'ND000007', '2026-03-20', NULL, N'Đang lập', N'Đang hoàn thiện hồ sơ ghép trẻ phù hợp');
 GO
 USE QuanLyTTBT;
 GO
@@ -920,7 +932,7 @@ SELECT
     nd.GioiTinh,
     nd.CCCD,
     nd.Email,
-    nd.MaXaPhuong,
+    nd.MaPhuongXa,
     px.TenPhuongXa,
     tp.TenTinhTP,
     nd.DiaChiCuThe,
@@ -929,7 +941,7 @@ SELECT
     vt.MaVaiTro,
     vt.TenVaiTro
 FROM dbo.NGUOIDUNG nd
-LEFT JOIN dbo.PHUONG_XA px ON nd.MaXaPhuong = px.MaPhuongXa
+LEFT JOIN dbo.PHUONG_XA px ON nd.MaPhuongXa = px.MaPhuongXa
 LEFT JOIN dbo.TINH_TP tp ON px.MaTinhTP = tp.MaTinhTP
 LEFT JOIN dbo.NGUOIDUNG_VAITRO ndvt ON nd.MaNguoiDung = ndvt.MaNguoiDung
 LEFT JOIN dbo.VAITRO vt ON ndvt.MaVaiTro = vt.MaVaiTro;
@@ -968,18 +980,46 @@ LEFT JOIN dbo.THONGTINTRETAM ttt ON yc.MaYeuCauGuiTre = ttt.MaYeuCauGuiTre
 LEFT JOIN dbo.HOSOTIEPNHANTRE hstn ON yc.MaYeuCauGuiTre = hstn.MaYeuCauGuiTre;
 GO
 
-CREATE OR ALTER VIEW dbo.vw_GiayToPhapLy
+CREATE OR ALTER VIEW vw_GiayToPhapLy
 AS
 SELECT
     gt.MaGiayTo,
-    gt.TenGiayTo,
-    gt.LoaiGiayTo,
+    gt.MaLoaiGiayTo,
+    lgt.TenLoaiGiayTo,
     gt.DuongDanFile,
     gt.TrangThai,
     gt.MaYeuCauGuiTre,
     gt.MaYeuCauNhan,
     gt.NgayCapNhat
-FROM dbo.GIAYTOPHAPLY gt;
+FROM GIAYTOPHAPLY gt
+INNER JOIN LOAIGIAYTOBATBUOC lgt
+    ON gt.MaLoaiGiayTo = lgt.MaLoaiGiayTo;
+GO
+
+CREATE OR ALTER VIEW vw_YeuCauNhanNuoi
+AS
+SELECT
+    ycnn.MaYeuCauNhan,
+    ycnn.MaNguoiNhan,
+    nd.HoTen,
+    nd.Email,
+    ycnn.ThuNhapHangThang,
+    ycnn.SoConDangNuoi,
+    ycnn.TinhTrangHonNhan,
+    ycnn.LoaiNoiO,
+    ycnn.SucKhoeDatYeuCau,
+    ycnn.QuanHeVoiTre,
+
+    ycnn.HopLeSoBo,
+    ycnn.DiemUuTien,
+    ycnn.LyDoTuChoiSoBo,
+
+    ycnn.TrangThai,
+    ycnn.NgayTao,
+    ycnn.GhiChu
+FROM YEUCAUNHANNUOI ycnn
+INNER JOIN NGUOIDUNG nd
+    ON ycnn.MaNguoiNhan=nd.MaNguoiDung;
 GO
 
 CREATE OR ALTER VIEW dbo.vw_DanhSachTre
@@ -1073,28 +1113,6 @@ JOIN dbo.TRE t ON td.MaTre = t.MaTre
 LEFT JOIN dbo.NGUOIDUNG nd ON td.MaNguoiCapNhat = nd.MaNguoiDung;
 GO
 
-CREATE OR ALTER VIEW dbo.vw_DanhSachYeuCauNhanNuoi
-AS
-SELECT
-    yc.MaYeuCauNhan,
-    yc.MaNguoiNhan,
-    nd.HoTen AS TenNguoiNhan,
-    nd.SDT AS SDTNguoiNhan,
-    yc.LyDoNhanNuoi,
-    yc.MongMuonVeTre,
-    yc.ThuNhapHangThang,
-    yc.NgheNghiep,
-    yc.NgayTao,
-    yc.NgayCapNhat,
-    yc.TrangThai,
-    yc.NguoiDuyet,
-    nd2.HoTen AS TenNguoiDuyet,
-    (SELECT COUNT(*) FROM dbo.GIAYTOPHAPLY gt WHERE gt.MaYeuCauNhan = yc.MaYeuCauNhan) AS SoGiayTo,
-    (SELECT COUNT(*) FROM dbo.GIAYTOPHAPLY gt WHERE gt.MaYeuCauNhan = yc.MaYeuCauNhan AND gt.TrangThai = N'Hợp lệ') AS SoGiayToHopLe
-FROM dbo.YEUCAUNHANNUOI yc
-JOIN dbo.NGUOIDUNG nd ON yc.MaNguoiNhan = nd.MaNguoiDung
-LEFT JOIN dbo.NGUOIDUNG nd2 ON yc.NguoiDuyet = nd2.MaNguoiDung;
-GO
 
 CREATE OR ALTER VIEW dbo.vw_DanhSachHoSoTiepNhanTre
 AS
@@ -1177,7 +1195,7 @@ BEGIN
         INSERT INTO dbo.NGUOIDUNG
         (
             MaNguoiDung, SDT, MatKhau, HoTen, NgaySinh, GioiTinh,
-            CCCD, Email, MaXaPhuong, DiaChiCuThe, NgayTao, TrangThaiTK
+            CCCD, Email, MaPhuongXa, DiaChiCuThe, NgayTao, TrangThaiTK
         )
         VALUES
         (
@@ -1327,43 +1345,6 @@ BEGIN
     END CATCH
 END;
 GO
-CREATE OR ALTER PROCEDURE dbo.sp_ThemGiayToPhapLy
-    @TenGiayTo NVARCHAR(150),
-    @LoaiGiayTo NVARCHAR(50),
-    @DuongDanFile NVARCHAR(255) = NULL,
-    @MaYeuCauGuiTre CHAR(8) = NULL,
-    @MaYeuCauNhan CHAR(8) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF (
-        (@MaYeuCauGuiTre IS NULL AND @MaYeuCauNhan IS NULL)
-        OR
-        (@MaYeuCauGuiTre IS NOT NULL AND @MaYeuCauNhan IS NOT NULL)
-    )
-    BEGIN
-        RAISERROR(N'Giấy tờ phải thuộc đúng một loại yêu cầu.', 16, 1);
-        RETURN;
-    END;
-
-    DECLARE @MaGiayTo CHAR(8);
-    SET @MaGiayTo = 'GT' + RIGHT('000000' + CAST(NEXT VALUE FOR dbo.SEQ_GIAYTO AS VARCHAR(6)), 6);
-
-    INSERT INTO dbo.GIAYTOPHAPLY
-    (
-        MaGiayTo, TenGiayTo, LoaiGiayTo, DuongDanFile,
-        TrangThai, MaYeuCauGuiTre, MaYeuCauNhan, NgayCapNhat
-    )
-    VALUES
-    (
-        @MaGiayTo, @TenGiayTo, @LoaiGiayTo, @DuongDanFile,
-        N'Chờ xác minh', @MaYeuCauGuiTre, @MaYeuCauNhan, SYSDATETIME()
-    );
-
-    SELECT @MaGiayTo AS MaGiayTo, N'Thêm giấy tờ thành công' AS ThongBao;
-END;
-GO
 CREATE OR ALTER PROCEDURE dbo.sp_DuyetYeuCauGuiTre
     @MaYeuCauGuiTre CHAR(8),
     @MaCanBoTiepNhan CHAR(8),
@@ -1438,7 +1419,7 @@ BEGIN
                 TTT.TenTre,
                 TTT.NgaySinh,
                 TTT.GioiTinh,
-                ND.MaXaPhuong,
+                ND.MaPhuongXa,
                 ND.DiaChiCuThe,
                 TTT.DanToc,
                 NULL,
@@ -1552,118 +1533,156 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sp_TaoYeuCauNhanNuoi
-    @MaNguoiNhan CHAR(8),
-    @LyDoNhanNuoi NVARCHAR(200) = NULL,
-    @MongMuonVeTre NVARCHAR(200) = NULL,
-    @ThuNhapHangThang DECIMAL(12,2) = NULL,
-    @NgheNghiep NVARCHAR(100) = NULL
+CREATE OR ALTER PROCEDURE sp_XetDuyetSoBoYCNhanNuoi
+    @MaYeuCauNhan CHAR(8)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF NOT EXISTS (SELECT 1 FROM dbo.NGUOIDUNG WHERE MaNguoiDung = @MaNguoiNhan)
-    BEGIN
-        RAISERROR(N'Người nhận nuôi không tồn tại.', 16, 1);
-        RETURN;
-    END;
+    DECLARE
+        @ThuNhap      DECIMAL(18,2),
+        @SoCon        INT,
+        @SucKhoe      BIT,
+        @QuanHe       NVARCHAR(50),
 
-    DECLARE @MaYeuCauNhan CHAR(8);
-    SET @MaYeuCauNhan = 'YCNN' + RIGHT('0000' + CAST(NEXT VALUE FOR dbo.SEQ_YCNN AS VARCHAR(4)), 4);
+        @Diem         DECIMAL(4,1) = 0,
+        @HopLe        BIT = 1,
+        @LyDo         NVARCHAR(500) = N'';
 
-    INSERT INTO dbo.YEUCAUNHANNUOI
-    (
-        MaYeuCauNhan, MaNguoiNhan, LyDoNhanNuoi, MongMuonVeTre,
-        ThuNhapHangThang, NgheNghiep, NgayTao, NgayCapNhat,
-        TrangThai, NguoiDuyet
-    )
-    VALUES
-    (
-        @MaYeuCauNhan, @MaNguoiNhan, @LyDoNhanNuoi, @MongMuonVeTre,
-        @ThuNhapHangThang, @NgheNghiep, GETDATE(), NULL,
-        N'Chờ xử lý', NULL
-    );
+    -- =====================================================
+    -- LAY THONG TIN HO SO
+    -- =====================================================
 
-    SELECT @MaYeuCauNhan AS MaYeuCauNhan, N'Tạo yêu cầu nhận nuôi thành công' AS ThongBao;
-END;
-GO
-CREATE OR ALTER PROCEDURE dbo.sp_TaoLichGapMatNhanNuoi
-    @MaYeuCauNhan CHAR(8),
-    @MaTre CHAR(8),
-    @MaCanBo CHAR(8),
-    @NgayGapMat DATETIME,
-    @ThoiGian DATETIME = NULL,
-    @DiaDiem NVARCHAR(200) = NULL,
-    @GhiChuCanBo NVARCHAR(200) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.YEUCAUNHANNUOI WHERE MaYeuCauNhan = @MaYeuCauNhan)
-    BEGIN
-        RAISERROR(N'Yêu cầu nhận nuôi không tồn tại.', 16, 1);
-        RETURN;
-    END;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.TRE WHERE MaTre = @MaTre)
-    BEGIN
-        RAISERROR(N'Trẻ không tồn tại.', 16, 1);
-        RETURN;
-    END;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.NGUOIDUNG WHERE MaNguoiDung = @MaCanBo)
-    BEGIN
-        RAISERROR(N'Cán bộ không tồn tại.', 16, 1);
-        RETURN;
-    END;
-
-    DECLARE @MaLichGap CHAR(8);
-
-    SET @MaLichGap = 'LHGM' + RIGHT('0000' + CAST(NEXT VALUE FOR dbo.SEQ_LHGM AS VARCHAR(4)), 4);
-
-    INSERT INTO dbo.LICHHENGAPMATNHANNUOI (
-        MaLichGap,
-        MaYeuCauNhan,
-        MaTre,
-        MaCanBo,
-        NgayGapMat,
-        ThoiGian,
-        DiaDiem,
-        TrangThai,
-        KetQua,
-        PhanHoiNguoiNhan,
-        ThoiGianDeXuatMoi,
-        GhiChuCanBo,
-        NgayTao,
-        NgayCapNhat
-    )
-    VALUES (
-        @MaLichGap,
-        @MaYeuCauNhan,
-        @MaTre,
-        @MaCanBo,
-        @NgayGapMat,
-        @ThoiGian,
-        @DiaDiem,
-        N'Chờ xác nhận',
-        NULL,
-        NULL,
-        NULL,
-        @GhiChuCanBo,
-        GETDATE(),
-        NULL
-    );
-
-    UPDATE dbo.YEUCAUNHANNUOI
-    SET TrangThai = N'Chờ ghép trẻ',
-        NgayCapNhat = GETDATE()
+    SELECT
+        @ThuNhap = ThuNhapHangThang,
+        @SoCon   = SoConDangNuoi,
+        @SucKhoe = SucKhoeDatYeuCau,
+        @QuanHe  = QuanHeVoiTre
+    FROM YEUCAUNHANNUOI
     WHERE MaYeuCauNhan = @MaYeuCauNhan;
 
-    SELECT 
-        @MaLichGap AS MaLichGap,
-        N'Tạo lịch gặp mặt thành công' AS ThongBao;
+    -- =====================================================
+    -- KIEM TRA GIAY TO BAT BUOC
+    -- =====================================================
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM LOAIGIAYTOBATBUOC l
+        WHERE l.ApDungYCNN = 1
+          AND l.BatBuoc = 1
+          AND NOT EXISTS
+          (
+              SELECT 1
+              FROM GIAYTOPHAPLY g
+              WHERE g.MaLoaiGiayTo = l.MaLoaiGiayTo
+                AND g.MaYeuCauNhan = @MaYeuCauNhan
+                AND g.TrangThai = N'Hợp lệ'
+          )
+    )
+    BEGIN
+        SET @HopLe = 0;
+        SET @LyDo += N'- Thiếu giấy tờ bắt buộc. ';
+    END
+
+    -- =====================================================
+    -- KIEM TRA GIAY TO QUAN HE
+    -- CHI BAT BUOC NEU KHAI LA NGUOI THAN
+    -- =====================================================
+
+    IF @QuanHe = N'Người thân'
+    BEGIN
+
+        SET @Diem += 5;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM GIAYTOPHAPLY
+            WHERE MaYeuCauNhan = @MaYeuCauNhan
+              AND MaLoaiGiayTo = 'QUANHE'
+              AND TrangThai = N'Hợp lệ'
+        )
+        BEGIN
+            SET @HopLe = 0;
+
+            SET @LyDo +=
+                N'- Khai là người thân nhưng chưa nộp giấy chứng minh quan hệ. ';
+        END
+    END
+
+    -- =====================================================
+    -- THU NHAP
+    -- =====================================================
+
+    IF @ThuNhap < 6000000
+    BEGIN
+        SET @HopLe = 0;
+
+        SET @LyDo +=
+            N'- Thu nhập dưới mức yêu cầu tối thiểu. ';
+    END
+    ELSE IF @ThuNhap >= 30000000
+        SET @Diem += 3;
+
+    ELSE IF @ThuNhap >= 15000000
+        SET @Diem += 2;
+
+    ELSE
+        SET @Diem += 1;
+
+    -- =====================================================
+    -- SO CON DANG NUOI
+    -- =====================================================
+
+    IF @SoCon = 0
+        SET @Diem += 2;
+
+    ELSE IF @SoCon <= 2
+        SET @Diem += 1;
+
+    -- =====================================================
+    -- SUC KHOE
+    -- =====================================================
+
+    IF @SucKhoe = 0
+    BEGIN
+        SET @HopLe = 0;
+
+        SET @LyDo +=
+            N'- Không đủ điều kiện sức khỏe. ';
+    END
+
+    -- =====================================================
+    -- CAP NHAT KET QUA
+    -- =====================================================
+
+    UPDATE YEUCAUNHANNUOI
+    SET
+        HopLeSoBo =
+            @HopLe,
+
+        DiemUuTien =
+            @Diem,
+
+        LyDoTuChoiSoBo =
+            CASE
+                WHEN @LyDo = N''
+                    THEN NULL
+                ELSE @LyDo
+            END,
+
+        TrangThai =
+            CASE
+                WHEN @HopLe = 1
+                    THEN N'Đã duyệt sơ bộ'
+                ELSE N'Từ chối sơ bộ'
+            END
+    WHERE MaYeuCauNhan = @MaYeuCauNhan;
+
 END;
 GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_TaoHoSoNhanNuoi
     @MaYeuCauNhan CHAR(8),
     @MaTre         CHAR(8),
@@ -1747,9 +1766,7 @@ BEGIN
         SELECT 1
         FROM dbo.LICHHENGAPMATNHANNUOI
         WHERE MaYeuCauNhan = @MaYeuCauNhan
-          AND MaTre = @MaTre
           AND TrangThai = N'Đã gặp mặt'
-          AND KetQua = N'Phù hợp'
     )
     BEGIN
         RAISERROR(N'Chưa có kết quả gặp mặt phù hợp nên chưa thể tạo hồ sơ nhận nuôi.', 16, 1);

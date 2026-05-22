@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -8,86 +8,9 @@ import {
 } from 'lucide-react';
 
 import { formatDate } from '../../utils/formatDate';
+import childApi from '../../api/childApi';
+import axiosClient from '../../api/axiosClient';
 
-const STORAGE_HEALTH_KEY = 'mock_health_records';
-const STORAGE_CHILD_KEY = 'mock_children';
-
-const DEMO_CHILDREN = [
-  {
-    MaTre: 'TRE00015',
-    HoTen: 'Nguyễn An',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2019-02-14',
-    TrangThai: 'Đang chăm sóc',
-  },
-  {
-    MaTre: 'TRE00016',
-    HoTen: 'Trần Văn Đức',
-    GioiTinh: 'Nam',
-    NgaySinh: '2019-08-20',
-    TrangThai: 'Đang chăm sóc',
-  },
-  {
-    MaTre: 'TRE00017',
-    HoTen: 'Lê Thị Mai',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2021-12-10',
-    TrangThai: 'Chờ nhận nuôi',
-  },
-];
-
-const DEMO_HEALTH_RECORDS = [
-  {
-    MaTheoDoi: 'TDSK0001',
-    MaTre: 'TRE00015',
-    MaNguoiCapNhat: 'ND000005',
-    NgayCapNhat: '2026-05-01T09:00:00',
-    CanNang: 18.5,
-    ChieuCao: 108,
-    NhipTim: 92,
-    NhomMau: 'O+',
-    NhietDo: 36.7,
-    KetLuan: 'Sức khỏe ổn định',
-    TinhTrangChiTiet: 'Ăn ngủ bình thường, chưa phát hiện dấu hiệu bất thường.',
-  },
-  {
-    MaTheoDoi: 'TDSK0002',
-    MaTre: 'TRE00016',
-    MaNguoiCapNhat: 'ND000005',
-    NgayCapNhat: '2026-05-04T14:20:00',
-    CanNang: 20.2,
-    ChieuCao: 112,
-    NhipTim: 88,
-    NhomMau: 'A+',
-    NhietDo: 36.5,
-    KetLuan: 'Tốt',
-    TinhTrangChiTiet: 'Thể trạng tốt, vận động bình thường.',
-  },
-  {
-    MaTheoDoi: 'TDSK0003',
-    MaTre: 'TRE00017',
-    MaNguoiCapNhat: 'ND000006',
-    NgayCapNhat: '2026-05-06T08:10:00',
-    CanNang: 12.4,
-    ChieuCao: 88,
-    NhipTim: 118,
-    NhomMau: 'B+',
-    NhietDo: 37.8,
-    KetLuan: 'Cần theo dõi',
-    TinhTrangChiTiet: 'Nhiệt độ hơi cao, cần theo dõi thêm trong ngày.',
-  },
-];
-
-function safeReadStorage(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = JSON.parse(raw || '[]');
-
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function normalizeChildCode(value) {
   if (!value) return '';
@@ -139,82 +62,28 @@ function toNumberOrNull(value) {
 
 function normalizeChild(item) {
   return {
-    MaTre: normalizeChildCode(item.MaTre || item.maTre || item.id || item.childId),
-    HoTen:
-      item.HoTen ||
-      item.hoTen ||
-      item.TenTre ||
-      item.childName ||
-      'Chưa cập nhật',
-    GioiTinh: item.GioiTinh || item.gioiTinh || item.gender || '',
-    NgaySinh: toDateInput(item.NgaySinh || item.ngaySinh || item.birthDate),
-    TrangThai: item.TrangThai || item.trangThai || item.status || '',
+    MaTre: normalizeChildCode(item.maTre || item.MaTre || item.id || item.childId),
+    HoTen: item.hoTen || item.HoTen || item.tenTre || item.TenTre || item.childName || 'Chưa cập nhật',
+    GioiTinh: item.gioiTinh || item.GioiTinh || item.gender || '',
+    NgaySinh: toDateInput(item.ngaySinh || item.NgaySinh || item.birthDate),
+    TrangThai: item.trangThai || item.TrangThai || item.status || '',
   };
 }
 
 function normalizeHealthRecord(item) {
   return {
-    MaTheoDoi: normalizeHealthCode(
-      item.MaTheoDoi || item.maTheoDoi || item.id || item.healthId
-    ),
-    MaTre: normalizeChildCode(item.MaTre || item.maTre || item.childId),
-    MaNguoiCapNhat: normalizeUserCode(
-      item.MaNguoiCapNhat || item.maNguoiCapNhat || item.updatedBy
-    ),
-    NgayCapNhat:
-      item.NgayCapNhat ||
-      item.ngayCapNhat ||
-      item.updatedAt ||
-      new Date().toISOString(),
-    CanNang: toNumberOrNull(item.CanNang || item.canNang || item.weight),
-    ChieuCao: toNumberOrNull(item.ChieuCao || item.chieuCao || item.height),
-    NhipTim: toNumberOrNull(item.NhipTim || item.nhipTim || item.heartRate),
-    NhomMau: item.NhomMau || item.nhomMau || item.bloodType || '',
-    NhietDo: toNumberOrNull(item.NhietDo || item.nhietDo || item.temperature),
-    KetLuan: item.KetLuan || item.ketLuan || item.conclusion || '',
-    TinhTrangChiTiet:
-      item.TinhTrangChiTiet ||
-      item.tinhTrangChiTiet ||
-      item.detail ||
-      item.note ||
-      '',
+    MaTheoDoi: normalizeHealthCode(item.maTheoDoi || item.MaTheoDoi || item.id || item.healthId),
+    MaTre: normalizeChildCode(item.maTre || item.MaTre || item.childId),
+    MaNguoiCapNhat: normalizeUserCode(item.maNguoiCapNhat || item.MaNguoiCapNhat || item.updatedBy),
+    NgayCapNhat: item.ngayCapNhat || item.NgayCapNhat || item.updatedAt || new Date().toISOString(),
+    CanNang: toNumberOrNull(item.canNang ?? item.CanNang ?? item.weight),
+    ChieuCao: toNumberOrNull(item.chieuCao ?? item.ChieuCao ?? item.height),
+    NhipTim: toNumberOrNull(item.nhipTim ?? item.NhipTim ?? item.heartRate),
+    NhomMau: item.nhomMau || item.NhomMau || item.bloodType || '',
+    NhietDo: toNumberOrNull(item.nhietDo ?? item.NhietDo ?? item.temperature),
+    KetLuan: item.ketLuan || item.KetLuan || item.conclusion || '',
+    TinhTrangChiTiet: item.tinhTrangChiTiet || item.TinhTrangChiTiet || item.detail || item.note || '',
   };
-}
-
-function getChildren() {
-  const stored = safeReadStorage(STORAGE_CHILD_KEY);
-  const merged = [...stored, ...DEMO_CHILDREN];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const child = normalizeChild(item);
-
-    if (child.MaTre && !map.has(child.MaTre)) {
-      map.set(child.MaTre, child);
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function getHealthRecords() {
-  const stored = safeReadStorage(STORAGE_HEALTH_KEY);
-  const merged = [...stored, ...DEMO_HEALTH_RECORDS];
-
-  const map = new Map();
-
-  merged.forEach((item) => {
-    const record = normalizeHealthRecord(item);
-
-    if (record.MaTheoDoi && !map.has(record.MaTheoDoi)) {
-      map.set(record.MaTheoDoi, record);
-    }
-  });
-
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.NgayCapNhat) - new Date(a.NgayCapNhat)
-  );
 }
 
 function getChildName(children, childId) {
@@ -281,8 +150,44 @@ function ValueText({ value, suffix }) {
 export default function ChildHealthList() {
   const navigate = useNavigate();
 
-  const children = useMemo(() => getChildren(), []);
-  const records = useMemo(() => getHealthRecords(), []);
+  const [rawChildren, setRawChildren] = useState([]);
+  const [rawRecords, setRawRecords] = useState([]);
+
+  useEffect(() => {
+    childApi.getAll({ limit: 500 })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setRawChildren(items);
+      })
+      .catch(() => setRawChildren([]));
+
+    axiosClient.get('/health-records')
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setRawRecords(items);
+      })
+      .catch(() => setRawRecords([]));
+  }, []);
+
+  const children = useMemo(() => {
+    const map = new Map();
+    rawChildren.forEach((item) => {
+      const child = normalizeChild(item);
+      if (child.MaTre && !map.has(child.MaTre)) map.set(child.MaTre, child);
+    });
+    return Array.from(map.values());
+  }, [rawChildren]);
+
+  const records = useMemo(() => {
+    const map = new Map();
+    rawRecords.forEach((item) => {
+      const record = normalizeHealthRecord(item);
+      if (record.MaTheoDoi && !map.has(record.MaTheoDoi)) map.set(record.MaTheoDoi, record);
+    });
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.NgayCapNhat) - new Date(a.NgayCapNhat)
+    );
+  }, [rawRecords]);
 
   const [keyword, setKeyword] = useState('');
   const [childFilter, setChildFilter] = useState('');

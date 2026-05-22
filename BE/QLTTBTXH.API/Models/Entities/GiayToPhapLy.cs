@@ -11,13 +11,12 @@ public class GiayToPhapLy
     [MaxLength(8)]
     public string MaGiayTo { get; set; } = null!;
 
-    [Column("TenGiayTo")]
-    [MaxLength(150)]
-    public string TenGiayTo { get; set; } = null!;
+    [Column("MaLoaiGiayTo", TypeName = "char(6)")]
+    [MaxLength(6)]
+    public string MaLoaiGiayTo { get; set; } = null!;
 
-    [Column("LoaiGiayTo")]
-    [MaxLength(50)]
-    public string LoaiGiayTo { get; set; } = null!;
+    [ForeignKey(nameof(MaLoaiGiayTo))]
+    public LoaiGiayToBatBuoc? LoaiGiayToBatBuoc { get; set; }
 
     [Column("DuongDanFile")]
     [MaxLength(255)]

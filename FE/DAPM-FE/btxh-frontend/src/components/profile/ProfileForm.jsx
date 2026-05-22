@@ -30,7 +30,11 @@ const cardClass =
 
 function formatDateForInput(value) {
     if (!value) return '';
-    if (typeof value === 'string' && value.includes('-')) return value;
+    if (typeof value === 'string') {
+        // Cắt phần T trở về sau nếu có (vd: "2000-01-15T00:00:00" → "2000-01-15")
+        const dateOnly = value.split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly;
+    }
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     return date.toISOString().split('T')[0];
@@ -45,18 +49,20 @@ function formatMemberSince(value) {
 
 function getInitialValues(user) {
     return {
-        fullName: user?.fullName || user?.name || '',
-        displayName: user?.displayName || user?.fullName || user?.name || '',
-        nationalId: user?.nationalId || user?.cccd || '',
-        gender: user?.gender || 'Nam',
-        dateOfBirth: formatDateForInput(user?.dateOfBirth || user?.dob),
-        phone: user?.phone || '',
+        fullName: user?.fullName || '',
+        displayName: user?.fullName || '',
+        // BE trả cCCD (camelCase của CCCD)
+        nationalId: user?.cCCD || user?.cccd || user?.CCCD || user?.nationalId || '',
+        gender: user?.gioiTinh || user?.gender || 'Nam',
+        dateOfBirth: formatDateForInput(user?.ngaySinh || user?.dateOfBirth || user?.dob),
+        phone: user?.phone || user?.sDT || '',
         email: user?.email || '',
-        province: user?.province || user?.city || 'TP. Đà Nẵng',
-        ward: user?.ward || user?.district || 'Quận Hải Châu',
-        addressDetail: user?.addressDetail || user?.address || '',
+        province: user?.tenTinhTP || user?.province || user?.city || '',
+        ward: user?.tenPhuongXa || user?.ward || user?.district || '',
+        addressDetail: user?.diaChiCuThe || user?.addressDetail || user?.address || '',
+        maXaPhuong: user?.maXaPhuong || '',
         avatarUrl: user?.avatarUrl || user?.avatar || '',
-        profileStatus: user?.profileStatus || 'Đã xác minh CCCD',
+        profileStatus: user?.isActive ? 'Đang hoạt động' : (user?.profileStatus || 'Chưa xác minh'),
         memberSince: user?.createdAt || user?.memberSince || '',
     };
 }
@@ -340,32 +346,42 @@ export default function ProfileForm({
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <div>
                                     <label className={labelClass}>Tỉnh / Thành phố</label>
-                                    <select
-                                        {...register('province')}
-                                        disabled={!isEditing}
-                                        className={inputClass(!isEditing)}
-                                    >
-                                        {provinceOptions.map((item) => (
-                                            <option key={item} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {isEditing ? (
+                                        <select
+                                            {...register('province')}
+                                            className={inputClass(false)}
+                                        >
+                                            {provinceOptions.map((item) => (
+                                                <option key={item} value={item}>{item}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            {...register('province')}
+                                            disabled
+                                            className={inputClass(true)}
+                                        />
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className={labelClass}>Phường / Xã / Quận</label>
-                                    <select
-                                        {...register('ward')}
-                                        disabled={!isEditing}
-                                        className={inputClass(!isEditing)}
-                                    >
-                                        {wardOptions.map((item) => (
-                                            <option key={item} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {isEditing ? (
+                                        <select
+                                            {...register('ward')}
+                                            className={inputClass(false)}
+                                        >
+                                            {wardOptions.map((item) => (
+                                                <option key={item} value={item}>{item}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            {...register('ward')}
+                                            disabled
+                                            className={inputClass(true)}
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="md:col-span-2">

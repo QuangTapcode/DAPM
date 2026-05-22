@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 
 import { useBasePath } from '../../hooks/useBasePath';
-import { useFetch } from '../../hooks/useFetch';
 import receptionApi from '../../api/receptionApi';
 import { formatDate } from '../../utils/formatDate';
 
@@ -73,63 +72,6 @@ const STATUS_META = {
   },
 };
 
-const DEMO_REQUESTS = [
-  {
-    MaYeuCauGuiTre: 'YCGT0001',
-    TenNguoiGui: 'Trần Thị Gửi',
-    MaLoaiNguoiGui: 'NTH',
-    QuanHeVoiTre: 'Bà ngoại',
-    LyDoGui: 'Gia đình khó khăn, không đủ điều kiện chăm sóc trẻ.',
-    NgayTao: '2026-03-01T00:00:00Z',
-    NgayCapNhat: '2026-03-02T00:00:00Z',
-    TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-    GhiChu: 'Hồ sơ hợp lệ, trẻ đã được tiếp nhận vào trung tâm.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0002',
-    TenNguoiGui: 'Nguyễn Văn Minh',
-    MaLoaiNguoiGui: 'CME',
-    QuanHeVoiTre: 'Cha ruột',
-    LyDoGui: 'Cha/mẹ bệnh nặng, chưa thể chăm sóc trẻ.',
-    NgayTao: '2026-04-10T00:00:00Z',
-    NgayCapNhat: null,
-    TrangThaiYC: STATUS_DB.CHO_XU_LY,
-    GhiChu: 'Chờ cán bộ tiếp nhận kiểm tra thông tin và giấy tờ.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0003',
-    TenNguoiGui: 'UBND Phường Hòa Khánh Bắc',
-    MaLoaiNguoiGui: 'CQDP',
-    QuanHeVoiTre: 'Cơ quan địa phương',
-    LyDoGui: 'Trẻ có hoàn cảnh đặc biệt cần được bảo trợ.',
-    NgayTao: '2026-04-14T00:00:00Z',
-    NgayCapNhat: '2026-04-15T00:00:00Z',
-    TrangThaiYC: STATUS_DB.DANG_XEM_XET,
-    GhiChu: 'Đang xác minh giấy tờ pháp lý và thông tin trẻ.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0004',
-    TenNguoiGui: 'Lê Thị Hạnh',
-    MaLoaiNguoiGui: 'CME',
-    QuanHeVoiTre: 'Mẹ ruột',
-    LyDoGui: 'Thông tin chưa đủ điều kiện tiếp nhận.',
-    NgayTao: '2026-04-16T00:00:00Z',
-    NgayCapNhat: '2026-04-17T00:00:00Z',
-    TrangThaiYC: STATUS_DB.TU_CHOI,
-    GhiChu: 'Từ chối do giấy tờ chưa hợp lệ.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0005',
-    TenNguoiGui: 'Phạm Quốc Nam',
-    MaLoaiNguoiGui: 'NTH',
-    QuanHeVoiTre: 'Cậu ruột',
-    LyDoGui: 'Người gửi đã hủy yêu cầu.',
-    NgayTao: '2026-04-18T00:00:00Z',
-    NgayCapNhat: '2026-04-19T00:00:00Z',
-    TrangThaiYC: STATUS_DB.DA_HUY,
-    GhiChu: 'Yêu cầu đã được hủy.',
-  },
-];
 
 function StatusPill({ status }) {
   const meta = STATUS_META[status] || {
@@ -156,20 +98,31 @@ function truncateText(value, max = 70) {
 function mapRequestRow(item) {
   if (!item) return null;
 
+  const maLoai = item.senderTypeCode || item.maLoaiNguoiGui || item.MaLoaiNguoiGui;
+  const status = item.status || item.trangThaiYC || item.TrangThaiYC || '';
+
   return {
-    id: item.id || item.MaYeuCauGuiTre,
-    code: item.code || item.MaYeuCauGuiTre,
-    senderName: item.senderName || item.TenNguoiGui || item.MaNguoiGui || '—',
-    senderType:
-      TYPE_LABEL[item.senderTypeCode || item.MaLoaiNguoiGui] ||
-      item.MaLoaiNguoiGui ||
+    id: item.id || item.maYeuCauGuiTre || item.MaYeuCauGuiTre,
+    code: item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.code,
+    senderName:
+      item.senderName ||
+      item.tenNguoiGui ||
+      item.TenNguoiGui ||
+      item.maNguoiGui ||
+      item.MaNguoiGui ||
       '—',
-    relationship: item.relationship || item.QuanHeVoiTre || '—',
-    reason: item.reason || item.LyDoGui || '',
-    createdAt: item.createdAt || item.NgayTao,
-    updatedAt: item.updatedAt || item.NgayCapNhat,
-    status: item.status || item.TrangThaiYC,
-    note: item.note || item.GhiChu || '',
+    senderType:
+      TYPE_LABEL[maLoai] ||
+      item.tenLoaiNguoiGui ||
+      item.TenLoaiNguoiGui ||
+      maLoai ||
+      '—',
+    relationship: item.relationship || item.quanHeVoiTre || item.QuanHeVoiTre || '—',
+    reason: item.reason || item.lyDoGui || item.LyDoGui || '',
+    createdAt: item.createdAt || item.ngayTao || item.NgayTao,
+    updatedAt: item.updatedAt || item.ngayCapNhat || item.NgayCapNhat,
+    status,
+    note: item.note || item.ghiChu || item.GhiChu || '',
   };
 }
 function StatCard({ label, value, icon, tone, active, onClick }) {
@@ -264,10 +217,16 @@ export default function ReceptionDashboard() {
 
   const [tab, setTab] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [requestsRaw, setRequestsRaw] = useState([]);
 
-  const { data } = useFetch(receptionApi.getAll);
-
-  const requestsRaw = data?.items?.length > 0 ? data.items : DEMO_REQUESTS;
+  useEffect(() => {
+    receptionApi.getAll({ page: 1, limit: 999 })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setRequestsRaw(items);
+      })
+      .catch(() => setRequestsRaw([]));
+  }, []);
 
   const requests = useMemo(
     () => requestsRaw.map(mapRequestRow).filter(Boolean),

@@ -25,7 +25,9 @@ public class QuanLyTTBTContext : DbContext
     public DbSet<ThongTinTreTam> THONGTINTRETAM => Set<ThongTinTreTam>();
     public DbSet<HoSoNhanNuoi> HOSONHANNUOI => Set<HoSoNhanNuoi>();
     public DbSet<HoSoTiepNhanTre> HOSOTIEPNHANTRE => Set<HoSoTiepNhanTre>();
-    public DbSet<LichHenGapMat> LICHHENGAPMAT => Set<LichHenGapMat>();
+    public DbSet<LoaiGiayToBatBuoc> LOAIGIAYTOBATBUOC => Set<LoaiGiayToBatBuoc>();
+    public DbSet<LichHenGapMatNhanNuoi> LICHHENGAPMATNHANNUOI => Set<LichHenGapMatNhanNuoi>();
+    public DbSet<ChiTietGapMat> CHITIETGAPMAT => Set<ChiTietGapMat>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -37,6 +39,9 @@ public class QuanLyTTBTContext : DbContext
 
         b.Entity<NguoiDungVaiTro>()
             .HasKey(x => new { x.MaNguoiDung, x.MaVaiTro });
+
+        b.Entity<ChiTietGapMat>()
+            .HasKey(x => new { x.MaLichGap, x.MaTre });
 
         // Unique indexes
         b.Entity<NguoiDung>().HasIndex(x => x.CCCD).IsUnique();
@@ -50,6 +55,12 @@ public class QuanLyTTBTContext : DbContext
             .HasOne(x => x.ThongTinTreTam)
             .WithOne(x => x.YeuCauGuiTre)
             .HasForeignKey<ThongTinTreTam>(x => x.MaYeuCauGuiTre);
+
+        // One-to-one HoSoTiepNhanTre <-> YeuCauGuiTre
+        b.Entity<YeuCauGuiTre>()
+            .HasOne(x => x.HoSoTiepNhan)
+            .WithOne(x => x.YeuCauGuiTre)
+            .HasForeignKey<HoSoTiepNhanTre>(x => x.MaYeuCauGuiTre);
 
         // Disable cascade on multi-FK paths
         foreach (var fk in b.Model.GetEntityTypes().SelectMany(t => t.GetForeignKeys()))

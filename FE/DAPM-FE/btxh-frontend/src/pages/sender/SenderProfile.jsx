@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import authApi from '../../api/authApi';
 import ProfileForm from '../../components/profile/ProfileForm';
 import { isSenderProfileComplete } from '../../utils/profileComplete';
 
@@ -10,26 +11,24 @@ export default function SenderProfile() {
   const { user, updateUser } = useAuth();
 
   const handleSave = async (payload) => {
-    console.log('Update sender profile:', payload);
-
-    // Sau này thay bằng API thật:
-    // const updatedUser = await senderApi.updateProfile(user.id, payload);
-
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    const nextUser = {
-      ...user,
-      ...payload,
+    const bePayload = {
+      HoTen: payload.fullName,
+      SDT: payload.phone,
+      CCCD: payload.nationalId,
+      GioiTinh: payload.gender,
+      NgaySinh: payload.dateOfBirth || null,
+      DiaChiCuThe: payload.addressDetail,
+      MaXaPhuong: payload.maXaPhuong || user?.maXaPhuong || null,
     };
 
-    updateUser(payload);
+    const updated = await authApi.updateProfile(user.id, bePayload);
+
+    const nextUser = { ...user, ...updated };
+    updateUser(updated || bePayload);
 
     if (isSenderProfileComplete(nextUser)) {
       const from = location.state?.from;
-
-      navigate(from || '/gui-tre/tao-yeu-cau', {
-        replace: true,
-      });
+      navigate(from || '/gui-tre/tao-yeu-cau', { replace: true });
     }
   };
 

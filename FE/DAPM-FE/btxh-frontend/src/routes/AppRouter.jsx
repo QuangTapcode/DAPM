@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import authApi from '../api/authApi';
 import { ROLES } from '../utils/constants';
-import { useLocation } from 'react-router-dom';
 import { isAdopterProfileComplete, isSenderProfileComplete } from '../utils/profileComplete';
 // Layouts
 import GuestLayout from '../components/layout/GuestLayout';
@@ -23,7 +24,6 @@ import SenderProfile from '../pages/sender/SenderProfile';
 
 // ─── Adopter ──────────────────────────────────────────
 import CreateAdoptionRequest from '../pages/adopter/CreateAdoptionRequest';
-import UpdateAdoptionRequest from '../pages/adopter/UpdateAdoptionRequest';
 import AdoptionStatus from '../pages/adopter/AdoptionStatus';
 import AdopterProfile from '../pages/adopter/AdopterProfile';
 
@@ -69,14 +69,39 @@ function ProtectedRoute({ allowedRoles, children }) {
 }
 function RequireCompletedAdopterProfile({ children }) {
   const { user, loading } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [checking, setChecking] = useState(true);
 
-  if (loading) return null;
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await authApi.getProfile();
+        if (mounted && res.success) {
+          setProfile(res.data);
+        }
+      } catch (error) {
+        console.error('Lỗi kiểm tra profile nhận nuôi:', error);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading || checking) return null;
 
   if (!user) {
     return <Navigate to="/dang-nhap" replace />;
   }
 
-  if (!isAdopterProfileComplete(user)) {
+  if (!profile || !isAdopterProfileComplete(profile)) {
     return (
       <Navigate
         to="/nhan-nuoi/ho-so?required=1"
@@ -94,14 +119,39 @@ function RequireCompletedAdopterProfile({ children }) {
 function RequireCompletedSenderProfile({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const [profile, setProfile] = useState(null);
+  const [checking, setChecking] = useState(true);
 
-  if (loading) return null;
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await authApi.getProfile();
+        if (mounted && res.success) {
+          setProfile(res.data);
+        }
+      } catch (error) {
+        console.error('Lỗi kiểm tra profile gửi trẻ:', error);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading || checking) return null;
 
   if (!user) {
     return <Navigate to="/dang-nhap" replace />;
   }
 
-  if (!isSenderProfileComplete(user)) {
+  if (!profile || !isSenderProfileComplete(profile)) {
     return (
       <Navigate
         to="/gui-tre/ho-so?required=1"
@@ -150,7 +200,6 @@ export default function AppRouter() {
           <Route path="/nhan-nuoi/tao-don" element={
             <RequireCompletedAdopterProfile><CreateAdoptionRequest /></RequireCompletedAdopterProfile>
           } />
-          <Route path="/nhan-nuoi/cap-nhat/:id" element={<UpdateAdoptionRequest />} />
           <Route path="/nhan-nuoi/trang-thai" element={
             <RequireCompletedAdopterProfile><AdoptionStatus /></RequireCompletedAdopterProfile>
           } />
