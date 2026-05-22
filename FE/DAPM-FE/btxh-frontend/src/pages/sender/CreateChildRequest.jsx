@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import family from '../../assets/sender.jpg';
 import receptionApi from '../../api/receptionApi';
+import authApi from '../../api/authApi';
 
 const SENDER_TYPES = [
   { code: 'CME', label: 'Cha hoặc mẹ ruột', requireDocs: true },
@@ -597,6 +598,15 @@ export default function CreateChildRequest() {
       reasonDetail: '',
     },
   });
+
+  useEffect(() => {
+    authApi.getProfile().then((profile) => {
+      if (profile?.fullName) setValue('senderName', profile.fullName);
+      if (profile?.cccd) setValue('senderNationalId', profile.cccd);
+      if (profile?.phone || profile?.sdt) setValue('senderPhone', profile.phone || profile.sdt);
+      if (profile?.diaChiCuThe) setValue('senderAddressDetail', profile.diaChiCuThe);
+    }).catch(() => {});
+  }, [setValue]);
 
   const senderTypeCode = watch('senderTypeCode');
   const senderProvinceCode = watch('senderProvinceCode');

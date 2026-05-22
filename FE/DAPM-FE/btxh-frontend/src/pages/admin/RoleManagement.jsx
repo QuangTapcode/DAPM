@@ -13,6 +13,20 @@ const ROLE_OPTIONS = [
   { value: ROLES.ADMIN,           label: 'Admin' },
 ];
 
+const getBackendRoleCode = (feRole) => {
+  switch (feRole) {
+    case 'admin': return 'ADMI';
+    case 'staff-reception':
+    case 'staff_reception': return 'QLNT';
+    case 'staff-adoption':
+    case 'staff_adoption': return 'QLNN';
+    case 'manager': return 'TPQL';
+    case 'sender': return 'NGGT';
+    case 'adopter': return 'NGNN';
+    default: return feRole;
+  }
+};
+
 export default function RoleManagement() {
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(null);
@@ -21,8 +35,10 @@ export default function RoleManagement() {
   const handleChangeRole = async (userId, newRole) => {
     setSaving(userId);
     try {
-      await adminApi.updateUser(userId, { role: newRole });
+      await adminApi.updateUser(userId, { roles: [getBackendRoleCode(newRole)] });
       refetch();
+    } catch (error) {
+      alert('Có lỗi xảy ra khi thay đổi vai trò.');
     } finally {
       setSaving(null);
     }

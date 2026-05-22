@@ -26,15 +26,15 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
   const [existingDocs, setExistingDocs] = useState([]);
   const [uploadingId, setUploadingId] = useState(null);
 
-  const API_DOMAIN = (import.meta.env.VITE_API_URL || 'https://localhost:44380/api').replace('/api', '');
+  const API_DOMAIN = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api').replace('/api', '');
 
   const loadData = () => {
     Promise.all([
       lookupApi.getGiayToBatBuocNhanNuoi(),
       documentApi.getDocuments({ maYeuCauNhan: requestId })
     ]).then(([resDocTypes, resDocs]) => {
-      if (resDocTypes.success) setDocTypes(resDocTypes.data);
-      if (resDocs.success) setExistingDocs(resDocs.data);
+      setDocTypes(Array.isArray(resDocTypes) ? resDocTypes : (resDocTypes?.items || []));
+      setExistingDocs(Array.isArray(resDocs) ? resDocs : (resDocs?.items || []));
     });
   };
 
@@ -50,14 +50,10 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
       formData.append('file', file);
       formData.append('maLoaiGiayTo', maLoaiGiayTo);
       formData.append('maYeuCauNhan', requestId);
-      const res = await documentApi.upload(formData);
-      if (res.success) {
-        alert('Tải lên thành công!');
-        loadData();
-        if (onUploadSuccess) onUploadSuccess();
-      } else {
-        alert('Lỗi: ' + res.message);
-      }
+      await documentApi.upload(formData);
+      alert('Tải lên thành công!');
+      loadData();
+      if (onUploadSuccess) onUploadSuccess();
     } catch {
       alert('Lỗi tải lên!');
     } finally {
@@ -214,11 +210,7 @@ export default function AdoptionStatus() {
           limit: 20,
         });
 
-        if (res.success) {
-          setApiItems(res.data?.items || []);
-        } else {
-          setApiItems([]);
-        }
+        setApiItems(res?.items || []);
       } catch (error) {
         console.error('Lỗi tải danh sách đơn nhận nuôi:', error);
         setApiItems([]);

@@ -77,10 +77,8 @@ function RequireCompletedAdopterProfile({ children }) {
 
     const fetchProfile = async () => {
       try {
-        const res = await authApi.getProfile();
-        if (mounted && res.success) {
-          setProfile(res.data);
-        }
+        const profile = await authApi.getProfile();
+        if (mounted) setProfile(profile);
       } catch (error) {
         console.error('Lỗi kiểm tra profile nhận nuôi:', error);
       } finally {
@@ -127,10 +125,8 @@ function RequireCompletedSenderProfile({ children }) {
 
     const fetchProfile = async () => {
       try {
-        const res = await authApi.getProfile();
-        if (mounted && res.success) {
-          setProfile(res.data);
-        }
+        const profile = await authApi.getProfile();
+        if (mounted) setProfile(profile);
       } catch (error) {
         console.error('Lỗi kiểm tra profile gửi trẻ:', error);
       } finally {

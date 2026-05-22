@@ -44,7 +44,7 @@ function getResponseItems(data) {
 }
 
 function getApiOrigin() {
-  const base = import.meta.env.VITE_API_URL || 'https://localhost:44380/api';
+  const base = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
   return base.replace(/\/api\/?$/, '');
 }
 

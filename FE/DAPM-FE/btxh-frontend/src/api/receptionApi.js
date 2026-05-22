@@ -14,7 +14,7 @@ const receptionApi = {
   reject: (id, reason) => axiosClient.post(`/receptions/${id}/reject`, { reason }),
 
   uploadDocument: (id, formData) => {
-    if (!formData.has('MaYeuCauGui')) formData.append('MaYeuCauGui', id);
+    if (!formData.has('maYeuCauGuiTre')) formData.append('maYeuCauGuiTre', id);
     return axiosClient.post('/documents/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

@@ -14,6 +14,18 @@ const ROLE_OPTIONS = [
   { value: ROLES.ADMIN,           label: 'Admin' },
 ];
 
+const getBackendRoleCode = (feRole) => {
+  switch (feRole) {
+    case ROLES.ADMIN: return 'ADMI';
+    case ROLES.STAFF_RECEPTION: return 'QLNT';
+    case ROLES.STAFF_ADOPTION: return 'QLNN';
+    case ROLES.MANAGER: return 'TPQL';
+    case ROLES.SENDER: return 'NGGT';
+    case ROLES.ADOPTER: return 'NGNN';
+    default: return feRole;
+  }
+};
+
 export default function AccountForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -22,17 +34,36 @@ export default function AccountForm() {
 
   useEffect(() => {
     if (isEdit) {
-      adminApi.getUserById(id).then(reset).catch(console.error);
+      adminApi.getUserById(id).then((user) => {
+        reset({
+          fullName: user.hoTen || user.fullName,
+          email: user.email,
+          phone: user.sdt || user.phone,
+          role: user.role || (user.roles?.length ? user.roles[0] : '')
+        });
+      }).catch(console.error);
     }
   }, [id, isEdit, reset]);
 
   const onSubmit = async (data) => {
-    if (isEdit) {
-      await adminApi.updateUser(id, data);
-    } else {
-      await adminApi.createUser(data);
+    const beRoleCode = getBackendRoleCode(data.role);
+    const payload = {
+      hoTen: data.fullName,
+      email: data.email,
+      sdt: data.phone,
+      roles: beRoleCode ? [beRoleCode] : []
+    };
+
+    try {
+      if (isEdit) {
+        await adminApi.updateUser(id, payload);
+      } else {
+        await adminApi.createUser({ ...payload, password: data.password });
+      }
+      navigate('/admin/accounts');
+    } catch (error) {
+      alert(error.message || 'Có lỗi xảy ra khi lưu dữ liệu');
     }
-    navigate('/admin/accounts');
   };
 
   const fieldClass = 'w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';

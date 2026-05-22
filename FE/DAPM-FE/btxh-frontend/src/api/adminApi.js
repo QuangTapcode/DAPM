@@ -12,7 +12,7 @@ const adminApi = {
   deleteUser: (id) => axiosClient.delete(`/users/${id}`),
 
   setUserStatus: (id, isActive) =>
-    axiosClient.patch(`/users/${id}/status`, { isActive }),
+    axiosClient.patch(`/users/${id}/status`, { TrangThaiTK: isActive }),
 
   getStats: () => axiosClient.get('/stats'),
 

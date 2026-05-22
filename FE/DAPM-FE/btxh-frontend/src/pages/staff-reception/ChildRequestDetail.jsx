@@ -722,20 +722,32 @@ export default function ChildRequestDetail() {
   }, [request]);
 
   async function handleStartReview() {
-    setLocalRequest((prev) => ({
-      ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.DANG_XEM_XET,
-      NgayCapNhat: new Date().toISOString(),
-    }));
+    try {
+      await receptionApi.update(id, { trangThaiYC: STATUS_DB.DANG_XEM_XET });
+      setLocalRequest((prev) => ({
+        ...(prev || data),
+        trangThaiYC: STATUS_DB.DANG_XEM_XET,
+        ngayCapNhat: new Date().toISOString(),
+      }));
+    } catch (err) {
+      alert(err?.message || 'Không thể cập nhật trạng thái.');
+    }
   }
 
   async function handleReject() {
-    setLocalRequest((prev) => ({
-      ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.TU_CHOI,
-      NgayCapNhat: new Date().toISOString(),
-      GhiChu: 'Yêu cầu bị từ chối do thông tin hoặc giấy tờ chưa hợp lệ.',
-    }));
+    const reason = window.prompt('Nhập lý do từ chối:') ?? '';
+    if (reason === null) return;
+    try {
+      await receptionApi.reject(id, reason || 'Thông tin hoặc giấy tờ chưa hợp lệ.');
+      setLocalRequest((prev) => ({
+        ...(prev || data),
+        trangThaiYC: STATUS_DB.TU_CHOI,
+        ngayCapNhat: new Date().toISOString(),
+        ghiChu: reason || 'Yêu cầu bị từ chối.',
+      }));
+    } catch (err) {
+      alert(err?.message || 'Không thể từ chối yêu cầu.');
+    }
   }
 
   async function handleMarkDocument(document, status) {
@@ -775,31 +787,29 @@ export default function ChildRequestDetail() {
       return;
     }
 
+    try {
+      await receptionApi.approve(id);
+    } catch (err) {
+      alert(err?.message || 'Không thể tiếp nhận yêu cầu.');
+      return;
+    }
+
     const acceptedRequest = {
       ...request,
       TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
       NgayCapNhat: new Date().toISOString(),
-      GhiChu:
-        'Yêu cầu đã được tiếp nhận. Cán bộ chuyển sang lập hồ sơ tiếp nhận trẻ.',
+      GhiChu: 'Yêu cầu đã được tiếp nhận. Cán bộ chuyển sang lập hồ sơ tiếp nhận trẻ.',
     };
-
-    // Sau này thay bằng API thật:
-    // await receptionApi.updateStatus(request.id, {
-    //   TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-    //   GhiChu: acceptedRequest.GhiChu,
-    // });
 
     setLocalRequest((prev) => ({
       ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-      NgayCapNhat: acceptedRequest.NgayCapNhat,
-      GhiChu: acceptedRequest.GhiChu,
+      trangThaiYC: STATUS_DB.DA_TIEP_NHAN,
+      ngayCapNhat: acceptedRequest.NgayCapNhat,
+      ghiChu: acceptedRequest.GhiChu,
     }));
 
     navigate(`${basePath}/tao-ho-so/${request.id}`, {
-      state: {
-        request: acceptedRequest,
-      },
+      state: { request: acceptedRequest },
     });
   }
 

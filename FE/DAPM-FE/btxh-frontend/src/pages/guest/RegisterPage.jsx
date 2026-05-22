@@ -37,10 +37,7 @@ export default function RegisterPage() {
         password: data.password,
       };
 
-      const res = await authApi.register(payload);
-      if (!res.success) {
-        throw new Error(res.message || 'Đăng ký thất bại');
-      }
+      await authApi.register(payload);
       navigate('/dang-nhap');
     } catch (err) {
       setError('root', {
