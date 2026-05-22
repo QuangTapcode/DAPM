@@ -17,8 +17,12 @@ import adminApi from '../../api/adminApi';
 import receptionProfileApi from '../../api/receptionProfileApi';
 import adoptionProfileApi from '../../api/adoptionProfileApi';
 import { formatDate } from '../../utils/formatDate';
-
-const PENDING_STATUSES = ['Chờ duyệt', 'Đang lập', 'Đang xử lý'];
+import {
+  compareProfilesByDateDesc,
+  getItems,
+  isPendingProfile,
+  normalizeManagerProfile,
+} from './managerProfileUtils';
 
 const FALLBACK_MONTHLY_DATA = [
   { month: 'T1', reception: 0, adoption: 0 },
@@ -32,29 +36,36 @@ const FALLBACK_MONTHLY_DATA = [
 function MailIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" />
+      <path d="M4 6h16v12H4z" />
+      <path d="m4 7 8 6 8-6" />
     </svg>
   );
 }
+
 function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 11.5 12 4l9 7.5" /><path d="M5 10.5V20h14v-9.5" />
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5 10.5V20h14v-9.5" />
     </svg>
   );
 }
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.2 2.2 4.8-5" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.2 2.2 4.8-5" />
     </svg>
   );
 }
+
 function InboxIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7" />
-      <path d="M4 13l2 5h12l2-5" /><path d="M9 13h6" />
+      <path d="M4 13l2 5h12l2-5" />
+      <path d="M9 13h6" />
     </svg>
   );
 }
@@ -92,18 +103,19 @@ function StatCard({ title, value, note, chip, icon, tone = 'blue', featured = fa
       deco: 'bg-violet-50',
     },
   };
-  const c = toneMap[tone];
+  const colors = toneMap[tone];
+
   return (
-    <div className={`relative overflow-hidden rounded-[26px] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.06)] ${c.wrap}`}>
-      <div className={`absolute -right-8 -top-8 h-28 w-28 rounded-full ${c.deco}`} />
+    <div className={`relative overflow-hidden rounded-[26px] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.06)] ${colors.wrap}`}>
+      <div className={`absolute -right-8 -top-8 h-28 w-28 rounded-full ${colors.deco}`} />
       <div className="relative">
         <div className="mb-8 flex items-start justify-between gap-3">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${c.icon}`}>{icon}</div>
-          {chip && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${c.chip}`}>{chip}</span>}
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colors.icon}`}>{icon}</div>
+          {chip && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${colors.chip}`}>{chip}</span>}
         </div>
         <p className="text-sm font-medium opacity-90">{title}</p>
         <div className="mt-2 text-5xl font-bold tracking-tight">{value ?? 0}</div>
-        <p className={`mt-4 text-sm ${c.note}`}>{note}</p>
+        <p className={`mt-4 text-sm ${colors.note}`}>{note}</p>
       </div>
     </div>
   );
@@ -118,16 +130,9 @@ function ChartCard({ title, subtitle, action, children }) {
           {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
         </div>
         {action && (
-          <div className="flex gap-2">
-            {Array.isArray(action)
-              ? action.map((item) => (
-                <span key={item.label} className={`rounded-full px-4 py-1.5 text-xs font-semibold ${item.active ? 'bg-[#1565A9] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {item.label}
-                </span>
-              ))
-              : <span className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-500">{action}</span>
-            }
-          </div>
+          <span className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-500">
+            {action}
+          </span>
         )}
       </div>
       {children}
@@ -152,30 +157,33 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-function getItems(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-}
-
 function getInitials(name = 'Người dùng') {
-  return name.trim().split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]).join('').toUpperCase() || 'ND';
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(-2)
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase() || 'ND'
+  );
 }
 
 function LatestRequestItem({ item }) {
-  const name = item.tenNguoiGui || item.tenNguoiNhan || item.TenNguoiGui || item.TenNguoiNhan || 'Người yêu cầu';
-  const date = item.ngayLap || item.ngayTiepNhan || item.ngayTao || '';
   return (
     <div className="flex items-center gap-3 rounded-2xl px-1 py-2">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-[#1565A9]">
-        {getInitials(name)}
+        {getInitials(item.personName || item.childName || 'Hồ sơ')}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-slate-800">{name}</div>
-        <div className="mt-0.5 text-xs text-slate-500">Đã nộp: {formatDate(date)}</div>
+        <div className="truncate text-sm font-semibold text-slate-800">
+          {item.personName || item.childName || 'Hồ sơ chờ duyệt'}
+        </div>
+        <div className="mt-0.5 text-xs text-slate-500">Ngày lập: {formatDate(item.createdAt)}</div>
       </div>
-      <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${item.__type === 'adoption' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-[#1565A9]'}`}>
-        {item.__type === 'adoption' ? 'Nhận nuôi' : 'Gửi trẻ'}
+      <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${item.type === 'adoption' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-[#1565A9]'}`}>
+        {item.type === 'adoption' ? 'Nhận nuôi' : 'Gửi trẻ'}
       </span>
     </div>
   );
@@ -185,6 +193,7 @@ function buildMonthlyChart(monthlyRaw) {
   if (!monthlyRaw) return FALLBACK_MONTHLY_DATA;
   const { send = [], adopt = [] } = monthlyRaw;
   const map = {};
+
   send.forEach(({ month, count }) => {
     const key = `T${month}`;
     map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
@@ -195,11 +204,8 @@ function buildMonthlyChart(monthlyRaw) {
     map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
     map[key].adoption += count;
   });
-  const sorted = Object.values(map).sort((a, b) => {
-    const ma = parseInt(a.month.slice(1));
-    const mb = parseInt(b.month.slice(1));
-    return ma - mb;
-  });
+
+  const sorted = Object.values(map).sort((a, b) => Number(a.month.slice(1)) - Number(b.month.slice(1)));
   return sorted.length ? sorted : FALLBACK_MONTHLY_DATA;
 }
 
@@ -211,39 +217,28 @@ export default function ManagerDashboard() {
   const { data: recData } = useFetch(() => receptionProfileApi.getAll({ page: 1, limit: 200 }));
   const { data: adpData } = useFetch(() => adoptionProfileApi.getAll({ page: 1, limit: 200 }));
 
-  const receptions = useMemo(() => getItems(recData), [recData]);
-  const adoptions = useMemo(() => getItems(adpData), [adpData]);
+  const receptions = useMemo(
+    () => getItems(recData).map((item) => normalizeManagerProfile(item, 'reception')),
+    [recData]
+  );
+  const adoptions = useMemo(
+    () => getItems(adpData).map((item) => normalizeManagerProfile(item, 'adoption')),
+    [adpData]
+  );
 
-  const pendingReceptions = useMemo(
-    () => receptions.filter((r) => PENDING_STATUSES.includes(r.trangThai || r.status)),
-    [receptions]
-  );
-  const pendingAdoptions = useMemo(
-    () => adoptions.filter((a) => PENDING_STATUSES.includes(a.trangThai || a.status)),
-    [adoptions]
-  );
+  const pendingReceptions = useMemo(() => receptions.filter(isPendingProfile), [receptions]);
+  const pendingAdoptions = useMemo(() => adoptions.filter(isPendingProfile), [adoptions]);
 
   const dashboard = useMemo(() => {
     const stats = statsData ?? {};
+    const pendingRec = stats.pendingReceptionProfiles ?? pendingReceptions.length;
+    const pendingAdp = stats.pendingAdoptionProfiles ?? pendingAdoptions.length;
+    const approvedRec = receptions.filter((item) => item.status === 'Đã duyệt').length;
+    const approvedAdp = adoptions.filter((item) => item.status === 'Đã duyệt').length;
 
-    // pending profile counts: prefer live-computed, fall back to stats endpoint
-    const pendingRec = statsData?.pendingReceptionProfiles ?? pendingReceptions.length;
-    const pendingAdp = statsData?.pendingAdoptionProfiles ?? pendingAdoptions.length;
-
-    const approvedRec = receptions.filter((r) => (r.trangThai || r.status) === 'Đã duyệt').length;
-    const approvedAdp = adoptions.filter((a) => (a.trangThai || a.status) === 'Đã duyệt').length;
-
-    const recentPending = [
-      ...pendingReceptions.slice(0, 5).map((r) => ({ ...r, __type: 'reception' })),
-      ...pendingAdoptions.slice(0, 5).map((a) => ({ ...a, __type: 'adoption' })),
-    ]
-      .sort((a, b) => new Date(b.ngayLap || b.ngayTiepNhan || 0) - new Date(a.ngayLap || a.ngayTiepNhan || 0))
+    const latestRequests = [...pendingReceptions, ...pendingAdoptions]
+      .sort(compareProfilesByDateDesc)
       .slice(0, 5);
-
-    const statusChartData = [
-      { name: 'Gửi trẻ',   pending: pendingRec, approved: approvedRec },
-      { name: 'Nhận nuôi', pending: pendingAdp, approved: approvedAdp },
-    ];
 
     return {
       pendingApprovalCount: pendingRec + pendingAdp,
@@ -251,10 +246,13 @@ export default function ManagerDashboard() {
       childrenAdopted: stats.childrenAdopted ?? 0,
       childrenWaiting: stats.childrenWaitingAdoption ?? 0,
       monthlyTrend: buildMonthlyChart(monthlyData),
-      latestRequests: recentPending,
-      statusChartData,
+      latestRequests,
+      statusChartData: [
+        { name: 'Gửi trẻ', pending: pendingRec, approved: approvedRec },
+        { name: 'Nhận nuôi', pending: pendingAdp, approved: approvedAdp },
+      ],
     };
-  }, [statsData, monthlyData, receptions, adoptions, pendingReceptions, pendingAdoptions]);
+  }, [adoptions, monthlyData, pendingAdoptions, pendingReceptions, receptions, statsData]);
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -305,17 +303,17 @@ export default function ManagerDashboard() {
             <ChartCard
               title="Xu hướng hồ sơ"
               subtitle="Dữ liệu tổng hợp theo từng tháng trong năm"
-              action={[{ label: '6 tháng', active: false }, { label: '1 năm', active: true }]}
+              action="Năm hiện tại"
             >
               <div className="h-[360px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dashboard.monthlyTrend}>
                     <defs>
-                      <linearGradient id="recGrad" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="managerRecGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#9BC7EC" stopOpacity={0.42} />
                         <stop offset="95%" stopColor="#9BC7EC" stopOpacity={0.04} />
                       </linearGradient>
-                      <linearGradient id="adpGrad" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="managerAdpGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#1565A9" stopOpacity={0.24} />
                         <stop offset="95%" stopColor="#1565A9" stopOpacity={0.03} />
                       </linearGradient>
@@ -325,8 +323,8 @@ export default function ManagerDashboard() {
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ paddingTop: 16 }} />
-                    <Area type="monotone" dataKey="reception" name="Tiếp nhận" stroke="#8CB9DF" strokeWidth={4} fill="url(#recGrad)" />
-                    <Area type="monotone" dataKey="adoption" name="Nhận nuôi" stroke="#1565A9" strokeWidth={4} fill="url(#adpGrad)" />
+                    <Area type="monotone" dataKey="reception" name="Tiếp nhận" stroke="#8CB9DF" strokeWidth={4} fill="url(#managerRecGrad)" />
+                    <Area type="monotone" dataKey="adoption" name="Nhận nuôi" stroke="#1565A9" strokeWidth={4} fill="url(#managerAdpGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -355,7 +353,9 @@ export default function ManagerDashboard() {
 
           <div className="flex h-full flex-col rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-[26px] font-bold leading-tight text-slate-800 max-sm:text-xl">Hồ sơ mới nhất</h2>
+              <h2 className="text-[26px] font-bold leading-tight text-slate-800 max-sm:text-xl">
+                Hồ sơ mới nhất
+              </h2>
               <button onClick={() => navigate('/truong-phong/cho-duyet')} className="text-sm font-semibold text-[#1565A9] hover:underline">
                 Xem tất cả
               </button>
@@ -364,7 +364,7 @@ export default function ManagerDashboard() {
             <div className="flex-1 space-y-3">
               {dashboard.latestRequests.length > 0 ? (
                 dashboard.latestRequests.map((item, idx) => (
-                  <LatestRequestItem key={`${item.__type}-${item.maHSTiepNhan || item.maHSNhanNuoi || idx}`} item={item} />
+                  <LatestRequestItem key={`${item.type}-${item.id || idx}`} item={item} />
                 ))
               ) : (
                 <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
