@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFetch } from '../../hooks/useFetch';
-import receptionProfileApi from '../../api/receptionProfileApi';
-import adoptionProfileApi from '../../api/adoptionProfileApi';
+import receptionApi from '../../api/receptionApi';
+import adoptionApi from '../../api/adoptionApi';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
@@ -191,38 +191,10 @@ export default function ProfileApproval() {
   const { type, id } = useParams();
   const navigate = useNavigate();
 
-  const api = type === 'reception' ? receptionProfileApi : adoptionProfileApi;
+  const api = type === 'reception' ? receptionApi : adoptionApi;
   const isAdopt = type === 'adoption';
 
-  const { data: rawProfile, loading, refetch } = useFetch(() => api.getById(id));
-
-  // Normalize BE camelCase fields to what the template expects
-  const profile = rawProfile ? (() => {
-    const p = rawProfile;
-    return {
-      ...p,
-      // common
-      status: p.status || p.trangThai || p.TrangThai || '',
-      requestCode: p.id || p.maHSNhanNuoi || p.maHSTiepNhan || '',
-      createdAt: p.ngayLap || p.ngayTiepNhan || '',
-      // adoption
-      adopterName: p.tenNguoiNhan || p.TenNguoiNhan || '',
-      phone: p.sdtNguoiNhan || p.SDTNguoiNhan || '',
-      motivation: p.lyDoNhanNuoi || p.LyDoNhanNuoi || '',
-      childExpectation: p.mongMuonVeTre || p.MongMuonVeTre || '',
-      occupation: p.ngheNghiep || p.NgheNghiep || '',
-      monthlyIncome: p.thuNhapHangThang || p.ThuNhapHangThang || '',
-      // reception
-      senderName: p.tenNguoiGui || p.TenNguoiGui || '',
-      reason: p.lyDoGui || p.LyDoGui || '',
-      senderRelation: p.quanHeVoiTre || p.QuanHeVoiTre || '',
-      // child (reception: from Tre entity; adoption: from linked YeuCauNhan)
-      childName: p.tenTre || p.TenTre || '',
-      childId: p.maTre || p.MaTre || '',
-      childDob: p.ngaySinhTre || p.NgaySinhTre || p.ngaySinh || '',
-      childGender: p.gioiTinhTre || p.GioiTinhTre || p.gioiTinh || '',
-    };
-  })() : null;
+  const { data: profile, loading, refetch } = useFetch(() => api.getById(id));
 
   const [rejectModal, setRejectModal] = useState(false);
   const [reason, setReason] = useState('');
@@ -273,25 +245,23 @@ export default function ProfileApproval() {
     );
   }
 
-  const canAct = ['Chờ duyệt', 'Đang lập', 'Đang xử lý'].includes(profile.status);
+  const statusVal = profile.trangThaiYC || profile.trangThai || profile.status;
+  const canAct = statusVal === 'Chờ xử lý';
 
-  const docs = profile.documents ?? [
-    { name: 'Bản sao CCCD người nhận nuôi', status: 'uploaded' },
-    { name: 'Giấy khám sức khỏe tổng quát', status: 'uploaded' },
-    { name: 'Giấy chứng nhận thu nhập & Tài chính', status: 'uploaded' },
-    { name: 'Tình trạng hôn nhân', status: 'missing' },
-  ];
+  const docs = Array.isArray(profile.giayTos) && profile.giayTos.length > 0
+    ? profile.giayTos.map((id) => ({ name: `Tài liệu #${id}`, status: 'uploaded', url: null }))
+    : [];
 
   return (
-    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 ">
-      <div className="mx-auto  max-w-[1720px]">
+    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
         <div className="card mb-4 border border-[var(--c-border-light)] p-5 sm:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--c-text-secondary)]">
                 <span>Mã hồ sơ</span>
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-[var(--c-primary)] normal-case">
-                  {profile.requestCode ?? id}
+                  {profile.maYeuCauGuiTre || profile.maYeuCauNhan || profile.id || id}
                 </span>
               </div>
 
@@ -306,13 +276,8 @@ export default function ProfileApproval() {
               </span>
 
               <Badge
-                status={profile.status}
+                status={statusVal}
                 size="md"
-                label={
-                  ['Chờ duyệt', 'Đang lập', 'Đang xử lý'].includes(profile.status)
-                    ? 'Đang thẩm định'
-                    : undefined
-                }
               />
 
               {profile.assignee && (
@@ -331,8 +296,8 @@ export default function ProfileApproval() {
           <>
             <Section iconSrc={userIcon} title="Thông tin người nhận nuôi">
               <FieldGrid>
-                <Field label="Họ và tên" value={profile.adopterName} />
-                <Field label="Số CCCD" value={profile.nationalId} />
+                <Field label="Họ và tên" value={profile.tenNguoiNhan} />
+                <Field label="Mã người nhận" value={profile.maNguoiNhan} />
               </FieldGrid>
 
               <Divider />
@@ -341,46 +306,35 @@ export default function ProfileApproval() {
                 <Field
                   label="Thu nhập hàng tháng"
                   value={
-                    profile.monthlyIncome
-                      ? `${Number(profile.monthlyIncome).toLocaleString('vi-VN')} VND`
+                    profile.thuNhapHangThang
+                      ? `${Number(profile.thuNhapHangThang).toLocaleString('vi-VN')} VND`
                       : undefined
                   }
                   highlight
                 />
-                <Field label="Số điện thoại" value={profile.phone} />
+                <Field label="Nghề nghiệp" value={profile.ngheNghiep} />
               </FieldGrid>
 
               <Divider />
 
               <FieldGrid>
-                <Field label="Email" value={profile.email} />
-                <Field label="Giới tính" value={profile.gender} />
-              </FieldGrid>
-
-              <Divider />
-
-              <FieldGrid>
-                <Field label="Ngày sinh" value={formatDate(profile.dob)} />
-                <Field label="Địa chỉ thường trú" value={profile.address} />
+                <Field label="Ngày nộp đơn" value={formatDate(profile.ngayTao || profile.createdAt)} />
+                <Field label="Ngày cập nhật" value={formatDate(profile.ngayCapNhat || profile.updatedAt)} />
               </FieldGrid>
             </Section>
 
             <Section iconSrc={documentIcon} title="Nội dung yêu cầu">
               <FieldGrid>
-                <Field label="Lý do nhận nuôi" value={profile.motivation} />
-                <Field label="Mong muốn về trẻ" value={profile.childExpectation} />
+                <Field label="Lý do nhận nuôi" value={profile.lyDoNhanNuoi} />
+                <Field label="Mong muốn về trẻ" value={profile.mongMuonVeTre} />
               </FieldGrid>
 
-              <Divider />
-
-              <FieldGrid>
-                <Field label="Nghề nghiệp" value={profile.occupation} />
-                <Field label="Ngày nộp đơn" value={formatDate(profile.createdAt)} />
-              </FieldGrid>
-            </Section>
-
-            <Section iconSrc={userIcon} title="Thông tin trẻ em được nhận nuôi">
-              <ChildBlock profile={profile} />
+              {profile.ghiChu && (
+                <>
+                  <Divider />
+                  <Field label="Ghi chú" value={profile.ghiChu} className="col-span-2" />
+                </>
+              )}
             </Section>
           </>
         )}
@@ -389,34 +343,37 @@ export default function ProfileApproval() {
           <>
             <Section iconSrc={documentIcon} title="Thông tin gửi trẻ">
               <FieldGrid>
-                <Field label="Tên trẻ" value={profile.childName} />
-                <Field label="Ngày sinh" value={formatDate(profile.childDob)} />
+                <Field label="Tên trẻ" value={profile.thongTinTre?.tenTre} />
+                <Field label="Ngày sinh" value={formatDate(profile.thongTinTre?.ngaySinh)} />
               </FieldGrid>
 
               <Divider />
 
               <FieldGrid>
-                <Field label="Giới tính" value={profile.childGender} />
-                <Field label="Sức khỏe" value={profile.healthStatus} />
+                <Field label="Giới tính" value={profile.thongTinTre?.gioiTinh} />
+                <Field label="Dân tộc" value={profile.thongTinTre?.danToc} />
               </FieldGrid>
 
               <Divider />
 
               <FieldGrid>
-                <Field label="Người giao" value={profile.senderName} />
-                <Field label="Quan hệ với trẻ" value={profile.senderRelation} />
+                <Field label="Người giao" value={profile.tenNguoiGui} />
+                <Field label="Quan hệ với trẻ" value={profile.quanHeVoiTre} />
               </FieldGrid>
 
               <Divider />
 
               <FieldGrid>
-                <Field label="Lý do gửi trẻ" value={profile.reason} />
-                <Field label="Ngày nộp hồ sơ" value={formatDate(profile.createdAt)} />
+                <Field label="Lý do gửi trẻ" value={profile.lyDoGui} />
+                <Field label="Ngày nộp hồ sơ" value={formatDate(profile.ngayTao || profile.createdAt)} />
               </FieldGrid>
-            </Section>
 
-            <Section iconSrc={userIcon} title="Trẻ trong hệ thống">
-              <ChildBlock profile={profile} />
+              {profile.ghiChu && (
+                <>
+                  <Divider />
+                  <Field label="Ghi chú" value={profile.ghiChu} />
+                </>
+              )}
             </Section>
           </>
         )}
