@@ -76,7 +76,7 @@ public class HoSoNhanNuoiController : ControllerBase
         if (ycnn == null)
             return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu nhận nuôi không tồn tại."));
         if (ycnn.TrangThai != "Đã duyệt")
-            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Yêu cầu nhận nuôi chưa được duyệt chính thức (Trạng thái phải là 'Đã duyệt')."));
+            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Chỉ yêu cầu nhận nuôi ở trạng thái 'Đã duyệt' mới được lập hồ sơ ghép trẻ."));
 
         // 3. Kiểm tra thông tin trẻ
         var child = await _db.TRE.FirstOrDefaultAsync(t => t.MaTre == dto.MaTre);
@@ -112,8 +112,12 @@ public class HoSoNhanNuoiController : ControllerBase
         };
 
         _db.HOSONHANNUOI.Add(h);
+
+        // 6. Cập nhật trạng thái yêu cầu nhận nuôi thành "Ghép trẻ" để đánh dấu đã ghép thành công
+        ycnn.TrangThai = "Ghép trẻ";
+
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<HoSoNhanNuoiDto>.Ok(Map(h), "Đã tạo hồ sơ"));
+        return Ok(ApiResponse<HoSoNhanNuoiDto>.Ok(Map(h), "Lập hồ sơ thành công. Yêu cầu nhận nuôi đã chuyển sang trạng thái 'Ghép trẻ'."));
     }
 
     [HttpPut("{id}")]

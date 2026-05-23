@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDate } from '../../utils/formatDate';
@@ -8,22 +8,22 @@ import Badge from '../../components/common/Badge';
 const pageClass = 'min-h-screen bg-[#F5F7FB]';
 
 const cardClass =
-  'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
+  'rounded-3xl border border-slate-200 bg-white shadow-sm';
 
 const softCardClass =
-  'rounded-[24px] border border-[#E6EDF5] bg-[#FAFCFF]';
+  'rounded-2xl bg-slate-50 border border-slate-100';
 
 const labelClass =
-  'mb-2 block text-[11px] font-bold uppercase tracking-[0.13em] text-[#8B9BB0]';
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500';
 
 const inputClass =
-  'w-full rounded-2xl border border-[#D7E5F7] bg-white px-4 py-3 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10';
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20';
 
 const primaryButton =
-  'rounded-2xl bg-[#0D47A1] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#083778] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none';
+  'rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none';
 
 const secondaryButton =
-  'rounded-2xl border border-[#CFE0F5] bg-white px-5 py-3 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400';
+  'rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400';
 
 function unwrapApiResponse(res) {
   if (res?.success !== undefined) return res.data;
@@ -165,14 +165,34 @@ function normalizeChild(child = {}) {
   };
 }
 
-function getProfileStatus(selectedChild, meeting, meetingResult) {
-  if (!selectedChild) return 'Chưa gán trẻ';
-  if (!meeting) return 'Chưa tạo lịch gặp';
-  if (meeting.TrangThai !== 'Đã xác nhận') return 'Chờ xác nhận lịch';
-  if (!meetingResult.result) return 'Chưa ghi nhận kết quả';
-  if (meetingResult.result === 'Phù hợp') return 'Đủ điều kiện gửi duyệt';
-  if (meetingResult.result === 'Cần gặp lại') return 'Cần gặp lại';
-  return 'Không đủ điều kiện';
+function normalizeMeeting(meeting = {}) {
+  const children = meeting.Children ?? meeting.children ?? [];
+
+  return {
+    MaLichGap: meeting.MaLichGap || meeting.maLichGap || '',
+    MaYeuCauNhan: meeting.MaYeuCauNhan || meeting.maYeuCauNhan || '',
+    TenNguoiNhan: meeting.TenNguoiNhan || meeting.tenNguoiNhan || '',
+    MaCanBo: meeting.MaCanBo || meeting.maCanBo || '',
+    TenCanBo: meeting.TenCanBo || meeting.tenCanBo || '',
+    NgayGapMat: meeting.NgayGapMat || meeting.ngayGapMat || null,
+    ThoiGian: meeting.ThoiGian || meeting.thoiGian || null,
+    DiaDiem: meeting.DiaDiem || meeting.diaDiem || '',
+    TrangThai: meeting.TrangThai || meeting.trangThai || '',
+    PhanHoiNguoiNhan:
+      meeting.PhanHoiNguoiNhan || meeting.phanHoiNguoiNhan || '',
+    ThoiGianDeXuatMoi:
+      meeting.ThoiGianDeXuatMoi || meeting.thoiGianDeXuatMoi || null,
+    NgayTao: meeting.NgayTao || meeting.ngayTao || null,
+    NgayCapNhat: meeting.NgayCapNhat || meeting.ngayCapNhat || null,
+    Children: Array.isArray(children)
+      ? children.map((child) => ({
+        MaTre: child.MaTre || child.maTre || '',
+        TenTre: child.TenTre || child.tenTre || '',
+        KetQua: child.KetQua || child.ketQua || '',
+        GhiChuCanBo: child.GhiChuCanBo || child.ghiChuCanBo || '',
+      }))
+      : [],
+  };
 }
 
 function profileStatusClass(status) {
@@ -208,7 +228,7 @@ function ReadOnlyField({ label, value, strong = false, wide = false }) {
     >
       <p className={labelClass}>{label}</p>
       <p
-        className={`text-sm leading-7 ${strong ? 'font-bold text-[#0D47A1]' : 'font-semibold text-[#26364A]'
+        className={`text-sm leading-relaxed ${strong ? 'font-bold text-blue-800' : 'font-medium text-slate-800'
           }`}
       >
         {value === null || value === undefined || value === '' ? 'Chưa có' : value}
@@ -219,25 +239,25 @@ function ReadOnlyField({ label, value, strong = false, wide = false }) {
 
 function SectionTitle({ number, title, description }) {
   return (
-    <div>
+    <div className="mb-6">
       <div className="flex items-center gap-3">
         {number && (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF3FF] text-sm font-bold text-[#0D47A1]">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
             {number}
           </span>
         )}
 
-        <h2 className="text-[18px] font-bold text-[#0D47A1]">{title}</h2>
+        <h2 className="text-lg font-bold text-slate-800">{title}</h2>
       </div>
 
       {description && (
-        <p className="mt-2 text-sm leading-7 text-[#7D90AA]">{description}</p>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
       )}
     </div>
   );
 }
 
-function ChildCard({ child, request, selected, onSelect }) {
+function ChildCard({ child, request, selectedForMeeting, selectedForProfile, onToggleMeetingSelection }) {
   const childAge = getAge(child.NgaySinh);
   const ageGap = getAgeGap(request.NgaySinhNguoiNhan, child.NgaySinh);
 
@@ -250,7 +270,7 @@ function ChildCard({ child, request, selected, onSelect }) {
 
   return (
     <article
-      className={`rounded-[24px] border p-5 transition ${selected
+      className={`rounded-[24px] border p-5 transition ${selectedForMeeting
         ? 'border-[#0D47A1] bg-[#F8FBFF] shadow-[0_12px_30px_rgba(13,71,161,0.12)]'
         : 'border-[#E1ECF8] bg-white hover:border-[#CFE0F5] hover:bg-[#FAFCFF]'
         }`}
@@ -265,7 +285,7 @@ function ChildCard({ child, request, selected, onSelect }) {
           </h3>
         </div>
 
-        {selected && (
+        {selectedForProfile && (
           <span className="rounded-full bg-[#0D47A1] px-3 py-1 text-xs font-bold text-white">
             Đã gán
           </span>
@@ -306,13 +326,21 @@ function ChildCard({ child, request, selected, onSelect }) {
         {childDescription}
       </p>
 
-      <button
-        type="button"
-        onClick={() => onSelect(child)}
-        className={`${primaryButton} mt-5 w-full`}
-      >
-        Gán trẻ vào hồ sơ
-      </button>
+      <div className="mt-5 flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => onToggleMeetingSelection(child)}
+          className={`${selectedForMeeting ? 'bg-white border border-[#CFE0F5] text-[#0D47A1] hover:bg-[#F4F8FF]' : primaryButton} w-full`}
+        >
+          {selectedForMeeting ? 'Bỏ chọn khỏi lịch gặp' : 'Chọn cho lịch gặp'}
+        </button>
+
+        {selectedForProfile && (
+          <span className="inline-flex items-center justify-center rounded-full bg-[#0D47A1] px-3 py-1 text-xs font-bold text-white">
+            Đã chọn hồ sơ
+          </span>
+        )}
+      </div>
     </article>
   );
 }
@@ -327,6 +355,7 @@ function EmptyState({ children }) {
 
 export default function CreateAdoptionProfile() {
   const { requestId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [request, setRequest] = useState(() =>
@@ -334,6 +363,7 @@ export default function CreateAdoptionProfile() {
   );
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedMeetingChildren, setSelectedMeetingChildren] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [meeting, setMeeting] = useState(null);
@@ -345,12 +375,15 @@ export default function CreateAdoptionProfile() {
     note: '',
   });
 
-  const [meetingResult, setMeetingResult] = useState({
-    result: '',
-    note: '',
-  });
+  const [meetingChildrenResults, setMeetingChildrenResults] = useState([]);
+  const [saveResultsLoading, setSaveResultsLoading] = useState(false);
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [submitProfileLoading, setSubmitProfileLoading] = useState(false);
 
   const [staffNote, setStaffNote] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectAttempted, setRejectAttempted] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   useEffect(() => {
@@ -362,15 +395,17 @@ export default function CreateAdoptionProfile() {
       try {
         setLoading(true);
 
-        const [requestRes, childrenRes] = await Promise.all([
+        const [requestRes, childrenRes, meetingsRes] = await Promise.all([
           adoptionApi.getById(requestId),
           adoptionApi.getMatchingChildren(requestId),
+          adoptionApi.getMeetings({ maYeuCauNhan: requestId, limit: 1 }),
         ]);
 
         if (!active) return;
 
         const requestPayload = unwrapApiResponse(requestRes);
         const childrenPayload = unwrapApiResponse(childrenRes);
+        const meetingsPayload = unwrapApiResponse(meetingsRes);
 
         setRequest(normalizeRequest(requestPayload, requestId));
 
@@ -379,6 +414,34 @@ export default function CreateAdoptionProfile() {
         );
 
         setChildren(normalizedChildren);
+
+        const meetingsList = getResponseItems(meetingsPayload);
+        if (meetingsList && meetingsList.length > 0) {
+          const meetingPayload = normalizeMeeting(meetingsList[0]);
+          setMeeting({
+            ...meetingPayload,
+            meetingDate: meetingPayload.ThoiGian ? meetingPayload.ThoiGian.split('T')[0] : '',
+            meetingTime: meetingPayload.ThoiGian ? meetingPayload.ThoiGian.split('T')[1]?.substring(0, 5) : '',
+            location: meetingPayload.DiaDiem,
+          });
+          setSelectedMeetingChildren(meetingPayload.Children.map((c) => c.MaTre));
+          const meetingChildrenRes = meetingPayload.Children.map((c) => ({
+            MaTre: c.MaTre,
+            TenTre: c.TenTre,
+            KetQua: c.KetQua || '',
+            GhiChuCanBo: c.GhiChuCanBo || '',
+          }));
+          setMeetingChildrenResults(meetingChildrenRes);
+
+          // Tự động chọn trẻ nếu đã có kết quả "Phù hợp"
+          if (meetingPayload.TrangThai === 'Đã gặp mặt') {
+            const suitable = meetingChildrenRes.find(c => c.KetQua === 'Phù hợp');
+            if (suitable) {
+              const childObj = normalizedChildren.find(c => c.MaTre === suitable.MaTre) || { MaTre: suitable.MaTre, HoTen: suitable.TenTre };
+              setSelectedChild(childObj);
+            }
+          }
+        }
       } catch (error) {
         console.error('Lỗi tải dữ liệu tạo hồ sơ nhận nuôi:', error);
 
@@ -406,19 +469,29 @@ export default function CreateAdoptionProfile() {
     return children;
   }, [children]);
 
-  const profileStatus = getProfileStatus(
-    selectedChild,
-    meeting,
-    meetingResult
-  );
+  const profileStatus = useMemo(() => {
+    if (meeting) {
+      if (meeting.TrangThai === 'Chờ xác nhận') return 'Chờ xác nhận lịch';
+      if (meeting.TrangThai === 'Yêu cầu đổi lịch') return 'Yêu cầu đổi lịch';
+      if (meeting.TrangThai === 'Đã xác nhận') return 'Chờ ghi nhận kết quả';
+      if (meeting.TrangThai === 'Đã gặp mặt') {
+        const hasSuitable = meetingChildrenResults.some(r => r.KetQua === 'Phù hợp');
+        if (hasSuitable) {
+          return selectedChild ? 'Đủ điều kiện gửi duyệt' : 'Chưa chọn trẻ phù hợp';
+        }
+        return 'Không có trẻ phù hợp';
+      }
+    }
+    return 'Chưa tạo lịch gặp';
+  }, [meeting, meetingChildrenResults, selectedChild]);
 
-  const canRecordResult = meeting && meeting.TrangThai === 'Đã xác nhận';
+  const canRecordResult = meeting && (meeting.TrangThai === 'Đã xác nhận' || meeting.TrangThai === 'Đã gặp mặt');
 
   const canSubmitProfile =
     selectedChild &&
     meeting &&
-    meeting.TrangThai === 'Đã xác nhận' &&
-    meetingResult.result === 'Phù hợp';
+    meeting.TrangThai === 'Đã gặp mặt' &&
+    meetingChildrenResults.find(r => r.MaTre === selectedChild.MaTre)?.KetQua === 'Phù hợp';
 
   const officerName =
     user?.HoTen ||
@@ -429,31 +502,149 @@ export default function CreateAdoptionProfile() {
     'Cán bộ nhận nuôi';
 
   function handleSelectChild(child) {
-    setSelectedChild(child);
-    setMeeting(null);
-    setMeetingResult({ result: '', note: '' });
-  }
+    setSelectedMeetingChildren((prev) => {
+      if (prev.includes(child.MaTre)) {
+        return prev.filter((maTre) => maTre !== child.MaTre);
+      }
 
-  function handleCreateMeeting(e) {
+      return [...prev, child.MaTre];
+    });
+    setMeeting(null);
+    setMeetingChildrenResults([]);
+  }
+  async function handleCreateMeeting(e) {
     e.preventDefault();
 
-    if (!selectedChild) return;
+    if (selectedMeetingChildren.length === 0) return;
 
-    setMeeting({
-      MaLichGap: `LHGM${String(Date.now()).slice(-4)}`,
-      MaYeuCauNhan: request.MaYeuCauNhan,
-      MaTre: selectedChild.MaTre,
-      TenTre: selectedChild.HoTen,
-      TrangThai: 'Chờ xác nhận',
-      ...meetingForm,
-    });
+    const meetingTime = new Date(
+      `${meetingForm.meetingDate}T${meetingForm.meetingTime}`
+    );
+
+    try {
+      const res = await adoptionApi.createMeeting({
+        maYeuCauNhan: request.MaYeuCauNhan,
+        thoiGian: meetingTime,
+        diaDiem: meetingForm.location,
+        maTres: selectedMeetingChildren,
+      });
+
+      const meetingPayload = normalizeMeeting(unwrapApiResponse(res));
+      setMeeting({
+        ...meetingPayload,
+        meetingDate: meetingForm.meetingDate,
+        meetingTime: meetingForm.meetingTime,
+        location: meetingForm.location,
+      });
+      setSelectedMeetingChildren(meetingPayload.Children.map((c) => c.MaTre));
+      setMeetingChildrenResults(
+        meetingPayload.Children.map((c) => ({
+          MaTre: c.MaTre,
+          TenTre: c.TenTre,
+          KetQua: '',
+          GhiChuCanBo: '',
+        }))
+      );
+      setSelectedChild(null);
+    } catch (error) {
+      console.error('Lỗi tạo lịch gặp mặt:', error);
+      alert('Không thể tạo lịch gặp mặt. Vui lòng thử lại.');
+    }
   }
 
-  function handleSubmitProfile() {
+  async function handleUpdateMeeting(e) {
+    e.preventDefault();
+    setRescheduleLoading(true);
+    const meetingTime = new Date(
+      `${meetingForm.meetingDate}T${meetingForm.meetingTime}`
+    );
+
+    try {
+      const res = await adoptionApi.updateMeeting(meeting.MaLichGap, {
+        ThoiGian: meetingTime,
+        DiaDiem: meetingForm.location,
+        TrangThai: 'Chờ xác nhận',
+      });
+
+      if (res.success) {
+        alert('Cập nhật lịch gặp mặt thành công.');
+        const updated = normalizeMeeting(res.data);
+        setMeeting({
+          ...updated,
+          meetingDate: updated.ThoiGian ? updated.ThoiGian.split('T')[0] : '',
+          meetingTime: updated.ThoiGian ? updated.ThoiGian.split('T')[1]?.substring(0, 5) : '',
+          location: updated.DiaDiem,
+        });
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    } catch (error) {
+      console.error('Lỗi cập nhật lịch gặp:', error);
+      alert('Cập nhật lịch gặp mặt thất bại.');
+    } finally {
+      setRescheduleLoading(false);
+    }
+  }
+
+  async function handleSaveMeetingResults() {
+    if (meetingChildrenResults.some((r) => !r.KetQua)) {
+      alert('Vui lòng chọn kết quả gặp mặt cho tất cả các trẻ.');
+      return;
+    }
+
+    setSaveResultsLoading(true);
+    try {
+      const res = await adoptionApi.updateMeeting(meeting.MaLichGap, {
+        TrangThai: 'Đã gặp mặt',
+        Children: meetingChildrenResults.map((r) => ({
+          MaTre: r.MaTre,
+          KetQua: r.KetQua,
+          GhiChuCanBo: r.GhiChuCanBo,
+        })),
+      });
+
+      if (res.success) {
+        alert('Ghi nhận kết quả gặp mặt thành công.');
+        const updated = normalizeMeeting(res.data);
+        setMeeting({
+          ...updated,
+          meetingDate: updated.ThoiGian ? updated.ThoiGian.split('T')[0] : '',
+          meetingTime: updated.ThoiGian ? updated.ThoiGian.split('T')[1]?.substring(0, 5) : '',
+          location: updated.DiaDiem,
+        });
+
+        // Tự động gán trẻ nếu có kết quả phù hợp
+        const suitable = meetingChildrenResults.find(r => r.KetQua === 'Phù hợp');
+        if (suitable) {
+          const childObj = children.find(c => c.MaTre === suitable.MaTre) || { MaTre: suitable.MaTre, HoTen: suitable.TenTre };
+          setSelectedChild(childObj);
+        }
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    } catch (error) {
+      console.error('Lỗi lưu kết quả gặp:', error);
+      alert('Lưu kết quả gặp mặt thất bại.');
+    } finally {
+      setSaveResultsLoading(false);
+    }
+  }
+
+  function handleResetMeeting() {
+    if (window.confirm('Bạn có chắc muốn hủy lịch gặp hiện tại và tạo lịch gặp mới?')) {
+      setMeeting(null);
+      setSelectedMeetingChildren([]);
+      setSelectedChild(null);
+      setMeetingChildrenResults([]);
+    }
+  }
+
+  async function handleSubmitProfile() {
     setSubmitAttempted(true);
 
     if (!canSubmitProfile) return;
 
+    setSubmitProfileLoading(true);
     const payload = {
       maYeuCauNhan: request.MaYeuCauNhan,
       maTre: selectedChild.MaTre,
@@ -463,16 +654,61 @@ export default function CreateAdoptionProfile() {
         user?.id ||
         user?.maNguoiNhan ||
         '',
-      ngayLap: new Date().toISOString(),
-      trangThai: 'Đang lập',
       ghiChu: staffNote,
     };
 
-    console.log('Payload lập hồ sơ nhận nuôi:', payload);
+    try {
+      const res = await adoptionApi.createProfile(payload);
+      if (res.success) {
+        alert('Lập hồ sơ thành công. Chuyển sang chế độ xem hồ sơ.');
+        // Tải lại thông tin yêu cầu để cập nhật trạng thái và mã hồ sơ
+        try {
+          const requestRes = await adoptionApi.getById(requestId);
+          setRequest(normalizeRequest(unwrapApiResponse(requestRes), requestId));
+        } catch (e) {
+          console.error('Lỗi tải lại request:', e);
+        }
+      } else {
+        alert('Lập hồ sơ thất bại: ' + (res.message || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+      console.error('Lỗi lập hồ sơ:', error);
+      alert(error?.response?.data?.message || error?.message || 'Lập hồ sơ thất bại.');
+    } finally {
+      setSubmitProfileLoading(false);
+    }
+  }
 
-    alert(
-      'Đã đủ dữ liệu lập hồ sơ. Cần nối payload này với API tạo hồ sơ nhận nuôi.'
-    );
+  async function handleRejectRequest() {
+    setRejectAttempted(true);
+    setRejectLoading(true);
+
+    if (!rejectReason.trim()) {
+      setRejectLoading(false);
+      return;
+    }
+
+    try {
+      const res = await adoptionApi.reject(request.MaYeuCauNhan, {
+        reason: rejectReason.trim(),
+      });
+
+      if (!res.success) {
+        throw new Error(res.message || 'Từ chối yêu cầu thất bại');
+      }
+
+      setRequest((prev) => ({
+        ...prev,
+        TrangThai: 'Từ chối sơ bộ',
+      }));
+      alert('Đã từ chối yêu cầu nhận nuôi thành công.');
+      navigate('/can-bo-nhan-nuoi/danh-sach');
+    } catch (error) {
+      console.error('Lỗi từ chối yêu cầu:', error);
+      alert(error?.message || 'Từ chối yêu cầu thất bại');
+    } finally {
+      setRejectLoading(false);
+    }
   }
 
   if (loading) {
@@ -507,7 +743,7 @@ export default function CreateAdoptionProfile() {
         </header>
 
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
-          <main className="space-y-8 xl:col-span-8">
+          <main className={`space-y-8 ${request.TrangThai === 'Ghép trẻ' || request.MaHoSoNhanNuoi ? 'xl:col-span-12' : 'xl:col-span-8'}`}>
             <section className={`${cardClass} overflow-hidden`}>
               <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-7 text-center lg:px-8">
                 <h2 className="mt-3 text-[28px] font-bold uppercase tracking-wide text-[#0D47A1]">
@@ -739,57 +975,157 @@ export default function CreateAdoptionProfile() {
             </section>
           </main>
 
-          <aside className="space-y-6 xl:col-span-4">
-            <section className={`${cardClass} p-6 lg:p-7`}>
-              <SectionTitle
-                title="Khu vực chọn trẻ"
-                description="Danh sách trẻ phù hợp được lấy từ API ghép trẻ của yêu cầu nhận nuôi."
-              />
+          {request.TrangThai !== 'Ghép trẻ' && !request.MaHoSoNhanNuoi && (
+            <aside className="space-y-6 xl:col-span-4">
+              {/* Section I: Child Selection */}
+              <section className={`${cardClass} p-6 lg:p-7`}>
+                <SectionTitle
+                  title={meeting ? "Trẻ tham gia cuộc gặp" : "Khu vực chọn trẻ"}
+                  description={meeting ? "Danh sách trẻ trong lịch gặp hiện tại" : "Chọn trẻ phù hợp để đưa vào lịch gặp mặt"}
+                />
 
-              <div className="mt-5 max-h-[680px] space-y-4 overflow-y-auto pr-1">
-                {eligibleChildren.map((child) => (
-                  <ChildCard
-                    key={child.MaTre}
-                    child={child}
-                    request={request}
-                    selected={selectedChild?.MaTre === child.MaTre}
-                    onSelect={handleSelectChild}
-                  />
-                ))}
+                <div className="mt-5 max-h-[680px] space-y-4 overflow-y-auto pr-1">
+                  {!meeting && eligibleChildren.map((child) => (
+                    <ChildCard
+                      key={child.MaTre}
+                      child={child}
+                      request={request}
+                      selectedForMeeting={selectedMeetingChildren.includes(child.MaTre)}
+                      selectedForProfile={selectedChild?.MaTre === child.MaTre}
+                      onToggleMeetingSelection={handleSelectChild}
+                    />
+                  ))}
 
-                {eligibleChildren.length === 0 && (
-                  <EmptyState>
-                    Không có trẻ phù hợp với điều kiện hiện tại.
-                  </EmptyState>
+                  {meeting && (
+                    <div className="space-y-3">
+                      {meeting.Children.map((c) => {
+                        const child = children.find((ch) => ch.MaTre === c.MaTre) || { MaTre: c.MaTre, HoTen: c.TenTre };
+                        return (
+                          <div key={child.MaTre} className="rounded-2xl border border-[#E6EDF5] bg-[#FCFDFF] p-4 flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] font-bold text-[#8FA0B8] uppercase">{child.MaTre}</p>
+                              <h4 className="font-bold text-[#26364A] text-sm mt-0.5">{child.HoTen}</h4>
+                              {child.GioiTinh && (
+                                <p className="text-xs text-[#7D90AA] mt-1">
+                                  {child.GioiTinh} · {getAge(child.NgaySinh)} tuổi
+                                </p>
+                              )}
+                            </div>
+                            {c.KetQua && (
+                              <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${c.KetQua === 'Phù hợp' ? 'bg-green-50 border-green-200 text-green-700' :
+                                  c.KetQua === 'Không phù hợp' ? 'bg-red-50 border-red-200 text-red-700' :
+                                    'bg-orange-50 border-orange-200 text-orange-700'
+                                }`}>
+                                {c.KetQua}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {!meeting && eligibleChildren.length === 0 && (
+                    <>
+                      <EmptyState>
+                        Không có trẻ phù hợp với điều kiện hiện tại.
+                      </EmptyState>
+
+                      <div className="rounded-2xl border border-[#E1ECF8] bg-[#FAFCFF] p-5">
+                        <label className={labelClass}>
+                          Lý do từ chối yêu cầu
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          className={inputClass}
+                          placeholder="Nhập lý do từ chối yêu cầu..."
+                        />
+                        {rejectAttempted && !rejectReason.trim() && (
+                          <p className="mt-2 text-sm text-red-600">
+                            Vui lòng nhập lý do từ chối trước khi gửi.
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleRejectRequest}
+                          disabled={rejectLoading}
+                          className={`${primaryButton} mt-4 w-full ${rejectLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                          {rejectLoading ? 'Đang từ chối...' : 'Từ chối yêu cầu nhận nuôi'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
+
+              {/* Section II: Meeting Scheduler or Status Control */}
+              <section className={`${cardClass} p-6 lg:p-7`}>
+                <SectionTitle
+                  title="Lịch hẹn gặp mặt"
+                  description={meeting ? "Trạng thái và chi tiết lịch hẹn" : "Lập lịch gặp mặt để đánh giá độ hòa hợp."}
+                />
+
+                {/* Case A: No Meeting Scheduled yet */}
+                {!meeting && selectedMeetingChildren.length === 0 && (
+                  <div className="mt-5">
+                    <EmptyState>Chọn ít nhất 1 trẻ phù hợp ở bên trái để lập lịch gặp.</EmptyState>
+                  </div>
                 )}
-              </div>
-            </section>
 
-            <section className={`${cardClass} p-6 lg:p-7`}>
-              <SectionTitle
-                title="Tạo lịch gặp mặt"
-                description="Lịch gặp dùng để xác nhận trước khi lập hồ sơ."
-              />
+                {!meeting && selectedMeetingChildren.length > 0 && (
+                  <form onSubmit={handleCreateMeeting} className="mt-5 grid gap-5">
+                    <div className="rounded-2xl border border-blue-100 bg-[#F4F8FF] p-4">
+                      <p className="text-xs font-semibold text-[#0D47A1]">
+                        Đã chọn {selectedMeetingChildren.length} trẻ cho buổi gặp.
+                      </p>
+                    </div>
 
-              {!selectedChild && (
-                <div className="mt-5">
-                  <EmptyState>Cần gán trẻ vào hồ sơ trước khi tạo lịch gặp.</EmptyState>
-                </div>
-              )}
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Ngày gặp</label>
+                        <input
+                          type="date"
+                          required
+                          value={meetingForm.meetingDate}
+                          onChange={(e) =>
+                            setMeetingForm((prev) => ({
+                              ...prev,
+                              meetingDate: e.target.value,
+                            }))
+                          }
+                          className={inputClass}
+                        />
+                      </div>
 
-              {selectedChild && !meeting && (
-                <form onSubmit={handleCreateMeeting} className="mt-5 grid gap-5">
-                  <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Giờ gặp</label>
+                        <input
+                          type="time"
+                          required
+                          value={meetingForm.meetingTime}
+                          onChange={(e) =>
+                            setMeetingForm((prev) => ({
+                              ...prev,
+                              meetingTime: e.target.value,
+                            }))
+                          }
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <label className={labelClass}>Ngày gặp</label>
+                      <label className={labelClass}>Địa điểm</label>
                       <input
-                        type="date"
                         required
-                        value={meetingForm.meetingDate}
+                        value={meetingForm.location}
                         onChange={(e) =>
                           setMeetingForm((prev) => ({
                             ...prev,
-                            meetingDate: e.target.value,
+                            location: e.target.value,
                           }))
                         }
                         className={inputClass}
@@ -797,211 +1133,322 @@ export default function CreateAdoptionProfile() {
                     </div>
 
                     <div>
-                      <label className={labelClass}>Giờ gặp</label>
+                      <label className={labelClass}>Cán bộ phụ trách</label>
                       <input
-                        type="time"
                         required
-                        value={meetingForm.meetingTime}
+                        value={meetingForm.officer}
                         onChange={(e) =>
                           setMeetingForm((prev) => ({
                             ...prev,
-                            meetingTime: e.target.value,
+                            officer: e.target.value,
                           }))
                         }
                         className={inputClass}
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className={labelClass}>Địa điểm</label>
-                    <input
-                      required
-                      value={meetingForm.location}
-                      onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          location: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </div>
+                    <div>
+                      <label className={labelClass}>Ghi chú lịch gặp</label>
+                      <textarea
+                        rows={3}
+                        value={meetingForm.note}
+                        onChange={(e) =>
+                          setMeetingForm((prev) => ({
+                            ...prev,
+                            note: e.target.value,
+                          }))
+                        }
+                        className={inputClass}
+                        placeholder="Ghi chú thêm về lịch gặp..."
+                      />
+                    </div>
 
-                  <div>
-                    <label className={labelClass}>Cán bộ phụ trách</label>
-                    <input
-                      required
-                      value={meetingForm.officer}
-                      onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          officer: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </div>
+                    <button type="submit" className={`${primaryButton} w-full`}>
+                      Tạo lịch gặp mặt
+                    </button>
+                  </form>
+                )}
 
-                  <div>
-                    <label className={labelClass}>Ghi chú lịch gặp</label>
-                    <textarea
-                      rows={4}
-                      value={meetingForm.note}
-                      onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          note: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                      placeholder="Nhập ghi chú nếu có..."
-                    />
-                  </div>
+                {/* Case B: Meeting exists */}
+                {meeting && (
+                  <div className="mt-5 space-y-5">
+                    <div className="rounded-2xl border border-[#E6EDF5] bg-[#FAFCFF] p-5">
+                      <div className="flex items-center justify-between gap-3 border-b border-[#E6EDF5] pb-3">
+                        <p className="text-xs font-bold text-[#1F2A3D]">
+                          Mã lịch: {meeting.MaLichGap}
+                        </p>
+                        <Badge status={meeting.TrangThai} size="sm" />
+                      </div>
 
-                  <button type="submit" className={`${primaryButton} w-full`}>
-                    Tạo lịch gặp mặt
-                  </button>
-                </form>
-              )}
+                      <div className="mt-4 space-y-2 text-sm leading-6 text-[#5F738F]">
+                        <p>
+                          <span className="font-bold text-[#26364A]">Thời gian:</span> {meeting.meetingDate} · {meeting.meetingTime}
+                        </p>
+                        <p>
+                          <span className="font-bold text-[#26364A]">Địa điểm:</span> {meeting.location}
+                        </p>
+                      </div>
 
-              {meeting && (
-                <div className="mt-5 rounded-2xl border border-[#E1ECF8] bg-[#FAFCFF] p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-[#1F2A3D]">
-                      {meeting.MaLichGap}
-                    </p>
-                    <Badge status={meeting.TrangThai} size="sm" />
-                  </div>
+                      {meeting.TrangThai === 'Chờ xác nhận' && (
+                        <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800 text-center">
+                          Đang chờ người nhận nuôi xác nhận lịch hẹn.
+                        </div>
+                      )}
 
-                  <p className="mt-3 text-sm leading-7 text-[#5F738F]">
-                    {meeting.meetingDate} · {meeting.meetingTime}
-                  </p>
+                      {meeting.TrangThai === 'Yêu cầu đổi lịch' && (
+                        <div className="mt-4 space-y-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-800">
+                          <p className="font-bold uppercase tracking-wider">Người nhận nuôi yêu cầu đổi lịch:</p>
+                          <p className="italic">"{meeting.PhanHoiNguoiNhan || 'Không có phản hồi chi tiết'}"</p>
+                          {meeting.ThoiGianDeXuatMoi && (
+                            <p className="font-bold text-red-900 mt-1">
+                              Thời gian đề xuất: {formatDate(meeting.ThoiGianDeXuatMoi)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                  <p className="text-sm leading-7 text-[#5F738F]">
-                    {meeting.location}
-                  </p>
+                    {/* Subcase B1: Reschedule Form (Only shown if 'Yêu cầu đổi lịch') */}
+                    {meeting.TrangThai === 'Yêu cầu đổi lịch' && (
+                      <form onSubmit={handleUpdateMeeting} className="grid gap-4 rounded-2xl border border-red-100 bg-[#FFFDFD] p-5">
+                        <p className="text-xs font-bold uppercase tracking-wider text-red-700">Cập nhật lại lịch hẹn</p>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                          <div>
+                            <label className={labelClass}>Ngày mới</label>
+                            <input
+                              type="date"
+                              required
+                              value={meetingForm.meetingDate}
+                              onChange={(e) =>
+                                setMeetingForm((prev) => ({
+                                  ...prev,
+                                  meetingDate: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Giờ mới</label>
+                            <input
+                              type="time"
+                              required
+                              value={meetingForm.meetingTime}
+                              onChange={(e) =>
+                                setMeetingForm((prev) => ({
+                                  ...prev,
+                                  meetingTime: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Địa điểm</label>
+                          <input
+                            required
+                            value={meetingForm.location}
+                            onChange={(e) =>
+                              setMeetingForm((prev) => ({
+                                ...prev,
+                                location: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={rescheduleLoading}
+                          className={`${primaryButton} w-full`}
+                        >
+                          {rescheduleLoading ? 'Đang cập nhật...' : 'Cập nhật và Gửi lại lịch'}
+                        </button>
+                      </form>
+                    )}
+
+                    {/* Subcase B2: Record Results (Only if status is 'Đã xác nhận' or 'Đã gặp mặt') */}
+                    {canRecordResult && (
+                      <div className="rounded-2xl border border-[#E6EDF5] bg-white p-5 space-y-4 shadow-sm">
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#0D47A1]">Ghi nhận đánh giá gặp mặt</p>
+
+                        <div className="space-y-4 divide-y divide-[#F0F4F8]">
+                          {meetingChildrenResults.map((r, index) => (
+                            <div key={r.MaTre} className={`${index > 0 ? 'pt-4' : ''} space-y-2`}>
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm font-bold text-[#26364A]">{r.TenTre}</p>
+                                <span className="text-xs font-semibold text-[#7D90AA]">{r.MaTre}</span>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-[#8FA0B8] uppercase">Kết quả</label>
+                                <select
+                                  value={r.KetQua}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMeetingChildrenResults(prev => prev.map(item => item.MaTre === r.MaTre ? { ...item, KetQua: val } : item));
+                                  }}
+                                  className="w-full mt-1 rounded-xl border border-[#D7E5F7] bg-white px-3 py-2 text-xs font-semibold text-[#26364A] outline-none"
+                                >
+                                  <option value="">Chọn kết quả</option>
+                                  <option value="Phù hợp">Phù hợp</option>
+                                  <option value="Không phù hợp">Không phù hợp</option>
+                                  <option value="Cần gặp lại">Cần gặp lại</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-[#8FA0B8] uppercase">Ghi chú cán bộ</label>
+                                <input
+                                  type="text"
+                                  value={r.GhiChuCanBo}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMeetingChildrenResults(prev => prev.map(item => item.MaTre === r.MaTre ? { ...item, GhiChuCanBo: val } : item));
+                                  }}
+                                  className="w-full mt-1 rounded-xl border border-[#D7E5F7] bg-white px-3 py-2 text-xs text-[#26364A] outline-none"
+                                  placeholder="Ghi chú tình hình gặp mặt..."
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveMeetingResults}
+                          disabled={saveResultsLoading}
+                          className={`${primaryButton} w-full text-xs py-2.5`}
+                        >
+                          {saveResultsLoading ? 'Đang lưu...' : 'Lưu kết quả & Đánh dấu đã gặp mặt'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* General Reset Action */}
                     <button
                       type="button"
-                      onClick={() => {
-                        setMeeting(null);
-                        setMeetingResult({ result: '', note: '' });
-                      }}
-                      className={secondaryButton}
+                      onClick={handleResetMeeting}
+                      className={`${secondaryButton} w-full text-xs py-2`}
                     >
-                      Cập nhật lịch
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMeeting((prev) => ({
-                          ...prev,
-                          TrangThai: 'Đã xác nhận',
-                        }))
-                      }
-                      className={primaryButton}
-                    >
-                      Xác nhận lịch
+                      Tạo lịch gặp mới / Hủy lịch gặp
                     </button>
                   </div>
-                </div>
-              )}
-            </section>
+                )}
+              </section>
 
-            <section className={`${cardClass} p-6 lg:p-7`}>
-              <SectionTitle
-                title="Ghi nhận kết quả gặp mặt"
-                description="Chỉ kết quả phù hợp mới cho phép gửi hồ sơ duyệt."
-              />
+              {/* Section III: Submit Profile or End Request */}
+              <section className={`${cardClass} p-6 lg:p-7`}>
+                <SectionTitle
+                  title="Gửi hồ sơ duyệt / Kết thúc"
+                  description="Hoàn tất quy trình ghép trẻ sau cuộc gặp mặt."
+                />
 
-              {!meeting && (
-                <div className="mt-5">
-                  <EmptyState>Cần tạo lịch gặp trước khi ghi nhận kết quả.</EmptyState>
-                </div>
-              )}
+                {meeting && meeting.TrangThai === 'Đã gặp mặt' ? (
+                  (() => {
+                    const suitableChildren = meetingChildrenResults.filter((r) => r.KetQua === 'Phù hợp');
 
-              {meeting && meeting.TrangThai !== 'Đã xác nhận' && (
-                <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-                  Cần xác nhận lịch gặp trước khi ghi nhận kết quả.
-                </p>
-              )}
+                    if (suitableChildren.length > 0) {
+                      return (
+                        <div className="mt-5 space-y-4">
+                          <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+                            <p className="text-xs font-semibold text-green-800 leading-5">
+                              Trẻ <span className="font-bold">{selectedChild?.HoTen}</span> ({selectedChild?.MaTre}) đã được đánh giá phù hợp và tự động gán vào hồ sơ này.
+                            </p>
+                          </div>
 
-              {canRecordResult && (
-                <div className="mt-5 grid gap-5">
-                  <div>
-                    <label className={labelClass}>Kết quả</label>
-                    <select
-                      value={meetingResult.result}
-                      onChange={(e) =>
-                        setMeetingResult((prev) => ({
-                          ...prev,
-                          result: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">Chọn kết quả</option>
-                      <option value="Phù hợp">Phù hợp</option>
-                      <option value="Không phù hợp">Không phù hợp</option>
-                      <option value="Cần gặp lại">Cần gặp lại</option>
-                    </select>
+                          <div>
+                            <label className={labelClass}>Ghi chú lập hồ sơ</label>
+                            <textarea
+                              rows={3}
+                              value={staffNote}
+                              onChange={(e) => setStaffNote(e.target.value)}
+                              className={inputClass}
+                              placeholder="Nhập ghi chú lập hồ sơ gửi trưởng phòng duyệt..."
+                            />
+                          </div>
+
+                          {submitAttempted && !selectedChild && (
+                            <p className="text-xs text-red-600 font-semibold">Vui lòng chọn 1 trẻ để gán vào hồ sơ.</p>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={handleSubmitProfile}
+                            disabled={submitProfileLoading}
+                            className={`${primaryButton} w-full`}
+                          >
+                            {submitProfileLoading ? 'Đang lập hồ sơ...' : 'Lập hồ sơ và gửi trưởng phòng duyệt'}
+                          </button>
+                        </div>
+                      );
+                    } else {
+                      // No suitable children
+                      const hasNeedMoreMeetings = meetingChildrenResults.some((r) => r.KetQua === 'Cần gặp lại');
+
+                      return (
+                        <div className="mt-5 space-y-4">
+                          <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+                            <p className="text-xs font-semibold text-red-800 leading-5">
+                              Không có trẻ nào được đánh giá là Phù hợp trong buổi gặp này.
+                            </p>
+                          </div>
+
+                          {hasNeedMoreMeetings ? (
+                            <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
+                              <p className="text-xs font-medium text-orange-800 leading-5">
+                                Một số trẻ được đánh giá là "Cần gặp lại". Bạn có thể bấm nút "Tạo lịch gặp mới" ở phần trên để hẹn gặp lại.
+                              </p>
+                            </div>
+                          ) : null}
+
+                          <div className="rounded-2xl border border-[#E6EDF5] bg-[#FFFDFD] p-5 space-y-3">
+                            <p className="text-xs font-bold uppercase tracking-wider text-red-700">Kết thúc hồ sơ (Từ chối yêu cầu)</p>
+
+                            <div>
+                              <label className={labelClass}>Lý do từ chối / kết thúc</label>
+                              <textarea
+                                rows={3}
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                className={inputClass}
+                                placeholder="Nhập lý do kết thúc hồ sơ nhận nuôi..."
+                              />
+                            </div>
+
+                            {rejectAttempted && !rejectReason.trim() && (
+                              <p className="text-xs text-red-600 font-semibold">Vui lòng nhập lý do từ chối.</p>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={handleRejectRequest}
+                              disabled={rejectLoading}
+                              className={`${primaryButton} bg-red-600 hover:bg-red-700 w-full`}
+                            >
+                              {rejectLoading ? 'Đang xử lý...' : 'Kết thúc hồ sơ và Từ chối yêu cầu'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()
+                ) : (
+                  <div className="mt-5">
+                    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-center">
+                      <p className="text-xs font-semibold text-amber-800 leading-5">
+                        Chỉ có thể lập hồ sơ hoặc kết thúc hồ sơ sau khi cuộc gặp mặt diễn ra và kết quả đã được ghi nhận ở trạng thái "Đã gặp mặt".
+                      </p>
+                    </div>
                   </div>
-
-                  <div>
-                    <label className={labelClass}>Ghi chú kết quả</label>
-                    <textarea
-                      rows={4}
-                      value={meetingResult.note}
-                      onChange={(e) =>
-                        setMeetingResult((prev) => ({
-                          ...prev,
-                          note: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                      placeholder="Nhập nhận xét sau buổi gặp..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>Ghi chú cán bộ</label>
-                    <textarea
-                      rows={4}
-                      value={staffNote}
-                      onChange={(e) => setStaffNote(e.target.value)}
-                      className={inputClass}
-                      placeholder="Nhập ghi chú nếu cần..."
-                    />
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section className={`${cardClass} p-6 lg:p-7`}>
-              <SectionTitle
-                title="Gửi hồ sơ duyệt"
-                description="Sau khi đủ điều kiện, payload lập hồ sơ sẽ gồm mã yêu cầu, mã trẻ, cán bộ lập, ngày lập, trạng thái và ghi chú."
-              />
-
-              {submitAttempted && !canSubmitProfile && (
-                <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-700">
-                  Cần gán trẻ, xác nhận lịch gặp và ghi nhận kết quả phù hợp
-                  trước khi gửi hồ sơ duyệt.
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={handleSubmitProfile}
-                className={`${primaryButton} mt-5 w-full`}
-              >
-                Lập hồ sơ và gửi trưởng phòng duyệt
-              </button>
-            </section>
-          </aside>
+                )}
+              </section>
+            </aside>
+          )}
         </div>
       </div>
     </div>

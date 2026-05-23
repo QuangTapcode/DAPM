@@ -33,12 +33,44 @@ const adoptionApi = {
     return axiosClient.post(`/adoptions/${id}/start-matching`);
   },
 
+  createMeeting: (payload) => {
+    return axiosClient.post('/meetings', payload);
+  },
+
+  updateMeeting: (id, payload) => {
+    return axiosClient.put(`/meetings/${id}`, payload);
+  },
+
+  getMeetings: (params = {}) => {
+    return axiosClient.get('/meetings', { params });
+  },
+
+  createProfile: (payload) => {
+    return axiosClient.post('/adoption-profiles', payload);
+  },
+
   reject: (id, payload = {}) => {
     return axiosClient.post(`/adoptions/${id}/reject`, payload);
   },
 
   getMatchingChildren: (id, params = {}) => {
     return axiosClient.get(`/adoptions/${id}/matching-children`, { params });
+  },
+
+  getAdoptionProfiles: (params = {}) => {
+    return axiosClient.get('/adoption-profiles', { params });
+  },
+
+  getProfileById: (id) => {
+    return axiosClient.get(`/adoption-profiles/${id}`);
+  },
+
+  getDocuments: (params = {}) => {
+    return axiosClient.get('/documents', { params });
+  },
+
+  getChildById: (id) => {
+    return axiosClient.get(`/children/${id}`);
   },
 };
 

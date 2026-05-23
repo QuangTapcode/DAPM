@@ -392,7 +392,7 @@ public async Task<ActionResult<ApiResponse<bool>>> StartMatching(string id)
             return NotFound(ApiResponse<bool>.Fail("Không tìm thấy yêu cầu nhận nuôi"));
         }
 
-        y.TrangThai = "Từ chối";
+        y.TrangThai = "Từ chối sơ bộ";
         y.GhiChu = body.Reason ?? body.ReasonReject;
 
         await _db.SaveChangesAsync();
@@ -450,9 +450,15 @@ public async Task<ActionResult<ApiResponse<bool>>> StartMatching(string id)
             .Include(t => t.PhuongXa)
             .AsQueryable();
 
+        // Chỉ lấy trẻ "Chờ nhận nuôi" và chưa có hồ sơ nhận nuôi nào đang xử lý
+        var activeProfileChildIds = _db.HOSONHANNUOI
+            .Where(h => h.TrangThai == "Đang lập" || h.TrangThai == "Chờ duyệt" || h.TrangThai == "Đã duyệt" || h.TrangThai == "Đã hoàn tất")
+            .Select(h => h.MaTre);
+
         query = query.Where(t =>
             t.TrangThai == "Chờ nhận nuôi" &&
-            t.NgaySinh != null);
+            t.NgaySinh != null &&
+            !activeProfileChildIds.Contains(t.MaTre));
 
         query = query.Where(t =>
             (currentYear - t.NgaySinh!.Value.Year) < 16);

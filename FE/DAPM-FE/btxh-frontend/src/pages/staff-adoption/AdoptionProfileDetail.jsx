@@ -1,752 +1,535 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
-import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
 
+/* ── Design tokens ─────────────────────────────────── */
 const pageClass = 'min-h-screen bg-[#F5F7FB]';
 
 const cardClass =
-    'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
+  'rounded-3xl border border-slate-200 bg-white shadow-sm';
 
-const softCardClass =
-    'rounded-[24px] border border-[#E6EDF5] bg-[#FAFCFF]';
-
-const primaryButton =
-    'inline-flex items-center justify-center rounded-2xl bg-[#0D47A1] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#083778]';
+const softCard =
+  'rounded-2xl bg-slate-50 border border-slate-100 px-5 py-4';
 
 const secondaryButton =
-    'inline-flex items-center justify-center rounded-2xl border border-[#CFE0F5] bg-white px-5 py-3 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
+  'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50';
 
-const fallbackProfile = {
-    MaHSNhanNuoi: 'HSNN0002',
-    MaYeuCauNhan: 'YCNN0002',
-    MaTre: 'TRE00011',
-
-    // HOSONHANNUOI
-    MaCanBo: 'ND000001', // trưởng phòng/người duyệt
-    NgayLap: '2026-03-16',
-    NgayDuyet: '2026-03-18',
-    TrangThai: 'Đã duyệt',
-    GhiChu: 'Hồ sơ đã được trưởng phòng duyệt, chờ hoàn tất quy trình theo quy định.',
-
-    // Lấy từ YEUCAUNHANNUOI thông qua MaYeuCauNhan
-    CanBoLapTuYeuCau: {
-        MaNguoiDung: 'ND000005',
-        HoTen: 'Hoàng Văn Nuôi',
-    },
-
-    // Lấy từ HOSONHANNUOI.MaCanBo join NGUOIDUNG
-    NguoiDuyetHoSo: {
-        MaNguoiDung: 'ND000001',
-        HoTen: 'Trần Minh Quang',
-        ChucVu: 'Trưởng phòng',
-    },
-
-    NguoiNhanNuoi: {
-        HoTen: 'Võ Thị Hạnh',
-        SoDienThoai: '0977777777',
-        NgaySinh: '1989-07-12',
-        NgheNghiep: 'Nhân viên kế toán',
-        ThuNhapHangThang: 25000000,
-        DiaChi: 'Hải Châu, Đà Nẵng',
-        LyDoNhanNuoi:
-            'Mong muốn xây dựng gia đình và chăm sóc trẻ lâu dài trong môi trường ổn định.',
-        MongMuonVeTre:
-            'Ưu tiên trẻ có độ tuổi nhỏ, phù hợp với điều kiện chăm sóc hiện tại.',
-    },
-
-    TreNhanNuoi: {
-        MaTre: 'TRE00011',
-        HoTen: 'Bé Nam',
-        NgaySinh: '2020-06-10',
-        GioiTinh: 'Nam',
-        SucKhoe: 'Ổn định',
-        TrangThai: 'Đang xử lý nhận nuôi',
-        GhiChu: 'Trẻ hòa đồng, sức khỏe ổn định.',
-    },
-
-    GiayTo: [
-        {
-            MaGiayTo: 'GT000021',
-            TenGiayTo: 'Ảnh CCCD người nhận nuôi',
-            LoaiGiayTo: 'Tùy thân',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/cccd.jpg',
-            NgayCapNhat: '2026-03-10',
-        },
-        {
-            MaGiayTo: 'GT000022',
-            TenGiayTo: 'Giấy khám sức khỏe',
-            LoaiGiayTo: 'Sức khỏe',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/suckhoe.pdf',
-            NgayCapNhat: '2026-03-10',
-        },
-        {
-            MaGiayTo: 'GT000023',
-            TenGiayTo: 'Giấy xác nhận tình trạng hôn nhân',
-            LoaiGiayTo: 'Hôn nhân',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/honnhan.pdf',
-            NgayCapNhat: '2026-03-11',
-        },
-        {
-            MaGiayTo: 'GT000024',
-            TenGiayTo: 'Minh chứng thu nhập',
-            LoaiGiayTo: 'Tài chính',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/thunhap.pdf',
-            NgayCapNhat: '2026-03-11',
-        },
-    ],
-};
-
+/* ── Status config ─────────────────────────────────── */
 const PROFILE_STEPS = ['Đang lập', 'Chờ duyệt', 'Đã duyệt', 'Đã hoàn tất'];
 
-function formatCurrency(value) {
-    if (value === null || value === undefined || value === '') {
-        return 'Chưa cập nhật';
-    }
-
-    return `${new Intl.NumberFormat('vi-VN').format(Number(value))} đ`;
+function getStepIndex(status) {
+  const idx = PROFILE_STEPS.indexOf(status);
+  return idx === -1 ? 0 : idx;
 }
 
-function safeDate(value) {
-    if (!value) return 'Chưa có';
-    return formatDate(value);
+function getStatusStyle(status) {
+  const map = {
+    'Đang lập': 'bg-slate-100 text-slate-600',
+    'Chờ duyệt': 'bg-amber-100 text-amber-700',
+    'Đã duyệt': 'bg-green-100 text-green-700',
+    'Đã hoàn tất': 'bg-blue-100 text-blue-700',
+    'Từ chối': 'bg-red-100 text-red-600',
+  };
+  return map[status] || 'bg-slate-100 text-slate-600';
 }
 
-function getFileUrl(path) {
-    if (!path) return '';
-
-    if (
-        path.startsWith('http') ||
-        path.startsWith('blob:') ||
-        path.startsWith('data:')
-    ) {
-        return path;
-    }
-
-    const baseUrl = import.meta.env.VITE_API_URL || '';
-    return `${baseUrl}${path}`;
+/* ── Helpers ───────────────────────────────────────── */
+function safeDate(v) {
+  if (!v) return '—';
+  return formatDate(v);
 }
 
-function getStatusTone(status) {
-    switch (status) {
-        case 'Đang lập':
-            return 'border-slate-200 bg-slate-50 text-slate-700';
-        case 'Chờ duyệt':
-            return 'border-amber-200 bg-amber-50 text-amber-700';
-        case 'Đã duyệt':
-            return 'border-green-200 bg-green-50 text-green-700';
-        case 'Đã hoàn tất':
-            return 'border-blue-200 bg-blue-50 text-blue-700';
-        case 'Từ chối':
-            return 'border-red-200 bg-red-50 text-red-700';
-        default:
-            return 'border-slate-200 bg-slate-50 text-slate-700';
-    }
+function formatCurrency(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  return new Intl.NumberFormat('vi-VN').format(Number(v)) + ' ₫';
 }
 
-function getProgressIndex(status) {
-    const index = PROFILE_STEPS.indexOf(status);
-    if (status === 'Từ chối') return 1;
-    return index === -1 ? 0 : index;
+function getAge(dateStr) {
+  if (!dateStr) return null;
+  const birth = new Date(dateStr);
+  if (isNaN(birth)) return null;
+  const diff = new Date() - birth;
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
-function normalizeProfile(raw, profileId) {
-    if (!raw) {
-        return {
-            ...fallbackProfile,
-            MaHSNhanNuoi: profileId || fallbackProfile.MaHSNhanNuoi,
-        };
-    }
-
-    const yeuCau = raw.YeuCauNhanNuoi || raw.yeuCauNhanNuoi || {};
-    const canBoLap =
-        raw.CanBoLapTuYeuCau ||
-        raw.canBoLapTuYeuCau ||
-        yeuCau.CanBoXuLy ||
-        yeuCau.canBoXuLy ||
-        yeuCau.CanBoLap ||
-        yeuCau.canBoLap ||
-        fallbackProfile.CanBoLapTuYeuCau;
-
-    const nguoiDuyet =
-        raw.NguoiDuyetHoSo ||
-        raw.nguoiDuyetHoSo ||
-        raw.TruongPhongDuyet ||
-        raw.truongPhongDuyet ||
-        fallbackProfile.NguoiDuyetHoSo;
-
-    return {
-        MaHSNhanNuoi:
-            raw.MaHSNhanNuoi ||
-            raw.MaHoSoNhanNuoi ||
-            raw.maHSNhanNuoi ||
-            raw.id ||
-            profileId ||
-            fallbackProfile.MaHSNhanNuoi,
-        MaYeuCauNhan:
-            raw.MaYeuCauNhan ||
-            raw.maYeuCauNhan ||
-            yeuCau.MaYeuCauNhan ||
-            fallbackProfile.MaYeuCauNhan,
-        MaTre: raw.MaTre || raw.maTre || fallbackProfile.MaTre,
-
-        MaCanBo:
-            raw.MaCanBo ||
-            raw.maCanBo ||
-            nguoiDuyet?.MaNguoiDung ||
-            fallbackProfile.MaCanBo,
-        NgayLap: raw.NgayLap || raw.ngayLap || fallbackProfile.NgayLap,
-        NgayDuyet: raw.NgayDuyet || raw.ngayDuyet || fallbackProfile.NgayDuyet,
-        TrangThai: raw.TrangThai || raw.trangThai || fallbackProfile.TrangThai,
-        GhiChu: raw.GhiChu || raw.ghiChu || fallbackProfile.GhiChu,
-
-        CanBoLapTuYeuCau: canBoLap,
-        NguoiDuyetHoSo: nguoiDuyet,
-
-        NguoiNhanNuoi:
-            raw.NguoiNhanNuoi ||
-            raw.nguoiNhanNuoi ||
-            yeuCau.NguoiNhanNuoi ||
-            yeuCau.nguoiNhanNuoi ||
-            fallbackProfile.NguoiNhanNuoi,
-
-        TreNhanNuoi:
-            raw.TreNhanNuoi ||
-            raw.treNhanNuoi ||
-            raw.Tre ||
-            raw.tre ||
-            fallbackProfile.TreNhanNuoi,
-
-        GiayTo:
-            raw.GiayTo ||
-            raw.giayTo ||
-            raw.documents ||
-            yeuCau.GiayTo ||
-            yeuCau.documents ||
-            fallbackProfile.GiayTo,
-    };
+function unwrap(res) {
+  if (res?.data?.success !== undefined) return res.data.data;
+  if (res?.success !== undefined) return res.data;
+  return res?.data ?? res;
 }
 
-function SectionTitle({ number, title, description }) {
-    return (
+function normalizeProfile(raw) {
+  if (!raw) return null;
+  return {
+    MaHSNhanNuoi: raw.maHSNhanNuoi || raw.MaHSNhanNuoi || '',
+    MaYeuCauNhan: raw.maYeuCauNhan || raw.MaYeuCauNhan || '',
+    MaTre:        raw.maTre        || raw.MaTre        || '',
+    TenTre:       raw.tenTre       || raw.TenTre       || '',
+    MaCanBo:      raw.maCanBo      || raw.MaCanBo      || '',
+    TenCanBo:     raw.tenCanBo     || raw.TenCanBo     || '',
+    NgayLap:      raw.ngayLap      || raw.NgayLap      || null,
+    NgayDuyet:    raw.ngayDuyet    || raw.NgayDuyet    || null,
+    TrangThai:    raw.trangThai    || raw.TrangThai    || '',
+    GhiChu:       raw.ghiChu       || raw.GhiChu       || '',
+  };
+}
+
+function normalizeRequest(raw) {
+  if (!raw) return null;
+  return {
+    MaYeuCauNhan:    raw.maYeuCauNhan    || raw.MaYeuCauNhan    || '',
+    TenNguoiNhan:    raw.tenNguoiNhan    || raw.TenNguoiNhan    || '',
+    SDTNguoiNhan:    raw.sdtNguoiNhan    || raw.SDTNguoiNhan    || '',
+    NgaySinhNguoiNhan: raw.ngaySinhNguoiNhan || raw.NgaySinhNguoiNhan || null,
+    ThuNhapHangThang: raw.thuNhapHangThang ?? raw.ThuNhapHangThang ?? null,
+    TinhTrangHonNhan: raw.tinhTrangHonNhan || raw.TinhTrangHonNhan || '',
+    LoaiNoiO:        raw.loaiNoiO        || raw.LoaiNoiO        || '',
+    LyDoNhanNuoi:    raw.lyDoNhanNuoi    || raw.LyDoNhanNuoi    || '',
+    MongMuonVeTre:   raw.mongMuonVeTre   || raw.MongMuonVeTre   || '',
+    TrangThai:       raw.trangThai       || raw.TrangThai       || '',
+    GhiChu:          raw.ghiChu          || raw.GhiChu          || '',
+  };
+}
+
+function normalizeChild(raw) {
+  if (!raw) return null;
+  return {
+    MaTre:     raw.maTre     || raw.MaTre     || '',
+    HoTen:     raw.hoTen     || raw.HoTen     || '',
+    NgaySinh:  raw.ngaySinh  || raw.NgaySinh  || null,
+    GioiTinh:  raw.gioiTinh  || raw.GioiTinh  || '',
+    DanToc:    raw.danToc    || raw.DanToc    || '',
+    TrangThai: raw.trangThai || raw.TrangThai || '',
+    GhiChu:    raw.ghiChu    || raw.GhiChu    || '',
+    HinhAnh:   raw.hinhAnh   || raw.HinhAnh   || '',
+  };
+}
+
+function normalizeDoc(raw) {
+  return {
+    MaGiayTo:    raw.maGiayTo    || raw.MaGiayTo    || '',
+    MaLoaiGiayTo: raw.maLoaiGiayTo || raw.MaLoaiGiayTo || '',
+    DuongDanFile: raw.duongDanFile || raw.DuongDanFile || '',
+    TrangThai:   raw.trangThai   || raw.TrangThai   || '',
+    NgayCapNhat: raw.ngayCapNhat || raw.NgayCapNhat || null,
+  };
+}
+
+/* ── Sub-components ─────────────────────────────────── */
+function Field({ label, value, wide = false, highlight = false }) {
+  return (
+    <div className={`${softCard} ${wide ? 'md:col-span-2' : ''}`}>
+      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p className={`text-sm leading-relaxed ${highlight ? 'font-bold text-blue-700' : 'font-medium text-slate-800'}`}>
+        {value || '—'}
+      </p>
+    </div>
+  );
+}
+
+function SectionHeader({ icon, title }) {
+  return (
+    <div className="mb-5 flex items-center gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-base">
+        {icon}
+      </span>
+      <h2 className="text-base font-bold text-slate-800">{title}</h2>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusStyle(status)}`}>
+      {status}
+    </span>
+  );
+}
+
+function ProgressTracker({ status }) {
+  const isRejected = status === 'Từ chối';
+  const currentIdx = getStepIndex(status);
+
+  return (
+    <div className={`${cardClass} p-6`}>
+      <div className="mb-6 flex items-start justify-between gap-3">
         <div>
-            <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF3FF] text-sm font-bold text-[#0D47A1]">
-                    {number}
-                </span>
-                <h2 className="text-[18px] font-bold text-[#0D47A1]">{title}</h2>
-            </div>
-
-            {description && (
-                <p className="mt-2 text-sm leading-7 text-[#7D90AA]">{description}</p>
-            )}
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Tiến trình hồ sơ
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-600">
+            Trưởng phòng có quyền duyệt hồ sơ
+          </p>
         </div>
-    );
-}
+        <StatusBadge status={status} />
+      </div>
 
-function DetailField({ label, value, wide = false, strong = false }) {
-    return (
-        <div className={`${softCardClass} px-5 py-4 ${wide ? 'md:col-span-2' : ''}`}>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.13em] text-[#8B9BB0]">
-                {label}
-            </p>
-            <p
-                className={`text-sm leading-7 ${strong ? 'font-bold text-[#0D47A1]' : 'font-semibold text-[#26364A]'
-                    }`}
-            >
-                {value || 'Chưa có'}
-            </p>
+      {isRejected ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+          ✕ Hồ sơ đã bị từ chối. Vui lòng liên hệ trưởng phòng để biết thêm chi tiết.
         </div>
-    );
-}
-
-function ProfileProgressBar({ status }) {
-    const isRejected = status === 'Từ chối';
-    const currentIndex = getProgressIndex(status);
-
-    return (
-        <section className={`${cardClass} p-6`}>
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h3 className="text-[20px] font-bold text-[#0D47A1]">
-                        Tiến trình hồ sơ
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-[#7D90AA]">
-                        Trạng thái hồ sơ do trưởng phòng quyết định.
-                    </p>
+      ) : (
+        <div className="flex items-start gap-0">
+          {PROFILE_STEPS.map((step, idx) => {
+            const done = idx < currentIdx;
+            const active = idx === currentIdx;
+            const future = idx > currentIdx;
+            return (
+              <div key={step} className={`flex items-start ${idx < PROFILE_STEPS.length - 1 ? 'flex-1' : ''}`}>
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all
+                      ${done ? 'border-blue-600 bg-blue-600 text-white'
+                        : active ? 'border-blue-600 bg-white text-blue-600 shadow-[0_0_0_4px_rgba(37,99,235,0.12)]'
+                        : 'border-slate-200 bg-white text-slate-400'}`}
+                  >
+                    {done ? '✓' : idx + 1}
+                  </div>
+                  <p className={`mt-2.5 max-w-[72px] text-center text-[11px] font-bold leading-4
+                    ${done ? 'text-blue-600' : active ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {step}
+                  </p>
                 </div>
-
-                <span
-                    className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusTone(
-                        status
-                    )}`}
-                >
-                    {status}
-                </span>
-            </div>
-
-            <div className="mt-7">
-                <div className="flex items-start">
-                    {PROFILE_STEPS.map((step, index) => {
-                        const active = !isRejected && index <= currentIndex;
-                        const current = !isRejected && index === currentIndex;
-                        const lineDone = !isRejected && index < currentIndex;
-
-                        return (
-                            <div
-                                key={step}
-                                className={`flex items-start ${index === PROFILE_STEPS.length - 1 ? 'w-auto' : 'flex-1'
-                                    }`}
-                            >
-                                <div className="flex w-[78px] flex-col items-center text-center">
-                                    <div
-                                        className={`flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-extrabold transition ${active
-                                            ? 'border-[#0D47A1] bg-[#0D47A1] text-white shadow-[0_8px_18px_rgba(13,71,161,0.22)]'
-                                            : 'border-[#D7E5F7] bg-white text-[#9AACBF]'
-                                            }`}
-                                    >
-                                        {index < currentIndex && !isRejected ? '✓' : index + 1}
-                                    </div>
-
-                                    <p
-                                        className={`mt-3 text-xs font-bold leading-5 ${current
-                                            ? 'text-[#0D47A1]'
-                                            : active
-                                                ? 'text-[#26364A]'
-                                                : 'text-[#8FA0B8]'
-                                            }`}
-                                    >
-                                        {step}
-                                    </p>
-                                </div>
-
-                                {index !== PROFILE_STEPS.length - 1 && (
-                                    <div
-                                        className={`mt-5 h-1 flex-1 rounded-full ${lineDone ? 'bg-[#0D47A1]' : 'bg-[#E6EDF5]'
-                                            }`}
-                                    />
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {isRejected && (
-                    <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-700">
-                        Hồ sơ đã bị từ chối. Quy trình dừng tại bước phê duyệt hồ sơ.
-                    </div>
+                {idx < PROFILE_STEPS.length - 1 && (
+                  <div className={`mt-5 h-0.5 flex-1 rounded-full transition-all ${done ? 'bg-blue-600' : 'bg-slate-200'}`} />
                 )}
-            </div>
-        </section>
-    );
-}
-
-function ProfileActionPanel({ status, onBack }) {
-    return (
-        <section className={`${cardClass} p-6`}>
-            <h3 className="text-[18px] font-bold text-[#0D47A1]">
-                Thao tác hồ sơ
-            </h3>
-
-            {status === 'Đang lập' && (
-                <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold leading-6 text-slate-700">
-                    Hồ sơ đang ở trạng thái đang lập. Cán bộ chỉ theo dõi thông tin đã lưu.
-                </p>
-            )}
-
-            {status === 'Chờ duyệt' && (
-                <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-700">
-                    Hồ sơ đang chờ trưởng phòng duyệt.
-                </p>
-            )}
-
-            {status === 'Đã duyệt' && (
-                <p className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold leading-6 text-green-700">
-                    Hồ sơ đã được trưởng phòng duyệt.
-                </p>
-            )}
-
-            {status === 'Từ chối' && (
-                <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-700">
-                    Hồ sơ đã bị từ chối. Không có thao tác xử lý tiếp.
-                </p>
-            )}
-
-            {status === 'Đã hoàn tất' && (
-                <p className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-700">
-                    Hồ sơ đã hoàn tất và được lưu trữ.
-                </p>
-            )}
-
-            <div className="mt-5 flex flex-col gap-3">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className={`${secondaryButton} w-full`}
-                >
-                    Quay lại
-                </button>
-
-                <Link
-                    to="/can-bo-nhan-nuoi/ho-so"
-                    className={`${primaryButton} w-full`}
-                >
-                    Xem danh sách hồ sơ
-                </Link>
-            </div>
-        </section>
-    );
-}
-
-function DocumentPreviewModal({ document, onClose }) {
-    if (!document) return null;
-
-    const fileUrl = getFileUrl(document.DuongDanFile);
-    const lowerUrl = String(fileUrl || '').toLowerCase();
-
-    const isImage =
-        lowerUrl.endsWith('.jpg') ||
-        lowerUrl.endsWith('.jpeg') ||
-        lowerUrl.endsWith('.png') ||
-        lowerUrl.endsWith('.webp');
-
-    const isPdf = lowerUrl.endsWith('.pdf');
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
-            <div className="flex max-h-[92vh] w-full max-w-[980px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-                <div className="flex items-start justify-between gap-4 border-b border-[#E4EAF2] px-6 py-5">
-                    <div>
-                        <h3 className="text-lg font-bold text-[#1F2A3D]">
-                            {document.TenGiayTo}
-                        </h3>
-                        <p className="mt-1 text-sm text-[#7D90AA]">
-                            {document.MaGiayTo} · {document.LoaiGiayTo}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-xl border border-[#D7E1EE] px-4 py-2 text-sm font-bold text-[#5F738F] transition hover:bg-[#F6F8FC]"
-                    >
-                        Đóng
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-auto bg-[#F6F8FC] p-5">
-                    {!fileUrl && (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-[#7D90AA]">
-                            Chưa có file giấy tờ để xem.
-                        </div>
-                    )}
-
-                    {fileUrl && isImage && (
-                        <div className="flex justify-center">
-                            <img
-                                src={fileUrl}
-                                alt={document.TenGiayTo}
-                                className="max-h-[72vh] max-w-full rounded-2xl border border-[#D7E1EE] bg-white object-contain"
-                            />
-                        </div>
-                    )}
-
-                    {fileUrl && isPdf && (
-                        <iframe
-                            src={fileUrl}
-                            title={document.TenGiayTo}
-                            className="h-[72vh] w-full rounded-2xl border border-[#D7E1EE] bg-white"
-                        />
-                    )}
-
-                    {fileUrl && !isImage && !isPdf && (
-                        <div className="rounded-2xl border border-[#D7E1EE] bg-white p-8 text-center">
-                            <p className="text-sm text-[#7D90AA]">
-                                Định dạng này chưa hỗ trợ xem trực tiếp.
-                            </p>
-
-                            <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mt-5 inline-flex rounded-xl bg-[#0D47A1] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#083778]"
-                            >
-                                Mở file
-                            </a>
-                        </div>
-                    )}
-                </div>
-            </div>
+              </div>
+            );
+          })}
         </div>
-    );
+      )}
+    </div>
+  );
 }
 
+function DocumentRow({ doc }) {
+  const statusColor = {
+    'Hợp lệ': 'bg-green-100 text-green-700',
+    'Chờ xác minh': 'bg-amber-100 text-amber-700',
+    'Không hợp lệ': 'bg-red-100 text-red-600',
+    'Hết hạn': 'bg-orange-100 text-orange-700',
+    'Cần bổ sung': 'bg-purple-100 text-purple-700',
+  }[doc.TrangThai] || 'bg-slate-100 text-slate-600';
+
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const fileUrl = doc.DuongDanFile
+    ? (doc.DuongDanFile.startsWith('http') ? doc.DuongDanFile : `${baseUrl}${doc.DuongDanFile}`)
+    : '';
+
+  return (
+    <div className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-slate-50/60 transition">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800 truncate">{doc.MaLoaiGiayTo}</p>
+        <p className="mt-0.5 text-xs text-slate-400">{doc.MaGiayTo} · Cập nhật {safeDate(doc.NgayCapNhat)}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2.5">
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColor}`}>
+          {doc.TrangThai}
+        </span>
+        {fileUrl && (
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-blue-600 transition hover:bg-blue-50"
+          >
+            Xem file
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Component ─────────────────────────────────── */
 export default function AdoptionProfileDetail() {
-    const { profileId } = useParams();
-    const navigate = useNavigate();
+  const { profileId } = useParams();
+  const navigate = useNavigate();
 
-    const [profile, setProfile] = useState(
-        normalizeProfile(fallbackProfile, profileId)
-    );
-    const [previewDoc, setPreviewDoc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [request, setRequest] = useState(null);
+  const [child, setChild] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (!profileId) return;
+  useEffect(() => {
+    if (!profileId) return;
+    let active = true;
 
-        adoptionApi
-            .getById(profileId)
-            .then((res) => {
-                setProfile(normalizeProfile(res, profileId));
-            })
-            .catch(() => {
-                setProfile(normalizeProfile(fallbackProfile, profileId));
-            });
-    }, [profileId]);
+    const loadAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const profileRes = await adoptionApi.getProfileById(profileId);
+        const profileData = normalizeProfile(unwrap(profileRes));
+        if (!profileData || !active) return;
+        setProfile(profileData);
 
-    const approvalBlockClass = getStatusTone(profile.TrangThai);
+        // Load related data in parallel
+        const [requestRes, childRes, docsRes] = await Promise.allSettled([
+          profileData.MaYeuCauNhan ? adoptionApi.getById(profileData.MaYeuCauNhan) : Promise.resolve(null),
+          profileData.MaTre ? adoptionApi.getChildById(profileData.MaTre) : Promise.resolve(null),
+          profileData.MaYeuCauNhan
+            ? adoptionApi.getDocuments({ maYeuCauNhan: profileData.MaYeuCauNhan })
+            : Promise.resolve(null),
+        ]);
 
+        if (!active) return;
+
+        if (requestRes.status === 'fulfilled' && requestRes.value) {
+          setRequest(normalizeRequest(unwrap(requestRes.value)));
+        }
+        if (childRes.status === 'fulfilled' && childRes.value) {
+          setChild(normalizeChild(unwrap(childRes.value)));
+        }
+        if (docsRes.status === 'fulfilled' && docsRes.value) {
+          const raw = unwrap(docsRes.value);
+          const arr = Array.isArray(raw) ? raw : (raw?.items ?? raw?.data ?? []);
+          setDocuments(Array.isArray(arr) ? arr.map(normalizeDoc) : []);
+        }
+      } catch (err) {
+        console.error('Lỗi tải chi tiết hồ sơ:', err);
+        if (active) setError('Không thể tải dữ liệu hồ sơ. Vui lòng thử lại.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadAll();
+    return () => { active = false; };
+  }, [profileId]);
+
+  if (loading) {
     return (
-        <div className={pageClass}>
-            <div className="mx-auto max-w-[1720px] space-y-7 px-5 py-8 sm:px-8 lg:px-10">
-                <header className="flex flex-col justify-between gap-5 border-b border-[#DDE6F0] pb-7 lg:flex-row lg:items-end">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6F83A3]">
-                            Theo dõi nhận nuôi
-                        </p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F7FB]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+          <p className="text-sm font-medium text-slate-500">Đang tải hồ sơ...</p>
+        </div>
+      </div>
+    );
+  }
 
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                            <h1 className="text-[34px] font-bold leading-tight text-[#0D47A1] md:text-[42px]">
-                                Hồ sơ nhận nuôi
-                            </h1>
+  if (error || !profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F7FB]">
+        <div className="rounded-3xl border border-red-100 bg-white p-10 text-center shadow-sm">
+          <p className="text-2xl font-bold text-slate-800">Không tìm thấy hồ sơ</p>
+          <p className="mt-2 text-sm text-slate-500">{error || 'Mã hồ sơ không tồn tại.'}</p>
+          <button
+            onClick={() => navigate('/can-bo-nhan-nuoi/ho-so')}
+            className="mt-6 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+          >
+            Về danh sách hồ sơ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-                            <span
-                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${approvalBlockClass}`}
-                            >
-                                {profile.TrangThai}
-                            </span>
-                        </div>
+  const childAge = getAge(child?.NgaySinh);
+  const docCount = documents.length;
+  const validDocCount = documents.filter(d => d.TrangThai === 'Hợp lệ').length;
 
-                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[#6F83A3]">
-                            Xem hồ sơ đã lập, cán bộ lập hồ sơ từ yêu cầu nhận nuôi và thông
-                            tin phê duyệt từ bảng hồ sơ nhận nuôi.
-                        </p>
-                    </div>
+  return (
+    <div className={pageClass}>
+      <div className="mx-auto max-w-[1720px] px-5 py-8 sm:px-8 lg:px-10">
 
-                    <div className="flex flex-wrap gap-3">
-                        <Link to="/can-bo-nhan-nuoi/ho-so" className={secondaryButton}>
-                            Về danh sách hồ sơ
-                        </Link>
-                        <Link to="/can-bo-nhan-nuoi/danh-sach" className={secondaryButton}>
-                            Về yêu cầu nhận nuôi
-                        </Link>
-                    </div>
-                </header>
+        {/* ── Header ── */}
+        <header className="mb-8 flex flex-col justify-between gap-5 border-b border-slate-200 pb-7 lg:flex-row lg:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Theo dõi nhận nuôi
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-800 md:text-4xl">
+                Hồ sơ nhận nuôi
+              </h1>
+              <StatusBadge status={profile.TrangThai} />
+            </div>
+            <p className="mt-2 text-sm text-slate-500">
+              Mã hồ sơ: <span className="font-bold text-blue-700">{profile.MaHSNhanNuoi}</span>
+              {' · '}
+              Yêu cầu: <span className="font-semibold text-slate-700">{profile.MaYeuCauNhan}</span>
+            </p>
+          </div>
 
-                <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
-                    <main className="xl:col-span-8">
-                        <section className={`${cardClass} overflow-hidden`}>
-                            <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-7 text-center lg:px-8">
-                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8FA0B8]">
-                                    Trung tâm bảo trợ xã hội
-                                </p>
+          <div className="flex gap-3">
+            <Link to="/can-bo-nhan-nuoi/ho-so" className={secondaryButton}>
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Danh sách hồ sơ
+            </Link>
+          </div>
+        </header>
 
-                                <h2 className="mt-3 text-[28px] font-bold uppercase tracking-wide text-[#0D47A1]">
-                                    Hồ sơ nhận nuôi
-                                </h2>
+        <div className="grid grid-cols-1 gap-7 xl:grid-cols-12">
+          {/* ── Left: main content ── */}
+          <div className="space-y-7 xl:col-span-8">
 
-                                <p className="mt-3 text-sm leading-7 text-[#7D90AA]">
-                                    Mã hồ sơ:{' '}
-                                    <span className="font-bold text-[#26364A]">
-                                        {profile.MaHSNhanNuoi}
-                                    </span>
-                                </p>
-                            </div>
-
-                            <div className="space-y-10 p-6 lg:p-8">
-                                <section>
-                                    <SectionTitle
-                                        number="I"
-                                        title="Thông tin hồ sơ nhận nuôi"
-                                        description="Thông tin chính của hồ sơ và cán bộ lập được truy xuất từ yêu cầu nhận nuôi."
-                                    />
-
-                                    <div className="mt-5 grid gap-5 md:grid-cols-2">
-                                        <DetailField label="Mã hồ sơ" value={profile.MaHSNhanNuoi} strong />
-                                        <DetailField label="Mã yêu cầu nhận nuôi" value={profile.MaYeuCauNhan} />
-                                        <DetailField label="Mã trẻ" value={profile.MaTre} />
-                                        <DetailField label="Ngày lập hồ sơ" value={safeDate(profile.NgayLap)} />
-
-                                        <DetailField
-                                            label="Cán bộ lập hồ sơ"
-                                            value={profile.CanBoLapTuYeuCau?.HoTen}
-                                        />
-                                        <DetailField
-                                            label="Mã cán bộ lập"
-                                            value={profile.CanBoLapTuYeuCau?.MaNguoiDung}
-                                        />
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <SectionTitle
-                                        number="II"
-                                        title="Thông tin người nhận nuôi"
-                                        description="Dữ liệu lấy từ yêu cầu nhận nuôi đã được xác minh."
-                                    />
-
-                                    <div className="mt-5 grid gap-5 md:grid-cols-2">
-                                        <DetailField label="Họ tên người nhận nuôi" value={profile.NguoiNhanNuoi?.HoTen} strong />
-                                        <DetailField label="Số điện thoại" value={profile.NguoiNhanNuoi?.SoDienThoai} />
-                                        <DetailField label="Ngày sinh" value={safeDate(profile.NguoiNhanNuoi?.NgaySinh)} />
-                                        <DetailField label="Nghề nghiệp" value={profile.NguoiNhanNuoi?.NgheNghiep} />
-                                        <DetailField label="Thu nhập hàng tháng" value={formatCurrency(profile.NguoiNhanNuoi?.ThuNhapHangThang)} />
-                                        <DetailField label="Địa chỉ" value={profile.NguoiNhanNuoi?.DiaChi} />
-                                        <DetailField label="Lý do nhận nuôi" value={profile.NguoiNhanNuoi?.LyDoNhanNuoi} wide />
-                                        <DetailField label="Mong muốn về trẻ" value={profile.NguoiNhanNuoi?.MongMuonVeTre} wide />
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <SectionTitle
-                                        number="III"
-                                        title="Thông tin trẻ được nhận nuôi"
-                                        description="Thông tin trẻ đã được gán vào hồ sơ nhận nuôi."
-                                    />
-
-                                    <div className="mt-5 grid gap-5 md:grid-cols-2">
-                                        <DetailField label="Mã trẻ" value={profile.TreNhanNuoi?.MaTre} strong />
-                                        <DetailField label="Họ tên trẻ" value={profile.TreNhanNuoi?.HoTen} />
-                                        <DetailField label="Ngày sinh" value={safeDate(profile.TreNhanNuoi?.NgaySinh)} />
-                                        <DetailField label="Giới tính" value={profile.TreNhanNuoi?.GioiTinh} />
-                                        <DetailField label="Tình trạng sức khỏe" value={profile.TreNhanNuoi?.SucKhoe} />
-                                        <DetailField label="Trạng thái trẻ" value={profile.TreNhanNuoi?.TrangThai} />
-                                        <DetailField label="Ghi chú về trẻ" value={profile.TreNhanNuoi?.GhiChu} wide />
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <SectionTitle
-                                        number="IV"
-                                        title="Giấy tờ pháp lý đã xác minh"
-                                        description="Danh sách giấy tờ người nhận nuôi đã nộp và được kiểm tra hợp lệ."
-                                    />
-
-                                    <div className="mt-5 divide-y divide-[#E6EDF5] overflow-hidden rounded-2xl border border-[#E6EDF5]">
-                                        {(profile.GiayTo || []).map((doc) => (
-                                            <div
-                                                key={doc.MaGiayTo}
-                                                className="flex flex-col justify-between gap-4 bg-[#FAFCFF] px-5 py-4 transition hover:bg-white md:flex-row md:items-center"
-                                            >
-                                                <div>
-                                                    <p className="font-bold text-[#26364A]">
-                                                        {doc.TenGiayTo}
-                                                    </p>
-                                                    <p className="mt-1 text-sm text-[#7D90AA]">
-                                                        {doc.MaGiayTo} · {doc.LoaiGiayTo}
-                                                    </p>
-                                                    <p className="mt-1 text-xs text-[#9AACBF]">
-                                                        Cập nhật: {safeDate(doc.NgayCapNhat)}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    <Badge status={doc.TrangThai} size="sm" />
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPreviewDoc(doc)}
-                                                        className="rounded-xl border border-[#CFE0F5] bg-white px-3 py-2 text-xs font-bold text-[#0D47A1] hover:bg-[#F4F8FF]"
-                                                    >
-                                                        Xem file
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <SectionTitle
-                                        number="V"
-                                        title="Phê duyệt hồ sơ"
-                                        description="Dữ liệu phê duyệt lấy từ bảng HOSONHANNUOI, trong đó MaCanBo là mã trưởng phòng/người duyệt."
-                                    />
-
-                                    <div className={`mt-5 rounded-[24px] border p-5 ${approvalBlockClass}`}>
-                                        <div className="grid gap-5 md:grid-cols-2">
-                                            <div>
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.13em] opacity-80">
-                                                    Mã người duyệt
-                                                </p>
-                                                <p className="mt-2 text-sm font-bold">
-                                                    {profile.MaCanBo || 'Chưa có'}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.13em] opacity-80">
-                                                    Trưởng phòng duyệt
-                                                </p>
-                                                <p className="mt-2 text-sm font-bold">
-                                                    {profile.NguoiDuyetHoSo?.HoTen || 'Chưa duyệt'}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.13em] opacity-80">
-                                                    Ngày duyệt
-                                                </p>
-                                                <p className="mt-2 text-sm font-bold">
-                                                    {safeDate(profile.NgayDuyet)}
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.13em] opacity-80">
-                                                    Trạng thái hồ sơ
-                                                </p>
-                                                <p className="mt-2 text-sm font-bold">
-                                                    {profile.TrangThai}
-                                                </p>
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.13em] opacity-80">
-                                                    Ghi chú / ý kiến xử lý
-                                                </p>
-                                                <p className="mt-2 text-sm font-bold leading-7">
-                                                    {profile.GhiChu || 'Chưa có'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
-                        </section>
-                    </main>
-
-                    <aside className="xl:col-span-4">
-                        <div className="space-y-6 xl:sticky xl:top-6 xl:max-h-[calc(100vh-48px)] xl:overflow-y-auto xl:pr-1">
-                            <ProfileProgressBar status={profile.TrangThai} />
-
-                            <ProfileActionPanel
-                                status={profile.TrangThai}
-                                onBack={() => navigate(-1)}
-                            />
-                        </div>
-                    </aside>
+            {/* Stats row */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                { label: 'Ngày lập', value: safeDate(profile.NgayLap) },
+                { label: 'Ngày duyệt', value: safeDate(profile.NgayDuyet) },
+                { label: 'Giấy tờ hợp lệ', value: docCount > 0 ? `${validDocCount}/${docCount}` : '—' },
+                { label: 'Cán bộ lập', value: profile.TenCanBo || profile.MaCanBo || '—' },
+              ].map(stat => (
+                <div key={stat.label} className={`${cardClass} px-5 py-4`}>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                  <p className="mt-1.5 text-base font-bold text-slate-800">{stat.value}</p>
                 </div>
+              ))}
             </div>
 
-            <DocumentPreviewModal
-                document={previewDoc}
-                onClose={() => setPreviewDoc(null)}
-            />
+            {/* Người nhận nuôi */}
+            <section className={cardClass}>
+              <div className="border-b border-slate-100 px-6 py-5">
+                <SectionHeader icon="👤" title="Thông tin người nhận nuôi" />
+              </div>
+              <div className="grid gap-4 p-6 md:grid-cols-2">
+                <Field label="Họ tên" value={request?.TenNguoiNhan} highlight />
+                <Field label="Số điện thoại" value={request?.SDTNguoiNhan} />
+                <Field label="Ngày sinh" value={safeDate(request?.NgaySinhNguoiNhan)} />
+                <Field label="Thu nhập hàng tháng" value={formatCurrency(request?.ThuNhapHangThang)} />
+                <Field label="Tình trạng hôn nhân" value={request?.TinhTrangHonNhan} />
+                <Field label="Loại nơi ở" value={request?.LoaiNoiO} />
+                <Field label="Lý do nhận nuôi" value={request?.LyDoNhanNuoi} wide />
+                <Field label="Mong muốn về trẻ" value={request?.MongMuonVeTre} wide />
+              </div>
+            </section>
+
+            {/* Trẻ được nhận nuôi */}
+            <section className={cardClass}>
+              <div className="border-b border-slate-100 px-6 py-5">
+                <SectionHeader icon="🧒" title="Trẻ được nhận nuôi" />
+              </div>
+              <div className="grid gap-4 p-6 md:grid-cols-2">
+                <Field label="Mã trẻ" value={profile.MaTre} highlight />
+                <Field label="Họ tên trẻ" value={child?.HoTen || profile.TenTre} />
+                <Field label="Ngày sinh" value={safeDate(child?.NgaySinh)} />
+                <Field label="Tuổi" value={childAge !== null ? `${childAge} tuổi` : '—'} />
+                <Field label="Giới tính" value={child?.GioiTinh} />
+                <Field label="Dân tộc" value={child?.DanToc} />
+                <Field label="Trạng thái trẻ" value={child?.TrangThai} />
+                <Field label="Ghi chú" value={child?.GhiChu} />
+              </div>
+            </section>
+
+            {/* Giấy tờ */}
+            <section className={cardClass}>
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <SectionHeader icon="📄" title="Giấy tờ pháp lý" />
+                {docCount > 0 && (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                    {validDocCount}/{docCount} hợp lệ
+                  </span>
+                )}
+              </div>
+              {documents.length === 0 ? (
+                <div className="px-6 py-10 text-center text-sm text-slate-400">
+                  Chưa có giấy tờ nào được ghi nhận.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {documents.map((doc) => (
+                    <DocumentRow key={doc.MaGiayTo} doc={doc} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Ghi chú hồ sơ */}
+            {profile.GhiChu && (
+              <section className={cardClass}>
+                <div className="border-b border-slate-100 px-6 py-5">
+                  <SectionHeader icon="📝" title="Ghi chú / Ý kiến xử lý" />
+                </div>
+                <div className="p-6">
+                  <p className={`rounded-2xl border px-4 py-3 text-sm font-medium leading-7
+                    ${profile.TrangThai === 'Từ chối'
+                      ? 'border-red-200 bg-red-50 text-red-700'
+                      : profile.TrangThai === 'Đã duyệt' || profile.TrangThai === 'Đã hoàn tất'
+                        ? 'border-green-200 bg-green-50 text-green-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+                    {profile.GhiChu}
+                  </p>
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* ── Right: sidebar ── */}
+          <aside className="xl:col-span-4">
+            <div className="space-y-6 xl:sticky xl:top-6">
+              {/* Progress tracker */}
+              <ProgressTracker status={profile.TrangThai} />
+
+              {/* Profile meta */}
+              <section className={cardClass}>
+                <div className="border-b border-slate-100 px-6 py-5">
+                  <p className="text-sm font-bold text-slate-800">Thông tin hồ sơ</p>
+                </div>
+                <div className="space-y-4 p-6">
+                  {[
+                    { label: 'Mã hồ sơ', value: profile.MaHSNhanNuoi, bold: true },
+                    { label: 'Yêu cầu liên kết', value: profile.MaYeuCauNhan },
+                    { label: 'Trạng thái', value: profile.TrangThai },
+                    { label: 'Cán bộ lập hồ sơ', value: profile.TenCanBo || profile.MaCanBo || '—' },
+                    { label: 'Ngày lập', value: safeDate(profile.NgayLap) },
+                    { label: 'Ngày duyệt', value: safeDate(profile.NgayDuyet) },
+                  ].map(({ label, value, bold }) => (
+                    <div key={label} className="flex items-start justify-between gap-3 text-sm">
+                      <span className="text-slate-400 shrink-0">{label}</span>
+                      <span className={`text-right font-semibold ${bold ? 'text-blue-700' : 'text-slate-800'}`}>
+                        {value || '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Actions */}
+              <section className={cardClass}>
+                <div className="border-b border-slate-100 px-6 py-5">
+                  <p className="text-sm font-bold text-slate-800">Thao tác</p>
+                </div>
+                <div className="space-y-3 p-6">
+                  <p className={`rounded-2xl border px-4 py-3 text-sm font-medium leading-6
+                    ${profile.TrangThai === 'Đang lập' ? 'border-slate-200 bg-slate-50 text-slate-600'
+                      : profile.TrangThai === 'Chờ duyệt' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                      : profile.TrangThai === 'Đã duyệt' ? 'border-green-200 bg-green-50 text-green-700'
+                      : profile.TrangThai === 'Đã hoàn tất' ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-red-200 bg-red-50 text-red-600'}`}>
+                    {profile.TrangThai === 'Đang lập' && 'Hồ sơ đang ở bước hoàn thiện, chờ gửi duyệt.'}
+                    {profile.TrangThai === 'Chờ duyệt' && 'Hồ sơ đang chờ trưởng phòng phê duyệt.'}
+                    {profile.TrangThai === 'Đã duyệt' && 'Hồ sơ đã được trưởng phòng phê duyệt thành công.'}
+                    {profile.TrangThai === 'Đã hoàn tất' && 'Hồ sơ đã hoàn tất và được lưu trữ chính thức.'}
+                    {profile.TrangThai === 'Từ chối' && 'Hồ sơ đã bị từ chối. Không có thao tác tiếp theo.'}
+                  </p>
+                  <Link
+                    to="/can-bo-nhan-nuoi/ho-so"
+                    className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Về danh sách hồ sơ
+                  </Link>
+                  <Link
+                    to="/can-bo-nhan-nuoi/danh-sach"
+                    className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Về yêu cầu nhận nuôi
+                  </Link>
+                </div>
+              </section>
+            </div>
+          </aside>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

@@ -2,107 +2,20 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
+import adoptionApi from '../../api/adoptionApi';
 
 const pageClass = 'min-h-screen bg-[#F5F7FB]';
 
-const cardClass =
-  'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
+const cardClass = 'rounded-3xl border border-slate-200 bg-white shadow-sm';
 
 const inputClass =
-  'w-full rounded-2xl border border-[#D7E5F7] bg-white px-4 py-3 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10';
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20';
 
 const primaryButton =
-  'rounded-xl bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#083778]';
+  'rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-50';
 
 const secondaryButton =
-  'rounded-xl border border-[#CFE0F5] bg-white px-4 py-2 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
-
-const fallbackMeetings = [
-  {
-    MaLichGap: 'LHGM0001',
-    MaYeuCauNhan: 'YCNN0004',
-    MaTre: 'TRE00015',
-    TenTre: 'Bé Minh',
-    TenNguoiNhan: 'Lê Thanh Mai',
-    SDTNguoiNhan: '0987654321',
-    NgayGap: '2026-03-25',
-    GioGap: '09:00',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Chờ xác nhận',
-    KetQuaGapMat: '',
-    GhiChu: 'Đã chọn trẻ, chờ xác nhận lịch gặp.',
-  },
-  {
-    MaLichGap: 'LHGM0002',
-    MaYeuCauNhan: 'YCNN0005',
-    MaTre: 'TRE00012',
-    TenTre: 'Bé An',
-    TenNguoiNhan: 'Trần Quốc Huy',
-    SDTNguoiNhan: '0912345678',
-    NgayGap: '2026-03-22',
-    GioGap: '14:00',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Đã xác nhận',
-    KetQuaGapMat: '',
-    GhiChu: 'Chờ ghi nhận kết quả gặp mặt.',
-  },
-  {
-    MaLichGap: 'LHGM0003',
-    MaYeuCauNhan: 'YCNN0006',
-    MaTre: 'TRE00018',
-    TenTre: 'Bé Lan',
-    TenNguoiNhan: 'Nguyễn Minh Anh',
-    SDTNguoiNhan: '0901234567',
-    NgayGap: '2026-03-20',
-    GioGap: '08:30',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Đã gặp mặt',
-    KetQuaGapMat: 'Cần gặp lại',
-    GhiChu: 'Cần sắp xếp buổi gặp tiếp theo.',
-  },
-];
-
-const fallbackProfiles = [
-  {
-    MaHoSoNhanNuoi: 'HSNN0001',
-    MaYeuCauNhan: 'YCNN0003',
-    MaTre: 'TRE00009',
-    TenTre: 'Bé Khôi',
-    TenNguoiNhan: 'Nguyễn Quốc Bảo',
-    SDTNguoiNhan: '0909090909',
-    NgayLap: '2026-03-18',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Chờ duyệt',
-    GhiChu: 'Hồ sơ đã lập và gửi trưởng phòng duyệt.',
-  },
-  {
-    MaHoSoNhanNuoi: 'HSNN0002',
-    MaYeuCauNhan: 'YCNN0002',
-    MaTre: 'TRE00011',
-    TenTre: 'Bé Nam',
-    TenNguoiNhan: 'Võ Thị Hạnh',
-    SDTNguoiNhan: '0977777777',
-    NgayLap: '2026-03-16',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Đã duyệt',
-    GhiChu: 'Trưởng phòng đã duyệt hồ sơ.',
-  },
-  {
-    MaHoSoNhanNuoi: 'HSNN0003',
-    MaYeuCauNhan: 'YCNN0001',
-    MaTre: 'TRE00008',
-    TenTre: 'Bé Mai',
-    TenNguoiNhan: 'Phạm Hoàng Nam',
-    SDTNguoiNhan: '0934567890',
-    NgayLap: '2026-03-10',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Đã hoàn tất',
-    GhiChu: 'Đã hoàn tất thủ tục nhận nuôi.',
-  },
-];
+  'rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50';
 
 const meetingStatusTabs = [
   { key: 'all', label: 'Tất cả' },
@@ -114,15 +27,17 @@ const meetingStatusTabs = [
 
 const profileStatusTabs = [
   { key: 'all', label: 'Tất cả' },
+  { key: 'Đang lập', label: 'Đang lập' },
   { key: 'Chờ duyệt', label: 'Chờ duyệt' },
   { key: 'Đã duyệt', label: 'Đã duyệt' },
   { key: 'Đã hoàn tất', label: 'Đã hoàn tất' },
   { key: 'Từ chối', label: 'Từ chối' },
 ];
+
 function EmptyRow({ colSpan, text }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-6 py-14 text-center text-sm text-[#8FA0B8]">
+      <td colSpan={colSpan} className="px-6 py-14 text-center text-sm text-slate-500">
         {text}
       </td>
     </tr>
@@ -130,36 +45,69 @@ function EmptyRow({ colSpan, text }) {
 }
 
 function getMeetingDisplayStatus(item) {
-  if (item.KetQuaGapMat === 'Cần gặp lại') return 'Cần gặp lại';
+  const result = item.Children?.find(c => c.KetQua)?.KetQua;
+  if (result === 'Cần gặp lại') return 'Cần gặp lại';
   return item.TrangThai;
 }
 
 function getMeetingNote(item) {
   if (item.TrangThai === 'Chờ xác nhận') return 'Chờ xác nhận lịch gặp';
-  if (item.TrangThai === 'Đã xác nhận' && !item.KetQuaGapMat) {
+  const result = item.Children?.find(c => c.KetQua)?.KetQua;
+  if (item.TrangThai === 'Đã xác nhận' && !result) {
     return 'Chờ ghi nhận kết quả';
   }
-  if (item.KetQuaGapMat === 'Cần gặp lại') return 'Cần sắp xếp gặp lại';
-  if (item.KetQuaGapMat === 'Phù hợp') return 'Có thể lập hồ sơ';
-  if (item.KetQuaGapMat === 'Không phù hợp') return 'Không tiếp tục hồ sơ';
+  if (result === 'Cần gặp lại') return 'Cần sắp xếp gặp lại';
+  if (result === 'Phù hợp') return 'Đã đánh giá phù hợp';
+  if (result === 'Không phù hợp') return 'Không tiếp tục hồ sơ';
   return 'Theo dõi lịch gặp';
 }
 
 function getProfileNote(status) {
+  if (status === 'Đang lập') return 'Đang hoàn thiện hồ sơ';
   if (status === 'Chờ duyệt') return 'Chờ trưởng phòng duyệt';
-  if (status === 'Đã duyệt') return 'Có thể hoàn tất thủ tục';
+  if (status === 'Đã duyệt') return 'Đã được duyệt';
   if (status === 'Đã hoàn tất') return 'Hồ sơ đã lưu trữ';
-  if (status === 'Từ chối') return 'Hồ sơ không tiếp tục xử lý';
+  if (status === 'Từ chối') return 'Hồ sơ bị từ chối';
   return 'Theo dõi hồ sơ';
 }
+
+function normalizeMeeting(m) {
+  const children = m.Children || m.children || [];
+  return {
+    MaLichGap: m.MaLichGap || m.maLichGap || '',
+    MaYeuCauNhan: m.MaYeuCauNhan || m.maYeuCauNhan || '',
+    TenNguoiNhan: m.TenNguoiNhan || m.tenNguoiNhan || '',
+    SDTNguoiNhan: m.SDTNguoiNhan || m.sdtNguoiNhan || m.SdtNguoiNhan || '',
+    ThoiGian: m.ThoiGian || m.thoiGian || '',
+    DiaDiem: m.DiaDiem || m.diaDiem || '',
+    TrangThai: m.TrangThai || m.trangThai || '',
+    Children: children.map(c => ({
+      KetQua: c.KetQua || c.ketQua || ''
+    }))
+  };
+}
+
+function normalizeProfile(p) {
+  return {
+    MaHSNhanNuoi: p.MaHSNhanNuoi || p.maHSNhanNuoi || p.maHsNhanNuoi || '',
+    MaYeuCauNhan: p.MaYeuCauNhan || p.maYeuCauNhan || '',
+    MaTre: p.MaTre || p.maTre || '',
+    TenTre: p.TenTre || p.tenTre || '',
+    MaCanBo: p.MaCanBo || p.maCanBo || '',
+    TenCanBo: p.TenCanBo || p.tenCanBo || '',
+    NgayLap: p.NgayLap || p.ngayLap || '',
+    TrangThai: p.TrangThai || p.trangThai || ''
+  };
+}
+
 function MainTabButton({ active, title, note, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex-1 rounded-2xl px-5 py-3 text-left transition ${active
-        ? 'bg-white text-[#0D47A1] shadow-[0_8px_24px_rgba(31,42,61,0.08)]'
-        : 'text-[#6F83A3] hover:bg-white/60'
+        ? 'bg-white text-blue-800 shadow-sm border border-slate-200'
+        : 'text-slate-500 hover:bg-white/60 border border-transparent'
         }`}
     >
       <p className="text-sm font-extrabold">{title}</p>
@@ -167,12 +115,12 @@ function MainTabButton({ active, title, note, onClick }) {
     </button>
   );
 }
+
 function StatusCombobox({ value, options, onChange }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
-  const selected =
-    options.find((item) => item.key === value) || options[0];
+  const selected = options.find((item) => item.key === value) || options[0];
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -180,7 +128,6 @@ function StatusCombobox({ value, options, onChange }) {
         setOpen(false);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -190,35 +137,24 @@ function StatusCombobox({ value, options, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-sm font-bold transition ${open
-          ? 'border-[#0D47A1] ring-4 ring-[#0D47A1]/10'
-          : 'border-[#D7E5F7] hover:border-[#9DBBE3]'
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 text-sm font-bold transition ${open
+          ? 'border-blue-600 ring-2 ring-blue-600/20'
+          : 'border-slate-200 hover:border-slate-300'
           }`}
       >
-        <span className="flex items-center gap-2 text-[#26364A]">
-          <span className="h-2 w-2 rounded-full bg-[#0D47A1]" />
+        <span className="flex items-center gap-2 text-slate-800">
+          <span className="h-2 w-2 rounded-full bg-blue-600" />
           {selected.label}
         </span>
-
-        <svg
-          className={`h-4 w-4 text-[#6F83A3] transition ${open ? 'rotate-180' : ''
-            }`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-            clipRule="evenodd"
-          />
+        <svg className={`h-4 w-4 text-slate-400 transition ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-full overflow-hidden rounded-2xl border border-[#DCE8F6] bg-white p-1.5 shadow-[0_18px_45px_rgba(31,42,61,0.16)]">
+        <div className="absolute right-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
           {options.map((item) => {
             const active = item.key === value;
-
             return (
               <button
                 key={item.key}
@@ -227,24 +163,16 @@ function StatusCombobox({ value, options, onChange }) {
                   onChange(item.key);
                   setOpen(false);
                 }}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${active
-                  ? 'bg-[#EAF3FF] text-[#0D47A1]'
-                  : 'text-[#42526B] hover:bg-[#F6F8FC]'
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-bold transition ${active
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-slate-600 hover:bg-slate-50'
                   }`}
               >
                 <span className="flex items-center gap-2">
-                  <span
-                    className={`h-2 w-2 rounded-full ${active ? 'bg-[#0D47A1]' : 'bg-[#C8D6E8]'
-                      }`}
-                  />
+                  <span className={`h-2 w-2 rounded-full ${active ? 'bg-blue-600' : 'bg-slate-300'}`} />
                   {item.label}
                 </span>
-
-                {active && (
-                  <span className="text-xs font-extrabold text-[#0D47A1]">
-                    ✓
-                  </span>
-                )}
+                {active && <span className="text-xs font-extrabold text-blue-600">✓</span>}
               </button>
             );
           })}
@@ -253,142 +181,129 @@ function StatusCombobox({ value, options, onChange }) {
     </div>
   );
 }
+
 export default function AdoptionProfileList() {
   const [activeTab, setActiveTab] = useState('meetings');
   const [keyword, setKeyword] = useState('');
   const [meetingStatus, setMeetingStatus] = useState('all');
   const [profileStatus, setProfileStatus] = useState('all');
-  const [meetings, setMeetings] = useState(fallbackMeetings);
-  const [profiles, setProfiles] = useState(fallbackProfiles);
+  
+  const [meetings, setMeetings] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [meetingsRes, profilesRes] = await Promise.all([
+          adoptionApi.getMeetings({ limit: 100 }),
+          adoptionApi.getAdoptionProfiles({ limit: 100 })
+        ]);
+
+        if (!active) return;
+
+        const ms = meetingsRes.data?.items || meetingsRes.data?.data?.items || meetingsRes.data || [];
+        const ps = profilesRes.data?.items || profilesRes.data?.data?.items || profilesRes.data || [];
+
+        setMeetings(Array.isArray(ms) ? ms.map(normalizeMeeting) : []);
+        setProfiles(Array.isArray(ps) ? ps.map(normalizeProfile) : []);
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu danh sách:", error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchData();
+    return () => { active = false; };
+  }, []);
 
   const filteredMeetings = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-
     return meetings.filter((item) => {
       const displayStatus = getMeetingDisplayStatus(item);
-
+      const result = item.Children?.find(c => c.KetQua)?.KetQua;
+      
       const matchStatus =
         meetingStatus === 'all' ||
         item.TrangThai === meetingStatus ||
-        item.KetQuaGapMat === meetingStatus ||
+        result === meetingStatus ||
         displayStatus === meetingStatus;
 
       const searchable = [
         item.MaLichGap,
         item.MaYeuCauNhan,
-        item.MaTre,
-        item.TenTre,
         item.TenNguoiNhan,
         item.SDTNguoiNhan,
-      ]
-        .join(' ')
-        .toLowerCase();
+      ].join(' ').toLowerCase();
 
       const matchKeyword = !kw || searchable.includes(kw);
-
       return matchStatus && matchKeyword;
     });
   }, [meetings, keyword, meetingStatus]);
 
   const filteredProfiles = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-
     return profiles.filter((item) => {
-      const matchStatus =
-        profileStatus === 'all' || item.TrangThai === profileStatus;
-
+      const matchStatus = profileStatus === 'all' || item.TrangThai === profileStatus;
       const searchable = [
-        item.MaHoSoNhanNuoi,
+        item.MaHSNhanNuoi,
         item.MaYeuCauNhan,
         item.MaTre,
         item.TenTre,
-        item.TenNguoiNhan,
-        item.SDTNguoiNhan,
-      ]
-        .join(' ')
-        .toLowerCase();
+        item.MaCanBo,
+        item.TenCanBo,
+      ].join(' ').toLowerCase();
 
       const matchKeyword = !kw || searchable.includes(kw);
-
       return matchStatus && matchKeyword;
     });
   }, [profiles, keyword, profileStatus]);
-  function confirmMeeting(meetingId) {
-    setMeetings((prev) =>
-      prev.map((item) =>
-        item.MaLichGap === meetingId
-          ? { ...item, TrangThai: 'Đã xác nhận' }
-          : item
-      )
-    );
-  }
 
-  function completeProfile(profileId) {
-    setProfiles((prev) =>
-      prev.map((item) =>
-        item.MaHoSoNhanNuoi === profileId
-          ? {
-            ...item,
-            TrangThai: 'Đã hoàn tất',
-            GhiChu: 'Đã hoàn tất thủ tục nhận nuôi.',
-          }
-          : item
-      )
-    );
-  }
-
-  const currentStatusTabs =
-    activeTab === 'meetings' ? meetingStatusTabs : profileStatusTabs;
-
-  const currentStatus =
-    activeTab === 'meetings' ? meetingStatus : profileStatus;
-
-  const setCurrentStatus =
-    activeTab === 'meetings' ? setMeetingStatus : setProfileStatus;
+  const currentStatusTabs = activeTab === 'meetings' ? meetingStatusTabs : profileStatusTabs;
+  const currentStatus = activeTab === 'meetings' ? meetingStatus : profileStatus;
+  const setCurrentStatus = activeTab === 'meetings' ? setMeetingStatus : setProfileStatus;
 
   return (
     <div className={pageClass}>
       <div className="mx-auto max-w-[1720px] space-y-7 px-5 py-8 sm:px-8 lg:px-10">
-        {/* Header */}
-        <header className="flex flex-col justify-between gap-5 border-b border-[#DDE6F0] pb-7 lg:flex-row lg:items-end">
+        <header className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-7 lg:flex-row lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6F83A3]">
-              Theo dõi nhận nuôi
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Quản lý công tác ghép trẻ
             </p>
-
-            <h1 className="mt-3 text-[34px] font-bold leading-tight text-[#0D47A1] md:text-[42px]">
-              Lịch gặp mặt và hồ sơ nhận nuôi
+            <h1 className="mt-2 text-3xl font-bold leading-tight text-slate-800 md:text-4xl">
+              Lịch gặp mặt & Hồ sơ nhận nuôi
             </h1>
           </div>
           <Link
             to="/can-bo-nhan-nuoi/danh-sach"
-            className="w-fit rounded-2xl border border-[#CFE0F5] bg-white px-5 py-3 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+            className="w-fit rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             Về yêu cầu nhận nuôi
           </Link>
         </header>
-        {/* Main Card */}
+
         <section className={`${cardClass} overflow-hidden`}>
-          {/* Toolbar */}
-          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+          <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-5 lg:px-7">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-              {/* Main tabs */}
-              <div className="w-full rounded-[24px] border border-[#DCE8F6] bg-[#EEF4FB] p-1.5 xl:w-[520px]">
+              <div className="w-full rounded-2xl bg-slate-100 p-1.5 xl:w-[520px]">
                 <div className="flex gap-1.5">
                   <MainTabButton
                     active={activeTab === 'meetings'}
-                    title="Lịch gặp mặt"
-                    note={`${meetings.length} lịch đang theo dõi`}
+                    title="Lịch hẹn gặp"
+                    note={`${meetings.length} lịch`}
                     onClick={() => {
                       setActiveTab('meetings');
                       setKeyword('');
                     }}
                   />
-
                   <MainTabButton
                     active={activeTab === 'profiles'}
                     title="Hồ sơ nhận nuôi"
-                    note={`${profiles.length} hồ sơ đã lập`}
+                    note={`${profiles.length} hồ sơ`}
                     onClick={() => {
                       setActiveTab('profiles');
                       setKeyword('');
@@ -397,25 +312,15 @@ export default function AdoptionProfileList() {
                 </div>
               </div>
 
-              {/* Search + status select */}
               <div className="flex w-full flex-col gap-3 md:flex-row xl:w-auto">
                 <div className="w-full md:w-[260px]">
-                  <StatusCombobox
-                    value={currentStatus}
-                    options={currentStatusTabs}
-                    onChange={setCurrentStatus}
-                  />
+                  <StatusCombobox value={currentStatus} options={currentStatusTabs} onChange={setCurrentStatus} />
                 </div>
-
                 <div className="w-full md:w-[420px]">
                   <input
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    placeholder={
-                      activeTab === 'meetings'
-                        ? 'Tìm lịch, yêu cầu, người nhận, trẻ...'
-                        : 'Tìm hồ sơ, yêu cầu, người nhận, trẻ...'
-                    }
+                    placeholder={activeTab === 'meetings' ? 'Tìm lịch, yêu cầu, người nhận...' : 'Tìm hồ sơ, mã trẻ...'}
                     className={inputClass}
                   />
                 </div>
@@ -423,236 +328,127 @@ export default function AdoptionProfileList() {
             </div>
           </div>
 
-          {/* Meetings table */}
-          {activeTab === 'meetings' && (
-            <div>
-              <div className="flex items-center justify-between border-b border-[#EDF3FB] px-7 py-5">
+          {loading ? (
+            <div className="p-20 text-center text-sm font-medium text-slate-500">Đang tải dữ liệu...</div>
+          ) : (
+            <>
+              {activeTab === 'meetings' && (
                 <div>
-                  <h2 className="text-xl font-bold text-[#0D47A1]">
-                    Lịch gặp mặt
-                  </h2>
-                  <p className="mt-1 text-sm text-[#8FA0B8]">
-                    Hiển thị {filteredMeetings.length} / {meetings.length} lịch gặp.
-                  </p>
+                  <div className="flex items-center justify-between border-b border-slate-100 px-7 py-5">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Danh sách Lịch gặp mặt</h2>
+                      <p className="mt-1 text-sm text-slate-500">Hiển thị {filteredMeetings.length} / {meetings.length} lịch gặp.</p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[1220px] border-collapse text-left text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-6 py-4 font-semibold">Mã lịch & Yêu cầu</th>
+                          <th className="px-6 py-4 font-semibold">Người nhận nuôi</th>
+                          <th className="px-6 py-4 font-semibold">Thời gian & Địa điểm</th>
+                          <th className="px-6 py-4 font-semibold">Trạng thái</th>
+                          <th className="px-6 py-4 font-semibold">Kết quả</th>
+                          <th className="px-6 py-4 text-right font-semibold">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredMeetings.map((item) => {
+                           const result = item.Children?.find(c => c.KetQua)?.KetQua;
+                           return (
+                            <tr key={item.MaLichGap} className="transition hover:bg-slate-50/50">
+                              <td className="px-6 py-5">
+                                <p className="font-bold text-blue-800">{item.MaLichGap}</p>
+                                <p className="mt-1 text-xs font-semibold text-slate-600">YC: {item.MaYeuCauNhan}</p>
+                              </td>
+                              <td className="px-6 py-5">
+                                <p className="font-semibold text-slate-800">{item.TenNguoiNhan}</p>
+                              </td>
+                              <td className="px-6 py-5">
+                                <p className="font-semibold text-slate-800">{formatDate(item.ThoiGian?.split('T')[0])} {item.ThoiGian?.split('T')[1]?.substring(0,5)}</p>
+                                <p className="mt-1 text-xs text-slate-500">{item.DiaDiem}</p>
+                              </td>
+                              <td className="px-6 py-5">
+                                <Badge status={item.TrangThai} size="md" />
+                                <p className="mt-1.5 text-xs text-slate-500">{getMeetingNote(item)}</p>
+                              </td>
+                              <td className="px-6 py-5">
+                                {result ? <Badge status={result} size="md" /> : <span className="text-sm font-semibold text-slate-400">Chưa có</span>}
+                              </td>
+                              <td className="px-6 py-5">
+                                <div className="flex justify-end gap-2">
+                                  <Link to={`/can-bo-nhan-nuoi/tao-ho-so/${item.MaYeuCauNhan}`} className={primaryButton}>
+                                    Vào xử lý
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {filteredMeetings.length === 0 && <EmptyRow colSpan="6" text="Không tìm thấy lịch gặp mặt phù hợp." />}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1220px] border-collapse text-left text-sm">
-                  <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
-                    <tr>
-                      <th className="px-6 py-4 font-bold">Mã lịch</th>
-                      <th className="px-6 py-4 font-bold">Yêu cầu</th>
-                      <th className="px-6 py-4 font-bold">Người nhận nuôi</th>
-                      <th className="px-6 py-4 font-bold">Trẻ được chọn</th>
-                      <th className="px-6 py-4 font-bold">Thời gian</th>
-                      <th className="px-6 py-4 font-bold">Trạng thái</th>
-                      <th className="px-6 py-4 font-bold">Kết quả</th>
-                      <th className="px-6 py-4 text-right font-bold">Thao tác</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-[#EDF3FB]">
-                    {filteredMeetings.map((item) => (
-                      <tr key={item.MaLichGap} className="transition hover:bg-[#F7FAFF]">
-                        <td className="px-6 py-5">
-                          <p className="font-extrabold text-[#0D47A1]">
-                            {item.MaLichGap}
-                          </p>
-                          <p className="mt-1 text-xs font-medium text-[#8FA0B8]">
-                            {getMeetingNote(item)}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5 font-bold text-[#26364A]">
-                          {item.MaYeuCauNhan}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">
-                            {item.TenNguoiNhan}
-                          </p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.SDTNguoiNhan}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">{item.MaTre}</p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.TenTre}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-semibold text-[#26364A]">
-                            {formatDate(item.NgayGap)}
-                          </p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.GioGap} · {item.DiaDiem}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <Badge status={item.TrangThai} size="md" />
-                        </td>
-
-                        <td className="px-6 py-5">
-                          {item.KetQuaGapMat ? (
-                            <Badge status={item.KetQuaGapMat} size="md" />
-                          ) : (
-                            <span className="text-sm font-semibold text-[#8FA0B8]">
-                              Chưa ghi nhận
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              to={`/can-bo-nhan-nuoi/tao-ho-so/${item.MaYeuCauNhan}`}
-                              className={primaryButton}
-                            >
-                              Tiếp tục xử lý
-                            </Link>
-
-                            {item.TrangThai === 'Chờ xác nhận' && (
-                              <button
-                                type="button"
-                                onClick={() => confirmMeeting(item.MaLichGap)}
-                                className={secondaryButton}
-                              >
-                                Xác nhận
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-
-                    {filteredMeetings.length === 0 && (
-                      <EmptyRow
-                        colSpan="8"
-                        text="Không tìm thấy lịch gặp mặt phù hợp."
-                      />
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Profiles table */}
-          {activeTab === 'profiles' && (
-            <div>
-              <div className="flex items-center justify-between border-b border-[#EDF3FB] px-7 py-5">
+              {activeTab === 'profiles' && (
                 <div>
-                  <h2 className="text-xl font-bold text-[#0D47A1]">
-                    Hồ sơ nhận nuôi
-                  </h2>
-                  <p className="mt-1 text-sm text-[#8FA0B8]">
-                    Hiển thị {filteredProfiles.length} / {profiles.length} hồ sơ.
-                  </p>
+                  <div className="flex items-center justify-between border-b border-slate-100 px-7 py-5">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Hồ sơ nhận nuôi</h2>
+                      <p className="mt-1 text-sm text-slate-500">Hiển thị {filteredProfiles.length} / {profiles.length} hồ sơ. Chỉ xem theo dõi vì Trưởng phòng là người có quyền duyệt.</p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-6 py-4 font-semibold">Mã HS & YC</th>
+                          <th className="px-6 py-4 font-semibold">Trẻ được gán</th>
+                          <th className="px-6 py-4 font-semibold">Cán bộ phụ trách</th>
+                          <th className="px-6 py-4 font-semibold">Ngày lập</th>
+                          <th className="px-6 py-4 font-semibold">Trạng thái</th>
+                          <th className="px-6 py-4 text-right font-semibold">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredProfiles.map((item) => (
+                          <tr key={item.MaHSNhanNuoi} className="transition hover:bg-slate-50/50">
+                            <td className="px-6 py-5">
+                              <p className="font-bold text-blue-800">{item.MaHSNhanNuoi}</p>
+                              <p className="mt-1 text-xs font-semibold text-slate-600">YC: {item.MaYeuCauNhan}</p>
+                            </td>
+                            <td className="px-6 py-5">
+                              <p className="font-semibold text-slate-800">{item.MaTre}</p>
+                              <p className="mt-1 text-xs text-slate-500">{item.TenTre}</p>
+                            </td>
+                            <td className="px-6 py-5">
+                              <p className="font-semibold text-slate-800">{item.TenCanBo}</p>
+                            </td>
+                            <td className="px-6 py-5 font-medium text-slate-600">
+                              {formatDate(item.NgayLap)}
+                            </td>
+                            <td className="px-6 py-5">
+                              <Badge status={item.TrangThai} size="md" />
+                              <p className="mt-1.5 text-xs text-slate-500">{getProfileNote(item.TrangThai)}</p>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <Link to={`/can-bo-nhan-nuoi/ho-so/${item.MaHSNhanNuoi}`} className={secondaryButton}>
+                                Xem chi tiết
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredProfiles.length === 0 && <EmptyRow colSpan="6" text="Không tìm thấy hồ sơ nhận nuôi phù hợp." />}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
-                  <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
-                    <tr>
-                      <th className="px-6 py-4 font-bold">Mã hồ sơ</th>
-                      <th className="px-6 py-4 font-bold">Yêu cầu</th>
-                      <th className="px-6 py-4 font-bold">Người nhận nuôi</th>
-                      <th className="px-6 py-4 font-bold">Trẻ được gán</th>
-                      <th className="px-6 py-4 font-bold">Ngày lập</th>
-                      <th className="px-6 py-4 font-bold">Cán bộ lập</th>
-                      <th className="px-6 py-4 font-bold">Trạng thái</th>
-                      <th className="px-6 py-4 text-right font-bold">Thao tác</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-[#EDF3FB]">
-                    {filteredProfiles.map((item) => (
-                      <tr key={item.MaHoSoNhanNuoi} className="transition hover:bg-[#F7FAFF]">
-                        <td className="px-6 py-5">
-                          <p className="font-extrabold text-[#0D47A1]">
-                            {item.MaHoSoNhanNuoi}
-                          </p>
-                          <p className="mt-1 text-xs font-medium text-[#8FA0B8]">
-                            {getProfileNote(item.TrangThai)}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5 font-bold text-[#26364A]">
-                          {item.MaYeuCauNhan}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">
-                            {item.TenNguoiNhan}
-                          </p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.SDTNguoiNhan}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">{item.MaTre}</p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.TenTre}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5 font-semibold text-[#5F738F]">
-                          {formatDate(item.NgayLap)}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-semibold text-[#26364A]">
-                            {item.TenCanBoLap}
-                          </p>
-                          <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.MaCanBoLap}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <Badge status={item.TrangThai} size="md" />
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              to={`/can-bo-nhan-nuoi/ho-so/${item.MaHoSoNhanNuoi}`}
-                              className={primaryButton}
-                            >
-                              Xem chi tiết
-                            </Link>
-
-                            {item.TrangThai === 'Đã duyệt' && (
-                              <button
-                                type="button"
-                                onClick={() => completeProfile(item.MaHoSoNhanNuoi)}
-                                className="rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-xs font-bold text-green-700 transition hover:bg-green-100"
-                              >
-                                Hoàn tất
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-
-                    {filteredProfiles.length === 0 && (
-                      <EmptyRow
-                        colSpan="8"
-                        text="Không tìm thấy hồ sơ nhận nuôi phù hợp."
-                      />
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </section>
       </div>

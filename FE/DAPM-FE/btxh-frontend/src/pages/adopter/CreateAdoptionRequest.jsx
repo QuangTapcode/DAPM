@@ -717,7 +717,7 @@ export default function CreateAdoptionRequest() {
 
     try {
       const formData = buildSubmitFormData(data);
-      const response = await adoptionApi.submitWithDocuments(formData);
+      const response = await adoptionApi.submit(formData);
 
       if (!response.success) {
         alert(response.message || 'Gửi đơn nhận nuôi thất bại');
