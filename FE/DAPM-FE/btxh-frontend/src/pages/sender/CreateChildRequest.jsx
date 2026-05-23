@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import family from '../../assets/sender.jpg';
+import receptionApi from '../../api/receptionApi';
+import authApi from '../../api/authApi';
 
 const SENDER_TYPES = [
   { code: 'CME', label: 'Cha hoặc mẹ ruột', requireDocs: true },
@@ -597,6 +599,15 @@ export default function CreateChildRequest() {
     },
   });
 
+  useEffect(() => {
+    authApi.getProfile().then((profile) => {
+      if (profile?.fullName) setValue('senderName', profile.fullName);
+      if (profile?.cccd) setValue('senderNationalId', profile.cccd);
+      if (profile?.phone || profile?.sdt) setValue('senderPhone', profile.phone || profile.sdt);
+      if (profile?.diaChiCuThe) setValue('senderAddressDetail', profile.diaChiCuThe);
+    }).catch(() => {});
+  }, [setValue]);
+
   const senderTypeCode = watch('senderTypeCode');
   const senderProvinceCode = watch('senderProvinceCode');
   const childProvinceCode = watch('childProvinceCode');
@@ -643,40 +654,59 @@ export default function CreateChildRequest() {
 
   const onSubmit = async (data) => {
     const payload = {
-      nguoiGui: {
-        hoTen: data.senderName,
-        maLoaiNguoiGui: data.senderTypeCode,
-        soCCCD: data.senderNationalId,
-        soDienThoai: data.senderPhone,
-        maXa: data.senderWardCode,
-        diaChiCuThe: data.senderAddressDetail,
+      maLoaiNguoiGui: data.senderTypeCode,
+      quanHeVoiTre: data.senderTypeCode,
+      lyDoGui: `${data.reason}: ${data.reasonDetail}`,
+      ghiChu: data.healthStatus || null,
+      thongTinTre: {
+        tenTre: data.childName,
+        ngaySinh: data.childDob || null,
+        gioiTinh: data.childGender === 'male' ? 'Nam' : 'Nữ',
+        danToc: data.ethnicity || null,
       },
-      tre: {
-        hoTen: data.childName,
-        ngaySinh: data.childDob,
-        gioiTinh: data.childGender,
-        danToc: data.ethnicity,
-        maXa: data.childWardCode,
-        diaChiCuThe: data.childAddressDetail,
-        tinhTrangSucKhoe: data.healthStatus,
-      },
-      lyDo: {
-        maLyDo: data.reason,
-        moTaChiTiet: data.reasonDetail,
-      },
-      giayTo: Object.entries(docs)
-        .filter(([, file]) => !!file)
-        .map(([key, file]) => ({
-          loaiGiayTo: key,
-          tenFile: file.name,
-          kichThuoc: file.size,
-        })),
     };
 
-    console.log('Payload gửi đi:', payload);
+    const result = await receptionApi.create(payload);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    navigate('/gui-tre/trang-thai');
+    const snapshot = {
+      requestId: result?.id || result?.maYeuCauGuiTre || null,
+      status: result?.status || result?.trangThaiYC || 'Chờ xử lý',
+      createdAt: result?.createdAt || result?.ngayTao || new Date().toISOString(),
+      // Sender info from form (BE doesn't return CCCD/phone)
+      senderName: result?.tenNguoiGui || data.senderName,
+      senderTypeCode: result?.maLoaiNguoiGui || data.senderTypeCode,
+      senderNationalId: data.senderNationalId,
+      senderPhone: data.senderPhone,
+      senderAddressDetail: data.senderAddressDetail,
+      senderWardName: senderWardOptions.find(w => w.wardCode === data.senderWardCode)?.wardName || '',
+      senderProvinceName: senderProvinceOptions.find(p => p.provinceCode === data.senderProvinceCode)?.provinceName || '',
+      // Child info
+      thongTinTre: result?.thongTinTre || {
+        tenTre: data.childName,
+        ngaySinh: data.childDob,
+        gioiTinh: data.childGender === 'male' ? 'Nam' : 'Nữ',
+        danToc: data.ethnicity,
+      },
+      childAddressDetail: data.childAddressDetail,
+      childWardName: childWardOptions.find(w => w.wardCode === data.childWardCode)?.wardName || '',
+      childProvinceName: childProvinceOptions.find(p => p.provinceCode === data.childProvinceCode)?.provinceName || '',
+      healthStatus: data.healthStatus,
+      // Reason
+      reason: data.reason,
+      reasonDetail: data.reasonDetail,
+      // Documents
+      giayTo: Object.entries(docs)
+        .filter(([, file]) => !!file)
+        .map(([key, file]) => ({ loaiGiayTo: key, tenFile: file.name })),
+    };
+
+    try {
+      sessionStorage.setItem('child-request-status', JSON.stringify(snapshot));
+    } catch {
+      // ignore storage errors
+    }
+
+    navigate('/gui-tre/trang-thai', { state: { request: snapshot } });
   };
 
   return (

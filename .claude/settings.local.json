@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":44380\")",
+      "Bash(head -80 HoSoTiepNhanController.cs)",
+      "Bash(head -80 HoSoNhanNuoiController.cs)",
+      "Bash(Select-String -Path \"D:\\\\HocTap\\\\DAPM\\\\FE\\\\DAPM-FE\\\\btxh-frontend\\\\src\\\\pages\\\\adopter\\\\CreateAdoptionRequest.jsx\" -Pattern \"success\")",
+      "Bash(Select-Object -First 10)",
+      "Bash(Get-ChildItem -Path \"D:\\\\HocTap\\\\DAPM\\\\BE\\\\QLTTBTXH.API\" -Recurse -Filter \"*Context.cs\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
+    ]
+  }
+}

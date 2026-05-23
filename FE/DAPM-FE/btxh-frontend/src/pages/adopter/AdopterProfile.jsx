@@ -26,17 +26,9 @@ export default function AdopterProfile() {
           lookupApi.getPhuongXa(),
         ]);
 
-        if (profileRes.success) {
-          setProfile(profileRes.data);
-        }
-
-        if (tinhTpRes.success) {
-          setTinhTpOptions(tinhTpRes.data);
-        }
-
-        if (phuongXaRes.success) {
-          setPhuongXaOptions(phuongXaRes.data);
-        }
+        setProfile(profileRes);
+        setTinhTpOptions(Array.isArray(tinhTpRes) ? tinhTpRes : (tinhTpRes?.items || []));
+        setPhuongXaOptions(Array.isArray(phuongXaRes) ? phuongXaRes : (phuongXaRes?.items || []));
       } catch (error) {
         console.error('Lỗi load profile:', error);
         alert(error?.message || 'Không thể tải thông tin cá nhân');
@@ -84,10 +76,8 @@ export default function AdopterProfile() {
     try {
       const res = await authApi.updateProfile(payload);
 
-      if (res.success) {
-        setProfile(res.data);
-        alert('Cập nhật thông tin thành công');
-      }
+      setProfile(res);
+      alert('Cập nhật thông tin thành công');
     } catch (error) {
       console.error('Lỗi cập nhật profile:', error);
       alert(error?.message || 'Cập nhật thông tin thất bại');

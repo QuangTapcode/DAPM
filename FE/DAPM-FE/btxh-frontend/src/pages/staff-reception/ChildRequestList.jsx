@@ -72,56 +72,6 @@ const STATUS_META = {
   },
 };
 
-const DEMO_REQUESTS = [
-  {
-    MaYeuCauGuiTre: 'YCGT0001',
-    TenNguoiGui: 'Trần Thị Gửi',
-    MaLoaiNguoiGui: 'NTH',
-    QuanHeVoiTre: 'Bà ngoại',
-    TenTre: 'Nguyễn An',
-    LyDoGui: 'Gia đình khó khăn, không đủ điều kiện chăm sóc trẻ.',
-    NgayTao: '2026-03-01T00:00:00Z',
-    NgayCapNhat: '2026-03-02T00:00:00Z',
-    TrangThaiYC: 'Đã tiếp nhận',
-    GhiChu: 'Hồ sơ hợp lệ, trẻ đã được tiếp nhận vào trung tâm.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0002',
-    TenNguoiGui: 'Nguyễn Văn Minh',
-    MaLoaiNguoiGui: 'CME',
-    QuanHeVoiTre: 'Cha ruột',
-    TenTre: 'Nguyễn Minh Khang',
-    LyDoGui: 'Cha/mẹ bệnh nặng, chưa thể chăm sóc trẻ.',
-    NgayTao: '2026-04-10T00:00:00Z',
-    NgayCapNhat: null,
-    TrangThaiYC: 'Chờ xử lý',
-    GhiChu: 'Chờ cán bộ tiếp nhận kiểm tra thông tin và giấy tờ.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0003',
-    TenNguoiGui: 'UBND Phường Hòa Khánh Bắc',
-    MaLoaiNguoiGui: 'CQDP',
-    QuanHeVoiTre: 'Cơ quan địa phương',
-    TenTre: 'Lê Minh',
-    LyDoGui: 'Trẻ có hoàn cảnh đặc biệt cần được bảo trợ.',
-    NgayTao: '2026-04-14T00:00:00Z',
-    NgayCapNhat: '2026-04-15T00:00:00Z',
-    TrangThaiYC: 'Đang xem xét',
-    GhiChu: 'Đang xác minh giấy tờ pháp lý và thông tin trẻ.',
-  },
-  {
-    MaYeuCauGuiTre: 'YCGT0004',
-    TenNguoiGui: 'Lê Thị Hạnh',
-    MaLoaiNguoiGui: 'CME',
-    QuanHeVoiTre: 'Mẹ ruột',
-    TenTre: 'Lê Bảo',
-    LyDoGui: 'Thông tin chưa đủ điều kiện tiếp nhận.',
-    NgayTao: '2026-04-16T00:00:00Z',
-    NgayCapNhat: '2026-04-17T00:00:00Z',
-    TrangThaiYC: 'Từ chối',
-    GhiChu: 'Từ chối do giấy tờ chưa hợp lệ.',
-  },
-];
 
 function normalizeStatus(value) {
   const status = String(value || '').trim();
@@ -145,6 +95,8 @@ function getChildName(item) {
     item.childName ||
     item.TenTre ||
     item.HoTenTre ||
+    item.thongTinTre?.tenTre ||
+    item.thongTinTre?.TenTre ||
     item.thongTinTreTam?.HoTen ||
     item.thongTinTreTam?.hoTen ||
     item.treTam?.HoTen ||
@@ -156,30 +108,35 @@ function getChildName(item) {
 function mapRequest(item) {
   if (!item) return null;
 
-  const id = item.id || item.MaYeuCauGuiTre;
+  const id = item.id || item.maYeuCauGuiTre || item.MaYeuCauGuiTre;
+  const maLoai = item.senderTypeCode || item.maLoaiNguoiGui || item.MaLoaiNguoiGui;
 
   return {
     id,
-    code: item.code || item.MaYeuCauGuiTre || id,
+    code: item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.code || id,
     senderName:
       item.senderName ||
+      item.tenNguoiGui ||
       item.TenNguoiGui ||
-      item.nguoiGui?.HoTen ||
       item.nguoiGui?.hoTen ||
+      item.nguoiGui?.HoTen ||
+      item.maNguoiGui ||
       item.MaNguoiGui ||
       '—',
     senderType:
-      TYPE_LABEL[item.senderTypeCode || item.MaLoaiNguoiGui] ||
+      TYPE_LABEL[maLoai] ||
+      item.tenLoaiNguoiGui ||
+      item.TenLoaiNguoiGui ||
       item.senderType ||
-      item.MaLoaiNguoiGui ||
+      maLoai ||
       '—',
-    relationship: item.relationship || item.QuanHeVoiTre || '—',
+    relationship: item.relationship || item.quanHeVoiTre || item.QuanHeVoiTre || '—',
     childName: getChildName(item),
-    reason: item.reason || item.LyDoGui || item.lyDo?.TenLyDo || '',
-    createdAt: item.createdAt || item.NgayTao,
-    updatedAt: item.updatedAt || item.NgayCapNhat,
-    status: normalizeStatus(item.status || item.TrangThaiYC),
-    note: item.note || item.GhiChu || '',
+    reason: item.reason || item.lyDoGui || item.LyDoGui || '',
+    createdAt: item.createdAt || item.ngayTao || item.NgayTao,
+    updatedAt: item.updatedAt || item.ngayCapNhat || item.NgayCapNhat,
+    status: normalizeStatus(item.status || item.trangThaiYC || item.TrangThaiYC),
+    note: item.note || item.ghiChu || item.GhiChu || '',
   };
 }
 
@@ -250,14 +207,14 @@ export default function ChildRequestList() {
 
         if (ignore) return;
 
-        const list = response?.items?.length ? response.items : DEMO_REQUESTS;
-        setItems(list);
+        const raw = Array.isArray(response) ? response : (response?.items || []);
+        setItems(raw);
       } catch (err) {
         if (ignore) return;
 
         console.error('Không thể tải danh sách yêu cầu gửi trẻ:', err);
-        setError('');
-        setItems(DEMO_REQUESTS);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+        setItems([]);
       } finally {
         if (!ignore) setLoading(false);
       }

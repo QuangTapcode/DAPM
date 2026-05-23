@@ -1,33 +1,19 @@
 import axiosClient from './axiosClient';
 
 const authApi = {
-  login: async (credentials) => {
-    return axiosClient.post('/auth/login', credentials);
-  },
+  login: (credentials) => axiosClient.post('/auth/login', credentials),
 
-  register: async (data) => {
-    return axiosClient.post('/auth/register', data);
-  },
+  register: (data) => axiosClient.post('/auth/register', data),
 
-  updateProfile: async (payload) => {
-    return axiosClient.put('/auth/profile', payload);
-  },
+  logout: () => axiosClient.post('/auth/logout'),
 
-  logout: async () => {
-    return axiosClient.post('/auth/logout');
-  },
+  getProfile: () => axiosClient.get('/auth/profile'),
 
-  getProfile: async () => {
-    return axiosClient.get('/auth/profile');
-  },
+  refreshToken: () => axiosClient.post('/auth/refresh'),
 
-  refreshToken: async () => {
-    return axiosClient.post('/auth/refresh');
-  },
+  changePassword: (payload) => axiosClient.post('/auth/change-password', payload),
 
-  changePassword: async (data) => {
-    return axiosClient.post('/auth/change-password', data);
-  }
+  updateProfile: (id, payload) => axiosClient.put(`/users/${id}`, payload),
 };
 
 export default authApi;

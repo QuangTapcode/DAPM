@@ -1,82 +1,19 @@
-import {
-    MOCK_RECEPTION_PROFILES,
-    mockApiResponse,
-    mockApiError,
-} from './mockData';
+import axiosClient from './axiosClient';
 
 const receptionProfileApi = {
-    getAll: async (params = {}) => {
-        let items = [...MOCK_RECEPTION_PROFILES];
+  getAll: (params = {}) => axiosClient.get('/reception-profiles', { params }),
 
-        if (params.status) {
-            items = items.filter((item) => item.status === params.status);
-        }
+  getById: (id) => axiosClient.get(`/reception-profiles/${id}`),
 
-        if (params.staffReceptionId) {
-            items = items.filter(
-                (item) => item.staffReceptionId === Number(params.staffReceptionId)
-            );
-        }
+  create: (data) => axiosClient.post('/reception-profiles', data),
 
-        return mockApiResponse({
-            items,
-            total: items.length,
-        });
-    },
+  update: (id, data) => axiosClient.put(`/reception-profiles/${id}`, data),
 
-    getById: async (id) => {
-        const profile = MOCK_RECEPTION_PROFILES.find(
-            (item) => item.id === Number(id)
-        );
+  delete: (id) => axiosClient.delete(`/reception-profiles/${id}`),
 
-        if (!profile) {
-            return mockApiError('Reception profile not found');
-        }
+  approve: (id) => axiosClient.post(`/reception-profiles/${id}/approve`),
 
-        return mockApiResponse(profile);
-    },
-
-    create: async (data) => {
-        const existed = MOCK_RECEPTION_PROFILES.find(
-            (item) => item.requestId === Number(data.requestId)
-        );
-
-        if (existed) {
-            return mockApiError('Yêu cầu này đã có hồ sơ tiếp nhận.');
-        }
-
-        const newProfile = {
-            id: MOCK_RECEPTION_PROFILES.length + 1,
-            ...data,
-            requestId: Number(data.requestId),
-            childId: Number(data.childId),
-            staffReceptionId: Number(data.staffReceptionId),
-            status: data.status || 'pending_manager',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        MOCK_RECEPTION_PROFILES.push(newProfile);
-        return mockApiResponse(newProfile);
-    },
-
-    update: async (id, data) => {
-        const index = MOCK_RECEPTION_PROFILES.findIndex(
-            (item) => item.id === Number(id)
-        );
-
-        if (index === -1) {
-            return mockApiError('Reception profile not found');
-        }
-
-        MOCK_RECEPTION_PROFILES[index] = {
-            ...MOCK_RECEPTION_PROFILES[index],
-            ...data,
-            updatedAt: new Date().toISOString(),
-        };
-
-        return mockApiResponse(MOCK_RECEPTION_PROFILES[index]);
-    },
+  reject: (id, reason) => axiosClient.post(`/reception-profiles/${id}/reject`, { reason }),
 };
 
 export default receptionProfileApi;

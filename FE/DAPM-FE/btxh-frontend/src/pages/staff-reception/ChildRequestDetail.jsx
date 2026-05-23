@@ -237,23 +237,25 @@ function mapDocument(doc, index) {
 function mapRequestDetail(item) {
   if (!item) return null;
 
-  const nguoiGui = item.nguoiGui || item.NguoiGui || {};
-  const treTam = item.thongTinTreTam || item.ThongTinTreTam || item.treTam || {};
-  const rawDocs = item.giayTo || item.GiayTo || item.documents || [];
+  // BE trả camelCase; ThongTinTre là DTO mới (không có nested nguoiGui)
+  const treTam = item.thongTinTre || item.thongTinTreTam || item.ThongTinTreTam || item.treTam || {};
+  const rawDocs = item.giayTos || item.giayTo || item.GiayTo || item.documents || [];
 
-  const id = item.MaYeuCauGuiTre || item.id;
+  const id = item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.id;
 
   return {
     id,
-    code: item.MaYeuCauGuiTre || item.code || id,
-    MaNguoiGui: item.MaNguoiGui || nguoiGui.MaNguoiDung || '',
-    MaLoaiNguoiGui: item.MaLoaiNguoiGui || item.senderTypeCode || '',
-    QuanHeVoiTre: item.QuanHeVoiTre || item.relationship || '',
-    LyDoGui: item.LyDoGui || item.reason || '',
-    TrangThaiYC: normalizeStatus(item.TrangThaiYC || item.status),
-    GhiChu: item.GhiChu || item.note || '',
-    NgayTao: item.NgayTao || item.createdAt || '',
-    NgayCapNhat: item.NgayCapNhat || item.updatedAt || '',
+    code: item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.code || id,
+    MaNguoiGui: item.maNguoiGui || item.MaNguoiGui || item.senderId || '',
+    MaLoaiNguoiGui: item.maLoaiNguoiGui || item.MaLoaiNguoiGui || item.senderTypeCode || '',
+    TenLoaiNguoiGui: item.tenLoaiNguoiGui || item.TenLoaiNguoiGui || '',
+    QuanHeVoiTre: item.quanHeVoiTre || item.QuanHeVoiTre || item.relationship || '',
+    LyDoGui: item.lyDoGui || item.LyDoGui || item.reason || '',
+    TrangThaiYC: normalizeStatus(item.trangThaiYC || item.TrangThaiYC || item.status),
+    GhiChu: item.ghiChu || item.GhiChu || item.note || '',
+    NgayTao: item.ngayTao || item.NgayTao || item.createdAt || '',
+    NgayCapNhat: item.ngayCapNhat || item.NgayCapNhat || item.updatedAt || '',
+    MaTre: item.maTre || item.MaTre || '',
     MaHSTiepNhan:
       item.MaHSTiepNhan ||
       item.hoSoTiepNhan?.MaHSTiepNhan ||
@@ -261,43 +263,25 @@ function mapRequestDetail(item) {
       '',
 
     nguoiGui: {
-      HoTen:
-        nguoiGui.HoTen ||
-        nguoiGui.hoTen ||
-        item.TenNguoiGui ||
-        item.senderName ||
-        '',
-      CCCD:
-        nguoiGui.CCCD ||
-        nguoiGui.SoCCCD ||
-        item.senderIdentityNumber ||
-        item.senderCccd ||
-        '',
-      SoDienThoai:
-        nguoiGui.SoDienThoai ||
-        nguoiGui.phone ||
-        item.senderPhone ||
-        '',
-      Email: nguoiGui.Email || nguoiGui.email || item.senderEmail || '',
-      TenTinhTP: nguoiGui.TenTinhTP || item.senderProvinceName || '',
-      TenXaPhuong: nguoiGui.TenXaPhuong || item.senderWardName || '',
-      DiaChiCuThe: nguoiGui.DiaChiCuThe || item.senderAddressDetail || '',
+      HoTen: item.tenNguoiGui || item.TenNguoiGui || item.senderName || '',
+      CCCD: item.senderCccd || item.SenderCccd || '',
+      SoDienThoai: item.senderPhone || item.SenderPhone || '',
+      Email: item.senderEmail || item.SenderEmail || '',
+      TenTinhTP: item.senderProvince || item.SenderProvince || '',
+      TenXaPhuong: item.senderWard || item.SenderWard || '',
+      DiaChiCuThe: item.senderAddress || item.SenderAddress || '',
     },
 
     treTam: {
-      MaTreTam: treTam.MaTreTam || treTam.id || '',
-      HoTen: treTam.HoTen || treTam.hoTen || item.childName || '',
-      NgaySinh: treTam.NgaySinh || treTam.ngaySinh || item.childBirthDate || '',
-      GioiTinh: treTam.GioiTinh || treTam.gioiTinh || item.childGender || '',
-      DanToc: treTam.DanToc || treTam.danToc || item.childEthnicity || '',
-      TenTinhTP: treTam.TenTinhTP || item.childProvinceName || '',
-      TenXaPhuong: treTam.TenXaPhuong || item.childWardName || '',
-      DiaChiCuThe: treTam.DiaChiCuThe || item.childAddressDetail || '',
-      TinhTrangSucKhoe:
-        treTam.TinhTrangSucKhoe ||
-        treTam.tinhTrangSucKhoe ||
-        item.childHealthStatus ||
-        '',
+      MaTreTam: treTam.maThongTin || treTam.MaThongTin || treTam.id || '',
+      HoTen: treTam.tenTre || treTam.TenTre || treTam.HoTen || treTam.hoTen || '',
+      NgaySinh: treTam.ngaySinh || treTam.NgaySinh || '',
+      GioiTinh: treTam.gioiTinh || treTam.GioiTinh || '',
+      DanToc: treTam.danToc || treTam.DanToc || '',
+      TenTinhTP: treTam.tenTinhTP || treTam.TenTinhTP || '',
+      TenXaPhuong: treTam.tenPhuongXa || treTam.TenXaPhuong || '',
+      DiaChiCuThe: treTam.diaChiCuThe || treTam.DiaChiCuThe || '',
+      TinhTrangSucKhoe: treTam.tinhTrangSucKhoe || treTam.TinhTrangSucKhoe || '',
     },
 
     documents: Array.isArray(rawDocs) ? rawDocs.map(mapDocument) : [],
@@ -738,20 +722,32 @@ export default function ChildRequestDetail() {
   }, [request]);
 
   async function handleStartReview() {
-    setLocalRequest((prev) => ({
-      ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.DANG_XEM_XET,
-      NgayCapNhat: new Date().toISOString(),
-    }));
+    try {
+      await receptionApi.update(id, { trangThaiYC: STATUS_DB.DANG_XEM_XET });
+      setLocalRequest((prev) => ({
+        ...(prev || data),
+        trangThaiYC: STATUS_DB.DANG_XEM_XET,
+        ngayCapNhat: new Date().toISOString(),
+      }));
+    } catch (err) {
+      alert(err?.message || 'Không thể cập nhật trạng thái.');
+    }
   }
 
   async function handleReject() {
-    setLocalRequest((prev) => ({
-      ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.TU_CHOI,
-      NgayCapNhat: new Date().toISOString(),
-      GhiChu: 'Yêu cầu bị từ chối do thông tin hoặc giấy tờ chưa hợp lệ.',
-    }));
+    const reason = window.prompt('Nhập lý do từ chối:') ?? '';
+    if (reason === null) return;
+    try {
+      await receptionApi.reject(id, reason || 'Thông tin hoặc giấy tờ chưa hợp lệ.');
+      setLocalRequest((prev) => ({
+        ...(prev || data),
+        trangThaiYC: STATUS_DB.TU_CHOI,
+        ngayCapNhat: new Date().toISOString(),
+        ghiChu: reason || 'Yêu cầu bị từ chối.',
+      }));
+    } catch (err) {
+      alert(err?.message || 'Không thể từ chối yêu cầu.');
+    }
   }
 
   async function handleMarkDocument(document, status) {
@@ -791,31 +787,29 @@ export default function ChildRequestDetail() {
       return;
     }
 
+    try {
+      await receptionApi.approve(id);
+    } catch (err) {
+      alert(err?.message || 'Không thể tiếp nhận yêu cầu.');
+      return;
+    }
+
     const acceptedRequest = {
       ...request,
       TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
       NgayCapNhat: new Date().toISOString(),
-      GhiChu:
-        'Yêu cầu đã được tiếp nhận. Cán bộ chuyển sang lập hồ sơ tiếp nhận trẻ.',
+      GhiChu: 'Yêu cầu đã được tiếp nhận. Cán bộ chuyển sang lập hồ sơ tiếp nhận trẻ.',
     };
-
-    // Sau này thay bằng API thật:
-    // await receptionApi.updateStatus(request.id, {
-    //   TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-    //   GhiChu: acceptedRequest.GhiChu,
-    // });
 
     setLocalRequest((prev) => ({
       ...(prev || data || DEMO_REQUEST_DETAIL),
-      TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-      NgayCapNhat: acceptedRequest.NgayCapNhat,
-      GhiChu: acceptedRequest.GhiChu,
+      trangThaiYC: STATUS_DB.DA_TIEP_NHAN,
+      ngayCapNhat: acceptedRequest.NgayCapNhat,
+      ghiChu: acceptedRequest.GhiChu,
     }));
 
     navigate(`${basePath}/tao-ho-so/${request.id}`, {
-      state: {
-        request: acceptedRequest,
-      },
+      state: { request: acceptedRequest },
     });
   }
 

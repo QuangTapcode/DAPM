@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import receptionProfileApi from '../../api/receptionProfileApi';
 import { Eye, Search } from 'lucide-react';
 import { formatDate } from '../../utils/formatDate';
 
-const STORAGE_KEY = 'mock_reception_profiles';
+
 
 const STATUS_PROFILE = {
     DANG_XU_LY: 'Đang xử lý',
@@ -50,61 +51,7 @@ const STATUS_META = {
     },
 };
 
-const DEMO_PROFILES = [
-    {
-        MaHSTiepNhan: 'HSTN0001',
-        MaYeuCauGuiTre: 'YCGT0002',
-        MaTre: null,
-        MaCanBoTiepNhan: 'ND000004',
-        TenNguoiDuyet: 'Trưởng phòng tiếp nhận',
-        TenTre: 'Nguyễn Minh Khang',
-        TenNguoiGui: 'Nguyễn Văn Minh',
-        NgayTiepNhan: '2026-04-10',
-        TrangThai: 'Chờ duyệt',
-        NgayDuyet: null,
-        GhiChu: 'Hồ sơ đã được lập, đang chờ trưởng phòng duyệt.',
-    },
-    {
-        MaHSTiepNhan: 'HSTN0002',
-        MaYeuCauGuiTre: 'YCGT0001',
-        MaTre: 'TRE00015',
-        MaCanBoTiepNhan: 'ND000004',
-        TenNguoiDuyet: 'Trưởng phòng tiếp nhận',
-        TenTre: 'Nguyễn An',
-        TenNguoiGui: 'Trần Thị Gửi',
-        NgayTiepNhan: '2026-03-01',
-        TrangThai: 'Đã duyệt',
-        NgayDuyet: '2026-03-02',
-        GhiChu: 'Hồ sơ đã duyệt, trẻ được tiếp nhận chính thức.',
-    },
-    {
-        MaHSTiepNhan: 'HSTN0003',
-        MaYeuCauGuiTre: 'YCGT0004',
-        MaTre: null,
-        MaCanBoTiepNhan: 'ND000004',
-        TenNguoiDuyet: 'Trưởng phòng tiếp nhận',
-        TenTre: 'Lê Bảo',
-        TenNguoiGui: 'Lê Thị Hạnh',
-        NgayTiepNhan: '2026-04-16',
-        TrangThai: 'Từ chối',
-        NgayDuyet: '2026-04-17',
-        GhiChu: 'Hồ sơ tiếp nhận không đạt điều kiện.',
-    },
-];
 
-function safeReadStorageProfiles() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const parsed = JSON.parse(raw || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [];
-    }
-}
-
-function safeWriteStorageProfiles(items) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
 
 function normalizeRequestCode(value) {
     if (!value) return '';
@@ -191,52 +138,43 @@ function normalizeStatus(value) {
 }
 
 function normalizeProfile(item) {
-    const maHSTiepNhan = normalizeProfileCode(item.MaHSTiepNhan || item.id);
+    const maHSTiepNhan = normalizeProfileCode(item.maHSTiepNhan || item.MaHSTiepNhan || item.id);
     const maYeuCauGuiTre = normalizeRequestCode(
-        item.MaYeuCauGuiTre || item.requestId || item.yeuCauGuiTre?.MaYeuCauGuiTre
+        item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.requestId
     );
-
     const maCanBoTiepNhan = normalizeUserCode(
-        item.MaCanBoTiepNhan ||
-        item.approverId ||
-        item.yeuCauGuiTre?.MaCanBoTiepNhan ||
-        'ND000004'
+        item.maCanBoTiepNhan || item.MaCanBoTiepNhan || item.approverId || ''
     );
 
     return {
         id: maHSTiepNhan,
         MaHSTiepNhan: maHSTiepNhan,
         MaYeuCauGuiTre: maYeuCauGuiTre,
-        MaTre: normalizeChildCode(item.MaTre || item.childId),
+        MaTre: normalizeChildCode(item.maTre || item.MaTre || item.childId),
         MaCanBoTiepNhan: maCanBoTiepNhan,
 
         TenNguoiDuyet:
-            item.TenNguoiDuyet ||
-            item.TenCanBoTiepNhan ||
-            item.approverName ||
-            'Trưởng phòng tiếp nhận',
+            item.tenCanBo || item.TenCanBo ||
+            item.TenNguoiDuyet || item.TenCanBoTiepNhan ||
+            item.approverName || '',
 
         TenTre:
-            item.TenTre ||
-            item.TenTreTam ||
-            item.childName ||
-            item.thongTinTreTam?.HoTen ||
-            item.thongTinTreTam?.hoTen ||
-            item.tre?.HoTen ||
-            item.tre?.hoTen ||
+            item.tenTre || item.TenTre ||
+            item.TenTreTam || item.childName ||
+            item.thongTinTreTam?.hoTen || item.thongTinTreTam?.HoTen ||
+            item.tre?.hoTen || item.tre?.HoTen ||
             'Chưa cập nhật',
 
         TenNguoiGui:
-            item.TenNguoiGui ||
+            item.tenNguoiGui || item.TenNguoiGui ||
             item.senderName ||
-            item.nguoiGui?.HoTen ||
-            item.nguoiGui?.hoTen ||
+            item.nguoiGui?.hoTen || item.nguoiGui?.HoTen ||
             'Chưa cập nhật',
 
-        NgayTiepNhan: item.NgayTiepNhan || item.createdAt || '',
-        TrangThai: normalizeStatus(item.TrangThai || item.status),
-        NgayDuyet: item.NgayDuyet || item.approvedAt || '',
-        GhiChu: item.GhiChu || item.note || '',
+        NgayTiepNhan: item.ngayTiepNhan || item.NgayTiepNhan || item.createdAt || '',
+        TrangThai: normalizeStatus(item.trangThai || item.TrangThai || item.status),
+        NgayDuyet: item.ngayDuyet || item.NgayDuyet || item.approvedAt || '',
+        GhiChu: item.ghiChu || item.GhiChu || item.note || '',
     };
 }
 
@@ -284,23 +222,19 @@ export default function ReceptionProfileList() {
 
     const [tab, setTab] = useState('');
     const [keyword, setKeyword] = useState('');
-    const [storageVersion, setStorageVersion] = useState(0);
+    const [profiles, setProfiles] = useState([]);
 
     const message = location.state?.message;
     const createdProfileId = normalizeProfileCode(location.state?.createdProfileId);
 
     useEffect(() => {
-        const savedProfiles = safeReadStorageProfiles();
-        const cleanedProfiles = cleanProfileList(savedProfiles);
-
-        safeWriteStorageProfiles(cleanedProfiles);
-        setStorageVersion((value) => value + 1);
+        receptionProfileApi.getAll({ page: 1, limit: 200 })
+            .then((res) => {
+                const items = Array.isArray(res) ? res : (res?.items || []);
+                setProfiles(cleanProfileList(items));
+            })
+            .catch(() => setProfiles([]));
     }, []);
-
-    const profiles = useMemo(() => {
-        const savedProfiles = safeReadStorageProfiles();
-        return cleanProfileList([...savedProfiles, ...DEMO_PROFILES]);
-    }, [storageVersion]);
 
     const filteredProfiles = useMemo(() => {
         const kw = keyword.trim().toLowerCase();

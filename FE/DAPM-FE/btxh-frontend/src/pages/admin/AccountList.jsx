@@ -42,17 +42,6 @@ const ROLE_OPTIONS = [
   { value: 'adopter',         label: 'Người nhận nuôi', desc: 'Đăng ký và theo dõi đơn nhận nuôi.' },
 ];
 
-const DEMO_USERS = [
-  { id: 1, fullName: 'Nguyễn Văn Lâm',  email: 'lam.nguyen@guardian.org', role: 'coordinator',    isActive: true,  createdAt: '2023-10-12' },
-  { id: 2, fullName: 'Phan Thị Thu',    email: 'thu.phan@guardian.org',    role: 'accountant',     isActive: false, createdAt: '2023-08-05' },
-  { id: 3, fullName: 'Lê Hồng Hạnh',   email: 'hanh.lh@guardian.org',    role: 'hr',             isActive: true,  createdAt: '2024-01-20' },
-  { id: 4, fullName: 'Trần Thị Hoa',   email: 'hoa.tran@guardian.org',   role: 'staff-reception', isActive: true,  createdAt: '2024-02-14' },
-  { id: 5, fullName: 'Đinh Văn Minh',  email: 'minh.dinh@guardian.org',  role: 'staff-adoption',  isActive: true,  createdAt: '2024-03-01' },
-  { id: 6, fullName: 'Ngô Thị Lan',    email: 'lan.ngo@guardian.org',    role: 'sender',          isActive: true,  createdAt: '2024-03-18' },
-  { id: 7, fullName: 'Bùi Quang Huy',  email: 'huy.bui@guardian.org',    role: 'adopter',         isActive: false, createdAt: '2024-04-05' },
-  { id: 8, fullName: 'Vũ Thị Bích',    email: 'bich.vu@guardian.org',    role: 'manager',         isActive: true,  createdAt: '2024-04-22' },
-];
-
 const BLANK_FORM = { fullName: '', email: '', role: 'staff-reception', password: '', confirmPassword: '' };
 
 function RoleModal({ user, onClose, onConfirm }) {
@@ -193,14 +182,10 @@ export default function AccountList() {
   const [search, setSearch] = useState('');
   const [modalUser, setModalUser] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [localUsers, setLocalUsers] = useState(DEMO_USERS);
 
-  const { data } = useFetch(() => adminApi.getUsers({ page, search }), [page, search]);
-  const apiItems = data?.items?.length ? data.items : null;
-  const items = apiItems
-    ? [...apiItems, ...localUsers.filter(u => !apiItems.find(a => a.id === u.id))]
-    : localUsers;
-  const totalPages = data?.totalPages || Math.ceil(items.length / 10) || 1;
+  const { data, refetch } = useFetch(() => adminApi.getUsers({ page, search }), [page, search]);
+  const items = data?.items || [];
+  const totalPages = data?.totalPages || 1;
 
   const filtered = search
     ? items.filter(u => u.fullName?.toLowerCase().includes(search.toLowerCase()) || u.email?.includes(search))
@@ -209,18 +194,70 @@ export default function AccountList() {
   const activeCount = items.filter(checkActive).length;
   const lockedCount = items.length - activeCount;
 
-  const handleConfirmRole = (id, role) => {
-    setLocalUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
-    setModalUser(null);
+  const handleConfirmRole = async (id, role) => {
+    const getBackendRoleCode = (feRole) => {
+      switch (feRole) {
+        case 'admin': return 'ADMI';
+        case 'staff-reception':
+        case 'staff_reception': return 'QLNT';
+        case 'staff-adoption':
+        case 'staff_adoption': return 'QLNN';
+        case 'manager': return 'TPQL';
+        case 'sender': return 'NGGT';
+        case 'adopter': return 'NGNN';
+        default: return feRole;
+      }
+    };
+
+    try {
+      await adminApi.updateUser(id, { roles: [getBackendRoleCode(role)] });
+      setModalUser(null);
+      if (refetch) refetch();
+    } catch (err) {
+      alert('Cập nhật phân quyền thất bại');
+    }
   };
 
-  const handleToggleLock = (id) => {
-    setLocalUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: !checkActive(u) } : u));
+  const handleToggleLock = async (id) => {
+    const user = items.find(u => u.id === id);
+    const newStatus = !checkActive(user);
+    try {
+      await adminApi.updateUser(id, { trangThaiTK: newStatus });
+      if (refetch) refetch();
+    } catch (err) {
+      alert('Có lỗi xảy ra khi thay đổi trạng thái');
+    }
   };
 
-  const handleAddAccount = (newUser) => {
-    setLocalUsers(prev => [...prev, newUser]);
-    setShowAdd(false);
+  const handleAddAccount = async (newUser) => {
+    const getBackendRoleCode = (feRole) => {
+      switch (feRole) {
+        case 'admin': return 'ADMI';
+        case 'staff-reception':
+        case 'staff_reception': return 'QLNT';
+        case 'staff-adoption':
+        case 'staff_adoption': return 'QLNN';
+        case 'manager': return 'TPQL';
+        case 'sender': return 'NGGT';
+        case 'adopter': return 'NGNN';
+        default: return feRole;
+      }
+    };
+
+    try {
+      await adminApi.createUser({
+        hoTen: newUser.fullName,
+        email: newUser.email,
+        sdt: 'Chưa cập nhật',
+        gioiTinh: 'Khác',
+        password: newUser.password,
+        roles: [getBackendRoleCode(newUser.role)]
+      });
+      setShowAdd(false);
+      if (refetch) refetch();
+    } catch (err) {
+      alert('Có lỗi xảy ra khi tạo tài khoản');
+    }
   };
 
   return (

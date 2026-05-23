@@ -8,43 +8,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const res = await authApi.getProfile();
-          if (res.success) {
-            setUser(res.data);
-            localStorage.setItem('user', JSON.stringify(res.data));
-          } else {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
-        } catch (error) {
-          console.error("Failed to load profile", error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
-      }
+    const token = localStorage.getItem('token');
+    if (!token) {
       setLoading(false);
-    };
-
-    initAuth();
+      return;
+    }
+    authApi.getProfile()
+      .then((profile) => {
+        setUser(profile);
+        localStorage.setItem('user', JSON.stringify(profile));
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(async (credentials) => {
-    const res = await authApi.login(credentials);
-    if (!res.success) {
-      throw new Error(res.message || 'Đăng nhập thất bại');
-    }
-    
-    const { token, user: userData } = res.data;
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-
-    return userData;
+    const result = await authApi.login(credentials);
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    setUser(result.user);
+    return result.user;
   }, []);
 
   const logout = useCallback(async () => {

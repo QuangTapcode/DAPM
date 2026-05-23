@@ -648,13 +648,8 @@ export default function CreateAdoptionRequest() {
           lookupApi.getGiayToBatBuocNhanNuoi(),
         ]);
 
-        if (profileRes.success) {
-          setProfile(profileRes.data);
-        }
-
-        if (documentTypeRes.success) {
-          setDocumentTypes(documentTypeRes.data);
-        }
+        setProfile(profileRes);
+        setDocumentTypes(Array.isArray(documentTypeRes) ? documentTypeRes : (documentTypeRes?.items || []));
       } catch (error) {
         console.error('Lỗi tải dữ liệu tạo đơn nhận nuôi:', error);
         alert(error?.message || 'Không thể tải dữ liệu tạo đơn');
@@ -719,11 +714,6 @@ export default function CreateAdoptionRequest() {
       const formData = buildSubmitFormData(data);
       const response = await adoptionApi.submit(formData);
 
-      if (!response.success) {
-        alert(response.message || 'Gửi đơn nhận nuôi thất bại');
-        return;
-      }
-
       const requestSnapshot = buildRequestSnapshot(data, profile, files, response);
 
       sessionStorage.setItem(
@@ -731,8 +721,8 @@ export default function CreateAdoptionRequest() {
         JSON.stringify(requestSnapshot)
       );
 
-      if (response.data?.trangThai === 'Từ chối sơ bộ') {
-        alert(response.data?.lyDoTuChoiSoBo || 'Hồ sơ bị từ chối sơ bộ');
+      if (response?.trangThai === 'Từ chối sơ bộ') {
+        alert(response?.lyDoTuChoiSoBo || 'Hồ sơ bị từ chối sơ bộ');
       } else {
         alert('Đã gửi yêu cầu nhận nuôi thành công');
       }

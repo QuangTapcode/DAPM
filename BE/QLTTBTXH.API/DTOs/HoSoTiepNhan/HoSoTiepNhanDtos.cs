@@ -10,6 +10,12 @@ public class HoSoTiepNhanDto
     public string? TenTre { get; set; }
     public string MaCanBoTiepNhan { get; set; } = null!;
     public string? TenCanBo { get; set; }
+    // Thông tin người gửi trẻ (từ YeuCauGuiTre.NguoiGui)
+    public string? TenNguoiGui { get; set; }
+    public string? QuanHeVoiTre { get; set; }
+    public string? LyDoGui { get; set; }
+    public DateTime? NgaySinhTre { get; set; }
+    public string? GioiTinhTre { get; set; }
     public DateTime NgayTiepNhan { get; set; }
     public string TrangThai { get; set; } = null!;
     public DateTime? NgayDuyet { get; set; }

@@ -20,7 +20,7 @@ public class YeuCauGuiTreController : ControllerBase
 
     public YeuCauGuiTreController(QuanLyTTBTContext db, ICodeGenerator code) { _db = db; _code = code; }
 
-    private static YeuCauGuiTreDto Map(YeuCauGuiTre y, List<string> giayTos) => new()
+    private static YeuCauGuiTreDto Map(YeuCauGuiTre y, List<string> giayTos, string? maTre = null) => new()
     {
         MaYeuCauGuiTre = y.MaYeuCauGuiTre,
         MaNguoiGui = y.MaNguoiGui,
@@ -34,6 +34,13 @@ public class YeuCauGuiTreController : ControllerBase
         TrangThaiYC = y.TrangThaiYC,
         GhiChu = y.GhiChu,
         GiayTos = giayTos,
+        MaTre = maTre ?? y.HoSoTiepNhan?.MaTre,
+        SenderCccd = y.NguoiGui?.CCCD,
+        SenderPhone = y.NguoiGui?.SDT,
+        SenderEmail = y.NguoiGui?.Email,
+        SenderProvince = y.NguoiGui?.PhuongXa?.TinhTP?.TenTinhTP,
+        SenderWard = y.NguoiGui?.PhuongXa?.TenPhuongXa,
+        SenderAddress = y.NguoiGui?.DiaChiCuThe,
         ThongTinTre = y.ThongTinTreTam is null ? null : new ThongTinTreTamDto
         {
             MaThongTin = y.ThongTinTreTam.MaThongTin,
@@ -49,9 +56,10 @@ public class YeuCauGuiTreController : ControllerBase
     public async Task<ActionResult<ApiResponse<PagedResult<YeuCauGuiTreDto>>>> GetAll([FromQuery] QueryParams q)
     {
         var query = _db.YEUCAUGUITRE
-            .Include(y => y.NguoiGui)
+            .Include(y => y.NguoiGui).ThenInclude(n => n!.PhuongXa!).ThenInclude(p => p.TinhTP)
             .Include(y => y.LoaiNguoiGui)
             .Include(y => y.ThongTinTreTam)
+            .Include(y => y.HoSoTiepNhan)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(q.SenderId))
@@ -84,9 +92,10 @@ public class YeuCauGuiTreController : ControllerBase
     public async Task<ActionResult<ApiResponse<YeuCauGuiTreDto>>> GetById(string id)
     {
         var y = await _db.YEUCAUGUITRE
-            .Include(y => y.NguoiGui)
+            .Include(y => y.NguoiGui).ThenInclude(n => n!.PhuongXa!).ThenInclude(p => p.TinhTP)
             .Include(y => y.LoaiNguoiGui)
             .Include(y => y.ThongTinTreTam)
+            .Include(y => y.HoSoTiepNhan)
             .FirstOrDefaultAsync(y => y.MaYeuCauGuiTre == id);
         if (y is null) return NotFound(ApiResponse<YeuCauGuiTreDto>.Fail("Reception request not found"));
 

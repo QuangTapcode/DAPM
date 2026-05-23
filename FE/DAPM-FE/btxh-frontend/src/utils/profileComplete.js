@@ -8,30 +8,31 @@ function getFirstValue(user, keys) {
             return user[key];
         }
     }
-
     return '';
 }
 
-const commonRequiredFields = [
+// BE trả về camelCase: fullName, cccd, gioiTinh, ngaySinh, phone, email,
+// maXaPhuong, tenPhuongXa, maTinhTP, tenTinhTP, diaChiCuThe
+const BASE_REQUIRED_FIELDS = [
     {
         label: 'Họ và tên',
-        keys: ['fullName', 'displayName', 'name', 'hoTen', 'HoTen'],
+        keys: ['fullName', 'FullName', 'HoTen', 'displayName', 'name'],
     },
     {
         label: 'Số CCCD',
-        keys: ['cccd', 'nationalId', 'identityNumber', 'CCCD'],
+        keys: ['cCCD', 'cccd', 'CCCD', 'nationalId', 'identityNumber'],
     },
     {
         label: 'Giới tính',
-        keys: ['gioiTinh', 'gender', 'GioiTinh'],
+        keys: ['gioiTinh', 'GioiTinh', 'gender'],
     },
     {
         label: 'Ngày sinh',
-        keys: ['ngaySinh', 'dateOfBirth', 'birthDate', 'dob', 'NgaySinh'],
+        keys: ['ngaySinh', 'NgaySinh', 'dateOfBirth', 'birthDate', 'dob'],
     },
     {
         label: 'Số điện thoại',
-        keys: ['phone', 'phoneNumber', 'soDienThoai', 'sdt', 'SoDienThoai', 'SDT'],
+        keys: ['phone', 'Phone', 'SDT', 'phoneNumber'],
     },
     {
         label: 'Email',
@@ -39,35 +40,16 @@ const commonRequiredFields = [
     },
     {
         label: 'Tỉnh / Thành phố',
-        keys: [
-            'maTinhTP',
-            'tenTinhTP',
-            'provinceName',
-            'provinceCode',
-            'province',
-            'MaTinhTP',
-            'TenTinhTP',
-        ],
+        // maXaPhuong đủ để suy ra tỉnh; tenTinhTP/maTinhTP là trực tiếp từ BE mới
+        keys: ['maTinhTP', 'MaTinhTP', 'tenTinhTP', 'TenTinhTP', 'maXaPhuong', 'MaXaPhuong', 'provinceName', 'provinceCode'],
     },
     {
         label: 'Phường / Xã',
-        keys: [
-            'maPhuongXa',
-            'tenPhuongXa',
-            'maXaPhuong',
-            'tenXaPhuong',
-            'wardName',
-            'wardCode',
-            'ward',
-            'MaPhuongXa',
-            'TenPhuongXa',
-            'MaXaPhuong',
-            'TenXaPhuong',
-        ],
+        keys: ['maXaPhuong', 'MaXaPhuong', 'tenPhuongXa', 'TenPhuongXa', 'wardName', 'wardCode'],
     },
     {
         label: 'Địa chỉ cụ thể',
-        keys: ['diaChiCuThe', 'addressDetail', 'address', 'specificAddress', 'DiaChiCuThe'],
+        keys: ['diaChiCuThe', 'DiaChiCuThe', 'addressDetail', 'address', 'specificAddress'],
     },
 ];
 
@@ -77,8 +59,7 @@ const commonRequiredFields = [
 
 export function getMissingAdopterProfileFields(user) {
     if (!user) return ['Thông tin tài khoản'];
-
-    return commonRequiredFields
+    return BASE_REQUIRED_FIELDS
         .filter((field) => !hasValue(getFirstValue(user, field.keys)))
         .map((field) => field.label);
 }
@@ -93,8 +74,7 @@ export function isAdopterProfileComplete(user) {
 
 export function getMissingSenderProfileFields(user) {
     if (!user) return ['Thông tin tài khoản'];
-
-    return commonRequiredFields
+    return BASE_REQUIRED_FIELDS
         .filter((field) => !hasValue(getFirstValue(user, field.keys)))
         .map((field) => field.label);
 }

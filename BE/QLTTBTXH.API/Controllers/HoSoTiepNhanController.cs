@@ -28,6 +28,11 @@ public class HoSoTiepNhanController : ControllerBase
         TenTre = h.Tre?.HoTen,
         MaCanBoTiepNhan = h.MaCanBoTiepNhan,
         TenCanBo = h.CanBoTiepNhan?.HoTen,
+        TenNguoiGui = h.YeuCauGuiTre?.NguoiGui?.HoTen,
+        QuanHeVoiTre = h.YeuCauGuiTre?.QuanHeVoiTre,
+        LyDoGui = h.YeuCauGuiTre?.LyDoGui,
+        NgaySinhTre = h.Tre?.NgaySinh,
+        GioiTinhTre = h.Tre?.GioiTinh,
         NgayTiepNhan = h.NgayTiepNhan,
         TrangThai = h.TrangThai,
         NgayDuyet = h.NgayDuyet,
@@ -40,6 +45,7 @@ public class HoSoTiepNhanController : ControllerBase
         var query = _db.HOSOTIEPNHANTRE
             .Include(h => h.Tre)
             .Include(h => h.CanBoTiepNhan)
+            .Include(h => h.YeuCauGuiTre).ThenInclude(y => y!.NguoiGui)
             .AsQueryable();
         if (!string.IsNullOrWhiteSpace(q.Status)) query = query.Where(h => h.TrangThai == q.Status);
 
@@ -59,7 +65,9 @@ public class HoSoTiepNhanController : ControllerBase
     public async Task<ActionResult<ApiResponse<HoSoTiepNhanDto>>> GetById(string id)
     {
         var h = await _db.HOSOTIEPNHANTRE
-            .Include(x => x.Tre).Include(x => x.CanBoTiepNhan)
+            .Include(x => x.Tre)
+            .Include(x => x.CanBoTiepNhan)
+            .Include(x => x.YeuCauGuiTre).ThenInclude(y => y!.NguoiGui)
             .FirstOrDefaultAsync(x => x.MaHSTiepNhan == id);
         if (h is null) return NotFound(ApiResponse<HoSoTiepNhanDto>.Fail("Not found"));
         return Ok(ApiResponse<HoSoTiepNhanDto>.Ok(Map(h)));

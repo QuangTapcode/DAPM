@@ -44,19 +44,13 @@ export function normalizeStatus(status) {
         PROCESSING: 'processing',
         COMPLETED: 'completed',
 
-        // Tiếng Việt mapping từ CSDL
+        // Vietnamese status values from BE
         'Chờ xử lý': 'pending',
         'Đang xem xét': 'reviewing',
-        'Chờ ghép trẻ': 'processing',
-        'Đã duyệt': 'approved',
-        'Từ chối': 'rejected',
-        'Đã hoàn tất': 'completed',
-
-        'Từ chối sơ bộ': 'rejected',
-        'Đang xác minh': 'reviewing',
         'Yêu cầu bổ sung': 'missing_info',
-        'Cần bổ sung': 'missing_info',
-        'Thiếu thông tin': 'missing_info',
+        'Đã tiếp nhận': 'approved',
+        'Từ chối': 'rejected',
+        'Đã hủy': 'rejected',
     };
 
     return statusMap[status] || status;
@@ -72,10 +66,10 @@ export function getCurrentStep(status) {
         case 'reviewing':
             return 2;
         case 'missing_info':
+        case 'rejected':
             return 3;
         case 'approved':
         case 'completed':
-        case 'rejected':
             return 4;
         default:
             return 1;

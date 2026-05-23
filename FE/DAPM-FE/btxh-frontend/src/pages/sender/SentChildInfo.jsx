@@ -10,72 +10,41 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
-import childApi from '../../api/childApi';
+import receptionApi from '../../api/receptionApi';
 
 const STATUS_MAP = {
-  active: {
-    label: 'Đang nuôi dưỡng',
-    badge: 'bg-green-50 text-green-700 border-green-200',
-  },
-  adopted: {
-    label: 'Đã nhận nuôi',
-    badge: 'bg-blue-50 text-blue-700 border-blue-200',
-  },
-  returned: {
-    label: 'Đã trả về',
-    badge: 'bg-slate-50 text-slate-700 border-slate-200',
-  },
-  pending: {
-    label: 'Chờ tiếp nhận',
-    badge: 'bg-amber-50 text-amber-700 border-amber-200',
-  },
+  active: { label: 'Đang nuôi dưỡng', badge: 'bg-green-50 text-green-700 border-green-200' },
+  'Đang chăm sóc': { label: 'Đang nuôi dưỡng', badge: 'bg-green-50 text-green-700 border-green-200' },
+  adopted: { label: 'Đã nhận nuôi', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  'Đã nhận nuôi': { label: 'Đã nhận nuôi', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  returned: { label: 'Đã trả về', badge: 'bg-slate-50 text-slate-700 border-slate-200' },
+  pending: { label: 'Chờ tiếp nhận', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+  'Đã tiếp nhận': { label: 'Đang nuôi dưỡng', badge: 'bg-green-50 text-green-700 border-green-200' },
 };
 
-const fallbackChildren = [
-  {
-    id: 'TRE00001',
-    childCode: 'TRE00001',
-    fullName: 'Nguyễn An',
-    dob: '2020-04-12',
-    gender: 'male',
-    ethnicity: 'Kinh',
-    provinceName: 'Đà Nẵng',
-    wardName: 'Hải Châu',
-    addressDetail: 'Số 12 Nguyễn Văn Linh',
-    healthStatus: 'Sức khỏe ổn định',
-    admissionDate: '2026-03-12',
-    staffName: 'Hoàng Văn Nuôi',
-    status: 'active',
-    documents: [
-      {
-        id: 'GT00001',
-        name: 'Giấy khai sinh',
-        url: '/uploads/giayto/tre00001/giay-khai-sinh.pdf',
-      },
-      {
-        id: 'GT00002',
-        name: 'Sổ hộ khẩu',
-        url: '/uploads/giayto/tre00001/so-ho-khau.pdf',
-      },
-    ],
-  },
-  {
-    id: 'TRE00002',
-    childCode: 'TRE00002',
-    fullName: 'Trần Minh',
-    dob: '2019-08-20',
-    gender: 'male',
-    ethnicity: 'Kinh',
-    provinceName: 'Đà Nẵng',
-    wardName: 'Thanh Khê',
-    addressDetail: 'Phường Thanh Khê Đông',
-    healthStatus: 'Cần theo dõi dinh dưỡng',
-    admissionDate: '2026-03-18',
-    staffName: 'Hoàng Văn Nuôi',
-    status: 'active',
+function mapReceptionToChild(item) {
+  const tre = item.thongTinTre || {};
+  const receptionId = item.id || item.maYeuCauGuiTre;
+  const maTre = item.maTre || null;
+  return {
+    id: maTre || receptionId,
+    childCode: maTre || receptionId,
+    receptionId,
+    fullName: tre.tenTre || '',
+    dob: tre.ngaySinh || null,
+    gender: tre.gioiTinh === 'Nam' ? 'male' : tre.gioiTinh === 'Nữ' ? 'female' : tre.gioiTinh || '',
+    ethnicity: tre.danToc || '',
+    provinceName: '',
+    wardName: '',
+    addressDetail: '',
+    healthStatus: item.ghiChu || '',
+    admissionDate: item.createdAt || item.ngayTao || null,
+    staffName: '',
+    status: item.status || item.trangThaiYC || 'Đã tiếp nhận',
     documents: [],
-  },
-];
+  };
+}
+
 
 function fmtDate(value) {
   if (!value) return '—';
@@ -386,25 +355,23 @@ export default function SentChildInfo() {
       try {
         setLoading(true);
 
-        // Sau này API nên trả về tất cả trẻ đã được tiếp nhận theo người gửi.
-        const res =
-          childApi.getReceivedChildrenBySenderId
-            ? await childApi.getReceivedChildrenBySenderId(user.id)
-            : await childApi.getApprovedChildBySenderId(user.id);
+        const res = await receptionApi.getAll({
+          senderId: user.id,
+          status: 'Đã tiếp nhận',
+          limit: 100,
+        });
 
-        const list = Array.isArray(res) ? res : res ? [res] : [];
+        const raw = Array.isArray(res) ? res : (res?.items || res?.data || []);
+        const list = raw.map(mapReceptionToChild);
 
         if (mounted) {
           setChildrenList(list);
-          setSelectedChildId(list[0]?.id || list[0]?.childCode || '');
+          setSelectedChildId(list[0]?.id || '');
         }
       } catch (error) {
         console.error('Không tải được danh sách trẻ đã gửi:', error);
-
-        // Mock tạm khi chưa có API thật.
         if (mounted) {
-          setChildrenList(fallbackChildren);
-          setSelectedChildId(fallbackChildren[0]?.id || '');
+          setChildrenList([]);
         }
       } finally {
         if (mounted) setLoading(false);

@@ -1,64 +1,46 @@
-# Mock Data Setup for BTXH Frontend
+# API Layer — BTXH Frontend
 
-## Tổng quan
+Tất cả các file trong thư mục này giao tiếp trực tiếp với **Backend ASP.NET Core** tại `http://localhost:8080/api`.
 
-Dự án này đã được cấu hình để sử dụng **mock data** thay vì API thật, giúp phát triển giao diện nhanh chóng mà không cần backend.
+## Cấu trúc
 
-## Dữ liệu mẫu có sẵn
+| File | Endpoint BE | Mô tả |
+|---|---|---|
+| `axiosClient.js` | — | Axios instance dùng chung: tự gắn Bearer token, unwrap `ApiResponse<T>` |
+| `authApi.js` | `/auth/*` | Đăng nhập, đăng ký, lấy profile, đổi mật khẩu, refresh token |
+| `childApi.js` | `/children/*` | CRUD trẻ, lịch sử tiêm chủng, theo dõi sức khoẻ, upload giấy tờ |
+| `adoptionApi.js` | `/adoptions/*` | CRUD yêu cầu nhận nuôi, duyệt/từ chối, upload giấy tờ |
+| `receptionApi.js` | `/receptions/*` | CRUD yêu cầu gửi trẻ, duyệt/từ chối, upload giấy tờ |
+| `adminApi.js` | `/users`, `/stats`, `/lookups`, `/roles` | Quản lý người dùng, thống kê, danh mục tra cứu |
+| `receptionProfileApi.js` | `/reception-profiles/*` | Hồ sơ tiếp nhận |
 
-### 1. Trẻ em (MOCK_CHILDREN)
-- 3 trẻ em mẫu với thông tin đầy đủ
-- Các trạng thái: available, pending
-- Có thông tin sức khỏe, giấy tờ
+## Cách dùng
 
-### 2. Đơn nhận nuôi (MOCK_ADOPTIONS)
-- 3 đơn nhận nuôi với các trạng thái khác nhau
-- pending, approved, missing_info
+```js
+import authApi from './authApi';
+import childApi from './childApi';
 
-### 3. Đơn tiếp nhận (MOCK_RECEPTIONS)
-- 3 đơn gửi trẻ với các trạng thái
-- approved, pending, rejected
+// Đăng nhập — trả { token, user }
+const { token, user } = await authApi.login({ email, password });
 
-### 4. Người dùng (MOCK_USERS)
-- 6 tài khoản với các vai trò khác nhau
+// Lấy danh sách trẻ
+const data = await childApi.getAll({ page: 1, limit: 10 });
+```
 
-### 5. Thống kê (MOCK_STATS)
-- Số liệu tổng quan cho admin dashboard
+## Format response
 
-## Cách sử dụng
+BE luôn trả `{ success, message, data }`. `axiosClient` tự unwrap `data` nên các API module nhận thẳng payload:
 
-1. **Chạy dự án**: `npm run dev`
-2. **Đăng nhập**: Sử dụng tài khoản mẫu ở trên
-3. **Test các tính năng**: Tất cả CRUD operations đều hoạt động với mock data
+```json
+// BE trả:
+{ "success": true, "message": "OK", "data": { "token": "...", "user": { ... } } }
 
-## Chuyển sang API thật
-
-Khi backend sẵn sàng:
-
-1. Cập nhật `src/api/axiosClient.js` với URL thật
-2. Thay thế các API files (`authApi.js`, `childApi.js`, etc.) về axios calls
-3. Xóa file `mockData.js`
-4. Cập nhật các import statements
-
-## Ví dụ API calls với mock data
-
-```javascript
-// Login
-await authApi.login({ email: 'admin@btxh.vn', password: '123456' });
-
-// Get children
-await childApi.getAll({ page: 1, limit: 10 });
-
-// Create adoption request
-await adoptionApi.create({
-  childId: 1,
-  reason: 'Gia đình tôi có điều kiện tốt...'
-});
+// Sau khi axiosClient unwrap, login() nhận:
+{ "token": "...", "user": { ... } }
 ```
 
 ## Lưu ý
 
-- Mock data được lưu trong memory, không persist khi refresh trang
-- Tất cả operations đều simulate delay 300ms để giống API thật
-- Error handling được implement đầy đủ
-- Pagination và filtering được hỗ trợ
+- Phải đảm bảo BE đang chạy ở `http://localhost:8080` trước khi khởi động FE
+- Token JWT lưu tại `localStorage.token` — xoá tự động khi nhận 401
+- Upload file dùng `multipart/form-data` (axiosClient tự điều chỉnh Content-Type)

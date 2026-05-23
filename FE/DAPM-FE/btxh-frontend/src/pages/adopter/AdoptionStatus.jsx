@@ -33,8 +33,8 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
       lookupApi.getGiayToBatBuocNhanNuoi(),
       documentApi.getDocuments({ maYeuCauNhan: requestId })
     ]).then(([resDocTypes, resDocs]) => {
-      if (resDocTypes.success) setDocTypes(resDocTypes.data);
-      if (resDocs.success) setExistingDocs(resDocs.data);
+      setDocTypes(Array.isArray(resDocTypes) ? resDocTypes : (resDocTypes?.items || []));
+      setExistingDocs(Array.isArray(resDocs) ? resDocs : (resDocs?.items || []));
     });
   };
 
@@ -50,14 +50,10 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
       formData.append('file', file);
       formData.append('maLoaiGiayTo', maLoaiGiayTo);
       formData.append('maYeuCauNhan', requestId);
-      const res = await documentApi.upload(formData);
-      if (res.success) {
-        alert('Tải lên thành công!');
-        loadData();
-        if (onUploadSuccess) onUploadSuccess();
-      } else {
-        alert('Lỗi: ' + res.message);
-      }
+      await documentApi.upload(formData);
+      alert('Tải lên thành công!');
+      loadData();
+      if (onUploadSuccess) onUploadSuccess();
     } catch {
       alert('Lỗi tải lên!');
     } finally {
@@ -192,43 +188,6 @@ function mapApiItemToDisplay(item) {
   };
 }
 
-function getResponseItems(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data?.items)) return data.data.items;
-  return [];
-}
-
-function normalizeMeeting(meeting = {}) {
-  const children = meeting.Children ?? meeting.children ?? [];
-
-  return {
-    MaLichGap: meeting.MaLichGap || meeting.maLichGap || '',
-    MaYeuCauNhan: meeting.MaYeuCauNhan || meeting.maYeuCauNhan || '',
-    TenNguoiNhan: meeting.TenNguoiNhan || meeting.tenNguoiNhan || '',
-    MaCanBo: meeting.MaCanBo || meeting.maCanBo || '',
-    TenCanBo: meeting.TenCanBo || meeting.tenCanBo || '',
-    NgayGapMat: meeting.NgayGapMat || meeting.ngayGapMat || null,
-    ThoiGian: meeting.ThoiGian || meeting.thoiGian || null,
-    DiaDiem: meeting.DiaDiem || meeting.diaDiem || '',
-    TrangThai: meeting.TrangThai || meeting.trangThai || '',
-    PhanHoiNguoiNhan:
-      meeting.PhanHoiNguoiNhan || meeting.phanHoiNguoiNhan || '',
-    ThoiGianDeXuatMoi:
-      meeting.ThoiGianDeXuatMoi || meeting.thoiGianDeXuatMoi || null,
-    NgayTao: meeting.NgayTao || meeting.ngayTao || null,
-    NgayCapNhat: meeting.NgayCapNhat || meeting.ngayCapNhat || null,
-    Children: Array.isArray(children)
-      ? children.map((child) => ({
-        MaTre: child.MaTre || child.maTre || '',
-        TenTre: child.TenTre || child.tenTre || '',
-        KetQua: child.KetQua || child.ketQua || '',
-        GhiChuCanBo: child.GhiChuCanBo || child.ghiChuCanBo || '',
-      }))
-      : [],
-  };
-}
-
 export default function AdoptionStatus() {
   const { user } = useAuth();
 
@@ -251,11 +210,7 @@ export default function AdoptionStatus() {
           limit: 20,
         });
 
-        if (res.success) {
-          setApiItems(res.data?.items || []);
-        } else {
-          setApiItems([]);
-        }
+        setApiItems(res?.items || []);
       } catch (error) {
         console.error('Lỗi tải danh sách đơn nhận nuôi:', error);
         setApiItems([]);
@@ -282,105 +237,6 @@ export default function AdoptionStatus() {
     mergedItems.find((item) => String(item.id) === String(selectedId)) ||
     mergedItems[0] ||
     null;
-
-  const [meeting, setMeeting] = useState(null);
-  const [meetingLoading, setMeetingLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [showRescheduleForm, setShowRescheduleForm] = useState(false);
-  const [proposedDate, setProposedDate] = useState('');
-  const [proposedTime, setProposedTime] = useState('');
-  const [adopterFeedback, setAdopterFeedback] = useState('');
-
-  useEffect(() => {
-    if (!selectedRequest?.id) {
-      setMeeting(null);
-      return;
-    }
-
-    let active = true;
-    const loadMeeting = async () => {
-      try {
-        setMeetingLoading(true);
-        const res = await adoptionApi.getMeetings({ maYeuCauNhan: selectedRequest.id, limit: 1 });
-        if (!active) return;
-        const items = getResponseItems(res);
-        if (items && items.length > 0) {
-          setMeeting(normalizeMeeting(items[0]));
-        } else {
-          setMeeting(null);
-        }
-      } catch (error) {
-        console.error('Lỗi tải lịch gặp:', error);
-        if (active) setMeeting(null);
-      } finally {
-        if (active) setMeetingLoading(false);
-      }
-    };
-
-    loadMeeting();
-    setShowRescheduleForm(false);
-    setProposedDate('');
-    setProposedTime('');
-    setAdopterFeedback('');
-
-    return () => {
-      active = false;
-    };
-  }, [selectedRequest?.id]);
-
-  async function handleConfirmMeeting() {
-    if (!meeting) return;
-    if (!window.confirm('Bạn có chắc chắn muốn xác nhận lịch hẹn gặp mặt này?')) return;
-
-    setActionLoading(true);
-    try {
-      const res = await adoptionApi.updateMeeting(meeting.MaLichGap, {
-        TrangThai: 'Đã xác nhận',
-      });
-      if (res.success) {
-        alert('Xác nhận lịch gặp mặt thành công!');
-        setMeeting(normalizeMeeting(res.data));
-      } else {
-        alert('Xác nhận lịch thất bại: ' + res.message);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Đã xảy ra lỗi khi xác nhận lịch gặp.');
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function handleRequestReschedule(e) {
-    e.preventDefault();
-    if (!meeting) return;
-    if (!proposedDate || !proposedTime) {
-      alert('Vui lòng chọn ngày và giờ đề xuất mới.');
-      return;
-    }
-
-    setActionLoading(true);
-    const newProposedTime = new Date(`${proposedDate}T${proposedTime}`);
-    try {
-      const res = await adoptionApi.updateMeeting(meeting.MaLichGap, {
-        TrangThai: 'Yêu cầu đổi lịch',
-        ThoiGianDeXuatMoi: newProposedTime,
-        PhanHoiNguoiNhan: adopterFeedback,
-      });
-      if (res.success) {
-        alert('Đã gửi yêu cầu đổi lịch gặp mặt thành công.');
-        setMeeting(normalizeMeeting(res.data));
-        setShowRescheduleForm(false);
-      } else {
-        alert('Gửi yêu cầu đổi lịch thất bại: ' + res.message);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Đã xảy ra lỗi khi gửi yêu cầu đổi lịch.');
-    } finally {
-      setActionLoading(false);
-    }
-  }
   const canUpdate =
     selectedRequest?.status === STATUS.MISSING_INFO ||
     selectedRequest?.status === 'missing_info' ||
@@ -572,158 +428,6 @@ export default function AdoptionStatus() {
                   window.location.reload();
                 }}
               />
-
-              {meetingLoading ? (
-                <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-[#FAFCFF] p-6 text-center">
-                  <Loader2 className="animate-spin mx-auto text-[#0D47A1] mb-2" size={24} />
-                  <p className="text-sm text-slate-400">Đang tải thông tin lịch gặp mặt...</p>
-                </div>
-              ) : meeting ? (
-                <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-[#FCFEFF] p-6 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-[#E7EEF9] pb-4">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="text-[#0D47A1]" size={20} />
-                      <h4 className="text-base font-bold !text-[#0D47A1]">Lịch hẹn gặp mặt</h4>
-                    </div>
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
-                      meeting.TrangThai === 'Chờ xác nhận' ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                      meeting.TrangThai === 'Đã xác nhận' ? 'bg-green-50 border-green-200 text-green-700' :
-                      meeting.TrangThai === 'Yêu cầu đổi lịch' ? 'bg-red-50 border-red-200 text-red-700' :
-                      meeting.TrangThai === 'Đã gặp mặt' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                      'bg-slate-50 border-slate-200 text-slate-700'
-                    }`}>
-                      {meeting.TrangThai}
-                    </span>
-                  </div>
-
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl bg-[#F6F8FC] p-4">
-                      <p className="text-[10px] font-bold text-[#8FA0B8] uppercase">Thời gian gặp</p>
-                      <p className="font-bold text-[#26364A] text-sm mt-1">
-                        {meeting.ThoiGian ? formatDate(meeting.ThoiGian) : 'Chưa xác định'}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-[#F6F8FC] p-4">
-                      <p className="text-[10px] font-bold text-[#8FA0B8] uppercase">Địa điểm</p>
-                      <div className="flex items-start gap-1 mt-1">
-                        <MapPin className="text-[#8FA0B8] shrink-0 mt-0.5" size={14} />
-                        <p className="font-bold text-[#26364A] text-sm leading-5">
-                          {meeting.DiaDiem || 'Chưa xác định'}
-                        </p>
-                      </div>
-                    </div>
-                    {meeting.TenCanBo && (
-                      <div className="rounded-xl bg-[#F6F8FC] p-4">
-                        <p className="text-[10px] font-bold text-[#8FA0B8] uppercase">Cán bộ phụ trách</p>
-                        <p className="font-bold text-[#26364A] text-sm mt-1">{meeting.TenCanBo}</p>
-                      </div>
-                    )}
-                    <div className="rounded-xl bg-[#F6F8FC] p-4">
-                      <p className="text-[10px] font-bold text-[#8FA0B8] uppercase">Mã lịch hẹn</p>
-                      <p className="font-bold text-[#26364A] text-sm mt-1">{meeting.MaLichGap}</p>
-                    </div>
-                  </div>
-
-                  {meeting.TrangThai === 'Chờ xác nhận' && !showRescheduleForm && (
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={handleConfirmMeeting}
-                        disabled={actionLoading}
-                        className="flex-1 rounded-xl bg-[#27AE60] hover:bg-[#219653] py-2.5 text-xs font-bold text-white transition disabled:opacity-50"
-                      >
-                        {actionLoading ? 'Đang xử lý...' : 'Xác nhận tham gia'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowRescheduleForm(true)}
-                        disabled={actionLoading}
-                        className="flex-1 rounded-xl border border-[#CFE0F5] bg-white hover:bg-slate-50 py-2.5 text-xs font-bold text-[#2F80ED] transition disabled:opacity-50"
-                      >
-                        Yêu cầu đổi lịch
-                      </button>
-                    </div>
-                  )}
-
-                  {showRescheduleForm && (
-                    <form onSubmit={handleRequestReschedule} className="mt-6 border-t border-[#E7EEF9] pt-5 space-y-4">
-                      <p className="text-xs font-bold text-[#0D47A1] uppercase tracking-wider">Đề xuất lịch gặp mới</p>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase text-[#8FA0B8] mb-1">Ngày đề xuất</label>
-                          <input
-                            type="date"
-                            required
-                            value={proposedDate}
-                            onChange={(e) => setProposedDate(e.target.value)}
-                            className="w-full rounded-xl border border-[#D7E5F7] px-3 py-2 text-xs font-medium outline-none focus:border-[#0D47A1]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase text-[#8FA0B8] mb-1">Giờ đề xuất</label>
-                          <input
-                            type="time"
-                            required
-                            value={proposedTime}
-                            onChange={(e) => setProposedTime(e.target.value)}
-                            className="w-full rounded-xl border border-[#D7E5F7] px-3 py-2 text-xs font-medium outline-none focus:border-[#0D47A1]"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#8FA0B8] mb-1">Lý do đổi lịch / Phản hồi</label>
-                        <textarea
-                          rows={2}
-                          required
-                          value={adopterFeedback}
-                          onChange={(e) => setAdopterFeedback(e.target.value)}
-                          className="w-full rounded-xl border border-[#D7E5F7] px-3 py-2 text-xs font-medium outline-none focus:border-[#0D47A1]"
-                          placeholder="Vui lòng nhập lý do hoặc đề xuất cụ thể..."
-                        />
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          type="submit"
-                          disabled={actionLoading}
-                          className="flex-1 rounded-xl bg-[#2F80ED] hover:bg-[#1f66c9] py-2.5 text-xs font-bold text-white transition disabled:opacity-50"
-                        >
-                          {actionLoading ? 'Đang gửi...' : 'Gửi yêu cầu đổi lịch'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowRescheduleForm(false)}
-                          className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-500 transition hover:bg-slate-50"
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {meeting.TrangThai === 'Yêu cầu đổi lịch' && (
-                    <div className="mt-5 rounded-xl bg-red-50 border border-red-100 p-4 space-y-2 text-xs text-red-800">
-                      <p className="font-bold">Đã gửi yêu cầu thay đổi lịch gặp:</p>
-                      <p className="italic">"{meeting.PhanHoiNguoiNhan}"</p>
-                      {meeting.ThoiGianDeXuatMoi && (
-                        <p className="font-bold">Đề xuất: {formatDate(meeting.ThoiGianDeXuatMoi)}</p>
-                      )}
-                      <p className="text-[10px] text-red-600 mt-2 font-semibold">Đang chờ cán bộ xác nhận và cập nhật lịch mới.</p>
-                    </div>
-                  )}
-
-                  {meeting.TrangThai === 'Đã xác nhận' && (
-                    <div className="mt-5 rounded-xl bg-green-50 border border-green-100 p-4 text-xs text-green-800 text-center font-semibold">
-                      Lịch hẹn gặp đã được xác nhận. Vui lòng có mặt đúng giờ tại địa điểm đã hẹn.
-                    </div>
-                  )}
-
-                  {meeting.TrangThai === 'Đã gặp mặt' && (
-                    <div className="mt-5 rounded-xl bg-blue-50 border border-blue-100 p-4 text-xs text-[#0D47A1] text-center font-semibold">
-                      Đã hoàn thành cuộc gặp mặt. Trung tâm đang tiến hành đánh giá độ hòa hợp và lập hồ sơ.
-                    </div>
-                  )}
-                </div>
-              ) : null}
             </div>
           )}
         </div>

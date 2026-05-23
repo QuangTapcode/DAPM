@@ -32,7 +32,11 @@ public class DashboardController : ControllerBase
             TotalSendRequests = await _db.YEUCAUGUITRE.CountAsync(),
             TotalAdoptionRequests = await _db.YEUCAUNHANNUOI.CountAsync(),
             TotalReceptionProfiles = await _db.HOSOTIEPNHANTRE.CountAsync(),
-            TotalAdoptionProfiles = await _db.HOSONHANNUOI.CountAsync()
+            TotalAdoptionProfiles = await _db.HOSONHANNUOI.CountAsync(),
+            PendingReceptionProfiles = await _db.HOSOTIEPNHANTRE.CountAsync(h =>
+                h.TrangThai == "Chờ duyệt" || h.TrangThai == "Đang lập" || h.TrangThai == "Đang xử lý"),
+            PendingAdoptionProfiles = await _db.HOSONHANNUOI.CountAsync(h =>
+                h.TrangThai == "Chờ duyệt" || h.TrangThai == "Đang lập" || h.TrangThai == "Đang xử lý")
         };
         return Ok(ApiResponse<DashboardStatsDto>.Ok(s));
     }

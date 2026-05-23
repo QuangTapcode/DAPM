@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, HeartPulse, Pencil, Search } from 'lucide-react';
 import { formatDate } from '../../utils/formatDate';
+import childApi from '../../api/childApi';
 
-const STORAGE_PROFILE_KEY = 'mock_reception_profiles';
 
 const CHILD_STATUS = {
   DANG_CHAM_SOC: 'Đang chăm sóc',
@@ -60,63 +60,6 @@ const HEALTH_META = {
   },
 };
 
-const DEMO_CHILDREN = [
-  {
-    MaTre: 'TRE00015',
-    HoTen: 'Nguyễn An',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2019-02-14',
-    DanToc: 'Kinh',
-    DiaChiCuThe: '20 Lê Duẩn',
-    TenXaPhuong: 'Thanh Khê',
-    TenTinhTP: 'Đà Nẵng',
-    TinhTrangSucKhoe: 'Sức khỏe ổn định.',
-    SucKhoeGanNhat: 'Khỏe mạnh',
-    TrangThai: 'Đang chăm sóc',
-    NgayTiepNhan: '2026-03-02',
-    GhiChu: 'Đã tiếp nhận chính thức vào trung tâm.',
-  },
-  {
-    MaTre: 'TRE00016',
-    HoTen: 'Trần Văn Đức',
-    GioiTinh: 'Nam',
-    NgaySinh: '2019-08-20',
-    DanToc: 'Kinh',
-    DiaChiCuThe: 'Chưa cập nhật',
-    TenXaPhuong: '',
-    TenTinhTP: 'Đà Nẵng',
-    TinhTrangSucKhoe: 'Khỏe mạnh.',
-    SucKhoeGanNhat: 'Tốt',
-    TrangThai: 'Đang chăm sóc',
-    NgayTiepNhan: '2026-04-05',
-    GhiChu: '',
-  },
-  {
-    MaTre: 'TRE00017',
-    HoTen: 'Lê Thị Mai',
-    GioiTinh: 'Nữ',
-    NgaySinh: '2021-12-10',
-    DanToc: 'Kinh',
-    DiaChiCuThe: 'Chưa cập nhật',
-    TenXaPhuong: '',
-    TenTinhTP: 'Đà Nẵng',
-    TinhTrangSucKhoe: 'Cần theo dõi dinh dưỡng.',
-    SucKhoeGanNhat: 'Cần theo dõi',
-    TrangThai: 'Chờ nhận nuôi',
-    NgayTiepNhan: '2026-04-17',
-    GhiChu: 'Đang theo dõi thêm sức khỏe.',
-  },
-];
-
-function safeReadProfiles() {
-  try {
-    const raw = localStorage.getItem(STORAGE_PROFILE_KEY);
-    const parsed = JSON.parse(raw || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function normalizeChildCode(value) {
   if (!value) return '';
@@ -206,62 +149,22 @@ function HealthPill({ status }) {
 
 function normalizeChild(item) {
   return {
-    MaTre: normalizeChildCode(item.MaTre || item.id || item.childId),
-    HoTen: item.HoTen || item.hoTen || item.TenTre || item.childName || 'Chưa cập nhật',
-    GioiTinh: item.GioiTinh || item.gioiTinh || item.gender || '',
-    NgaySinh: item.NgaySinh || item.ngaySinh || item.birthDate || item.childBirthDate || '',
-    DanToc: item.DanToc || item.danToc || item.ethnicity || '',
-    DiaChiCuThe: item.DiaChiCuThe || item.addressDetail || item.childAddressDetail || '',
-    TenXaPhuong: item.TenXaPhuong || item.wardName || item.childWardName || '',
-    TenTinhTP: item.TenTinhTP || item.provinceName || item.childProvinceName || '',
-    TinhTrangSucKhoe:
-      item.TinhTrangSucKhoe ||
-      item.tinhTrangSucKhoe ||
-      item.healthStatus ||
-      item.childHealthStatus ||
-      '',
-    SucKhoeGanNhat:
-      item.SucKhoeGanNhat ||
-      item.latestHealthStatus ||
-      item.healthSummary ||
-      HEALTH_STATUS.CAN_THEO_DOI,
-    TrangThai: item.TrangThai || item.status || CHILD_STATUS.DANG_CHAM_SOC,
-    NgayTiepNhan: item.NgayTiepNhan || item.createdAt || item.receivedAt || '',
-    GhiChu: item.GhiChu || item.note || '',
+    MaTre: normalizeChildCode(item.maTre || item.MaTre || item.id || item.childId),
+    HoTen: item.hoTen || item.HoTen || item.tenTre || item.TenTre || item.childName || 'Chưa cập nhật',
+    GioiTinh: item.gioiTinh || item.GioiTinh || item.gender || '',
+    NgaySinh: item.ngaySinh || item.NgaySinh || item.birthDate || '',
+    DanToc: item.danToc || item.DanToc || item.ethnicity || '',
+    DiaChiCuThe: item.diaChiCuThe || item.DiaChiCuThe || item.addressDetail || '',
+    TenXaPhuong: item.tenXaPhuong || item.TenXaPhuong || item.wardName || '',
+    TenTinhTP: item.tenTinhTP || item.TenTinhTP || item.provinceName || '',
+    TinhTrangSucKhoe: item.tinhTrangSucKhoe || item.TinhTrangSucKhoe || item.healthStatus || '',
+    SucKhoeGanNhat: item.sucKhoeGanNhat || item.SucKhoeGanNhat || item.latestHealthStatus || HEALTH_STATUS.CAN_THEO_DOI,
+    TrangThai: item.trangThai || item.TrangThai || item.status || CHILD_STATUS.DANG_CHAM_SOC,
+    NgayTiepNhan: item.ngayTiepNhan || item.NgayTiepNhan || item.createdAt || '',
+    GhiChu: item.ghiChu || item.GhiChu || item.note || '',
   };
 }
 
-function getChildrenFromApprovedProfiles() {
-  const profiles = safeReadProfiles();
-
-  return profiles
-    .filter((profile) => profile.TrangThai === 'Đã duyệt' && profile.MaTre)
-    .map((profile) => {
-      const childSource = profile.tre || profile.thongTinTreTam || {};
-
-      return normalizeChild({
-        MaTre: profile.MaTre,
-        HoTen:
-          profile.TenTre ||
-          profile.TenTreTam ||
-          childSource.HoTen ||
-          childSource.hoTen ||
-          profile.childName,
-        GioiTinh: childSource.GioiTinh || childSource.gioiTinh,
-        NgaySinh: childSource.NgaySinh || childSource.ngaySinh,
-        DanToc: childSource.DanToc || childSource.danToc,
-        DiaChiCuThe: childSource.DiaChiCuThe,
-        TenXaPhuong: childSource.TenXaPhuong,
-        TenTinhTP: childSource.TenTinhTP,
-        TinhTrangSucKhoe:
-          childSource.TinhTrangSucKhoe || childSource.tinhTrangSucKhoe,
-        SucKhoeGanNhat: childSource.SucKhoeGanNhat || HEALTH_STATUS.CAN_THEO_DOI,
-        TrangThai: childSource.TrangThai || CHILD_STATUS.DANG_CHAM_SOC,
-        NgayTiepNhan: profile.NgayDuyet || profile.NgayTiepNhan,
-        GhiChu: 'Được tạo từ hồ sơ tiếp nhận đã duyệt.',
-      });
-    });
-}
 
 export default function ChildList() {
   const navigate = useNavigate();
@@ -269,23 +172,27 @@ export default function ChildList() {
   const [keyword, setKeyword] = useState('');
   const [tab, setTab] = useState('');
   const [healthFilter, setHealthFilter] = useState('');
+  const [rawChildren, setRawChildren] = useState([]);
+
+  useEffect(() => {
+    childApi.getAll({ limit: 500 })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setRawChildren(items);
+      })
+      .catch(() => setRawChildren([]));
+  }, []);
 
   const children = useMemo(() => {
-    const approvedChildren = getChildrenFromApprovedProfiles();
-    const merged = [...approvedChildren, ...DEMO_CHILDREN];
-
     const uniqueMap = new Map();
-
-    merged.forEach((item) => {
+    rawChildren.forEach((item) => {
       const child = normalizeChild(item);
-
       if (child.MaTre && !uniqueMap.has(child.MaTre)) {
         uniqueMap.set(child.MaTre, child);
       }
     });
-
     return Array.from(uniqueMap.values());
-  }, []);
+  }, [rawChildren]);
 
   const filteredChildren = useMemo(() => {
     const kw = keyword.trim().toLowerCase();

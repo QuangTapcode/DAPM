@@ -14,18 +14,23 @@ import {
 } from 'recharts';
 import { useFetch } from '../../hooks/useFetch';
 import adminApi from '../../api/adminApi';
-import receptionApi from '../../api/receptionApi';
-import adoptionApi from '../../api/adoptionApi';
-import { REQUEST_STATUS } from '../../utils/constants';
+import receptionProfileApi from '../../api/receptionProfileApi';
+import adoptionProfileApi from '../../api/adoptionProfileApi';
 import { formatDate } from '../../utils/formatDate';
+import {
+  compareProfilesByDateDesc,
+  getItems,
+  isPendingProfile,
+  normalizeManagerProfile,
+} from './managerProfileUtils';
 
 const FALLBACK_MONTHLY_DATA = [
-  { month: 'T1', reception: 5, adoption: 2 },
-  { month: 'T2', reception: 7, adoption: 3 },
-  { month: 'T3', reception: 6, adoption: 4 },
-  { month: 'T4', reception: 9, adoption: 3 },
-  { month: 'T5', reception: 8, adoption: 5 },
-  { month: 'T6', reception: 11, adoption: 6 },
+  { month: 'T1', reception: 0, adoption: 0 },
+  { month: 'T2', reception: 0, adoption: 0 },
+  { month: 'T3', reception: 0, adoption: 0 },
+  { month: 'T4', reception: 0, adoption: 0 },
+  { month: 'T5', reception: 0, adoption: 0 },
+  { month: 'T6', reception: 0, adoption: 0 },
 ];
 
 function MailIcon() {
@@ -98,27 +103,19 @@ function StatCard({ title, value, note, chip, icon, tone = 'blue', featured = fa
       deco: 'bg-violet-50',
     },
   };
-
-  const c = toneMap[tone];
+  const colors = toneMap[tone];
 
   return (
-    <div className={`relative overflow-hidden rounded-[26px] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.06)] ${c.wrap}`}>
-      <div className={`absolute -right-8 -top-8 h-28 w-28 rounded-full ${c.deco}`} />
+    <div className={`relative overflow-hidden rounded-[26px] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.06)] ${colors.wrap}`}>
+      <div className={`absolute -right-8 -top-8 h-28 w-28 rounded-full ${colors.deco}`} />
       <div className="relative">
         <div className="mb-8 flex items-start justify-between gap-3">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${c.icon}`}>
-            {icon}
-          </div>
-          {chip && (
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${c.chip}`}>
-              {chip}
-            </span>
-          )}
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colors.icon}`}>{icon}</div>
+          {chip && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${colors.chip}`}>{chip}</span>}
         </div>
-
         <p className="text-sm font-medium opacity-90">{title}</p>
-        <div className="mt-2 text-5xl font-bold tracking-tight">{value}</div>
-        <p className={`mt-4 text-sm ${c.note}`}>{note}</p>
+        <div className="mt-2 text-5xl font-bold tracking-tight">{value ?? 0}</div>
+        <p className={`mt-4 text-sm ${colors.note}`}>{note}</p>
       </div>
     </div>
   );
@@ -129,29 +126,13 @@ function ChartCard({ title, subtitle, action, children }) {
     <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-[30px] font-bold leading-tight text-slate-800 max-sm:text-xl">{title}</h2>
+          <h2 className="text-[28px] font-bold leading-tight text-slate-800 max-sm:text-xl">{title}</h2>
           {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
         </div>
         {action && (
-          <div className="flex gap-2">
-            {Array.isArray(action)
-              ? action.map((item) => (
-                <span
-                  key={item.label}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold ${item.active
-                    ? 'bg-[#1565A9] text-white'
-                    : 'bg-slate-100 text-slate-500'
-                    }`}
-                >
-                  {item.label}
-                </span>
-              ))
-              : (
-                <span className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-500">
-                  {action}
-                </span>
-              )}
-          </div>
+          <span className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-500">
+            {action}
+          </span>
         )}
       </div>
       {children}
@@ -161,7 +142,6 @@ function ChartCard({ title, subtitle, action, children }) {
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
-
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
       <p className="mb-2 text-sm font-semibold text-slate-700">{label}</p>
@@ -177,12 +157,6 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-function getItems(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-}
-
 function getInitials(name = 'Người dùng') {
   return (
     name
@@ -190,134 +164,95 @@ function getInitials(name = 'Người dùng') {
       .split(/\s+/)
       .filter(Boolean)
       .slice(-2)
-      .map((item) => item[0])
+      .map((word) => word[0])
       .join('')
       .toUpperCase() || 'ND'
   );
-}
-
-function isWithinLastDays(dateValue, days = 30) {
-  if (!dateValue) return false;
-  const time = new Date(dateValue).getTime();
-  if (Number.isNaN(time)) return false;
-  const now = Date.now();
-  return now - time <= days * 24 * 60 * 60 * 1000;
-}
-
-function getStatusValue(status) {
-  return typeof status === 'string' ? status.toLowerCase() : status;
 }
 
 function LatestRequestItem({ item }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl px-1 py-2">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-[#1565A9]">
-        {getInitials(item.name)}
+        {getInitials(item.personName || item.childName || 'Hồ sơ')}
       </div>
-
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-slate-800">{item.name}</div>
-        <div className="mt-0.5 text-xs text-slate-500">
-          Đã nộp: {formatDate(item.createdAt)}
+        <div className="truncate text-sm font-semibold text-slate-800">
+          {item.personName || item.childName || 'Hồ sơ chờ duyệt'}
         </div>
+        <div className="mt-0.5 text-xs text-slate-500">Ngày lập: {formatDate(item.createdAt)}</div>
       </div>
-
-      <span
-        className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${item.type === 'adoption'
-          ? 'bg-emerald-50 text-emerald-700'
-          : 'bg-blue-50 text-[#1565A9]'
-          }`}
-      >
+      <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${item.type === 'adoption' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-[#1565A9]'}`}>
         {item.type === 'adoption' ? 'Nhận nuôi' : 'Gửi trẻ'}
       </span>
     </div>
   );
 }
 
+function buildMonthlyChart(monthlyRaw) {
+  if (!monthlyRaw) return FALLBACK_MONTHLY_DATA;
+  const { send = [], adopt = [] } = monthlyRaw;
+  const map = {};
+
+  send.forEach(({ month, count }) => {
+    const key = `T${month}`;
+    map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
+    map[key].reception += count;
+  });
+  adopt.forEach(({ month, count }) => {
+    const key = `T${month}`;
+    map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
+    map[key].adoption += count;
+  });
+
+  const sorted = Object.values(map).sort((a, b) => Number(a.month.slice(1)) - Number(b.month.slice(1)));
+  return sorted.length ? sorted : FALLBACK_MONTHLY_DATA;
+}
+
 export default function ManagerDashboard() {
   const navigate = useNavigate();
 
   const { data: statsData } = useFetch(() => adminApi.getStats());
-  const { data: receptionData } = useFetch(() => receptionApi.getAll());
-  const { data: adoptionData } = useFetch(() => adoptionApi.getAll());
+  const { data: monthlyData } = useFetch(() => adminApi.getRequestsByMonth());
+  const { data: recData } = useFetch(() => receptionProfileApi.getAll({ page: 1, limit: 200 }));
+  const { data: adpData } = useFetch(() => adoptionProfileApi.getAll({ page: 1, limit: 200 }));
 
-  const receptions = useMemo(() => getItems(receptionData), [receptionData]);
-  const adoptions = useMemo(() => getItems(adoptionData), [adoptionData]);
+  const receptions = useMemo(
+    () => getItems(recData).map((item) => normalizeManagerProfile(item, 'reception')),
+    [recData]
+  );
+  const adoptions = useMemo(
+    () => getItems(adpData).map((item) => normalizeManagerProfile(item, 'adoption')),
+    [adpData]
+  );
+
+  const pendingReceptions = useMemo(() => receptions.filter(isPendingProfile), [receptions]);
+  const pendingAdoptions = useMemo(() => adoptions.filter(isPendingProfile), [adoptions]);
 
   const dashboard = useMemo(() => {
-    const pendingReceptionCount = receptions.filter(
-      (item) => getStatusValue(item.status) === REQUEST_STATUS.PENDING
-    ).length;
+    const stats = statsData ?? {};
+    const pendingRec = stats.pendingReceptionProfiles ?? pendingReceptions.length;
+    const pendingAdp = stats.pendingAdoptionProfiles ?? pendingAdoptions.length;
+    const approvedRec = receptions.filter((item) => item.status === 'Đã duyệt').length;
+    const approvedAdp = adoptions.filter((item) => item.status === 'Đã duyệt').length;
 
-    const pendingAdoptionCount = adoptions.filter(
-      (item) => getStatusValue(item.status) === REQUEST_STATUS.PENDING
-    ).length;
-
-    const lastMonthReceptionCount = receptions.filter((item) =>
-      isWithinLastDays(item.createdAt, 30)
-    ).length;
-
-    const lastMonthAdoptionCount = adoptions.filter((item) => {
-      const compareDate = item.approvedAt || item.updatedAt || item.createdAt;
-      return isWithinLastDays(compareDate, 30);
-    }).length;
-
-    const recentRequests = [
-      ...receptions.map((item) => ({
-        id: `reception-${item.id}`,
-        name: item.senderName || item.parentName || item.fullName || 'Người yêu cầu',
-        createdAt: item.createdAt,
-        type: 'reception',
-      })),
-      ...adoptions.map((item) => ({
-        id: `adoption-${item.id}`,
-        name: item.adopterName || item.applicantName || item.fullName || 'Người yêu cầu',
-        createdAt: item.createdAt,
-        type: 'adoption',
-      })),
-    ]
-      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    const latestRequests = [...pendingReceptions, ...pendingAdoptions]
+      .sort(compareProfilesByDateDesc)
       .slice(0, 5);
 
-    const statusChartData = [
-      {
-        name: 'Gửi trẻ',
-        pending: pendingReceptionCount,
-        approved: receptions.filter(
-          (item) => getStatusValue(item.status) === REQUEST_STATUS.APPROVED
-        ).length,
-      },
-      {
-        name: 'Nhận nuôi',
-        pending: pendingAdoptionCount,
-        approved: adoptions.filter(
-          (item) => getStatusValue(item.status) === REQUEST_STATUS.APPROVED
-        ).length,
-      },
-    ];
-
     return {
-      pendingApprovalCount: pendingReceptionCount + pendingAdoptionCount,
-      currentChildren:
-        statsData?.currentChildren ??
-        statsData?.childrenInCenter ??
-        statsData?.yearlyChildren ??
-        0,
-      lastMonthAdoptions:
-        statsData?.lastMonthAdoptions ?? lastMonthAdoptionCount,
-      lastMonthReceptions:
-        statsData?.lastMonthReceptions ?? lastMonthReceptionCount,
-      monthlyTrend:
-        statsData?.monthlyData ??
-        statsData?.monthlyTrend ??
-        FALLBACK_MONTHLY_DATA,
-      latestRequests:
-        statsData?.latestRequests?.length > 0
-          ? statsData.latestRequests
-          : recentRequests,
-      statusChartData,
+      pendingApprovalCount: pendingRec + pendingAdp,
+      childrenInCare: stats.childrenInCare ?? 0,
+      childrenAdopted: stats.childrenAdopted ?? 0,
+      childrenWaiting: stats.childrenWaitingAdoption ?? 0,
+      monthlyTrend: buildMonthlyChart(monthlyData),
+      latestRequests,
+      statusChartData: [
+        { name: 'Gửi trẻ', pending: pendingRec, approved: approvedRec },
+        { name: 'Nhận nuôi', pending: pendingAdp, approved: approvedAdp },
+      ],
     };
-  }, [statsData, receptions, adoptions]);
+  }, [adoptions, monthlyData, pendingAdoptions, pendingReceptions, receptions, statsData]);
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -334,34 +269,32 @@ export default function ManagerDashboard() {
             icon={<MailIcon />}
             title="Hồ sơ cần phê duyệt"
             value={dashboard.pendingApprovalCount}
-            note="Các hồ sơ đang chờ trưởng phòng xem xét"
+            note="Hồ sơ đang chờ trưởng phòng xem xét"
             chip="Ưu tiên xử lý"
             tone="blue"
+            featured
           />
-
           <StatCard
             icon={<HomeIcon />}
-            title="Số trẻ hiện tại của trung tâm"
-            value={dashboard.currentChildren}
-            note="Tổng số trẻ đang được quản lý tại thời điểm hiện tại"
-            chip="Cập nhật mới"
+            title="Trẻ đang chăm sóc"
+            value={dashboard.childrenInCare}
+            note="Tổng số trẻ đang được quản lý tại trung tâm"
+            chip="Hiện tại"
             tone="peach"
           />
-
           <StatCard
             icon={<CheckIcon />}
-            title="Nhận nuôi 1 tháng gần nhất"
-            value={dashboard.lastMonthAdoptions}
-            note="Số hồ sơ nhận nuôi hoàn tất trong 30 ngày gần đây"
-            tone="green"
+            title="Trẻ chờ nhận nuôi"
+            value={dashboard.childrenWaiting}
+            note="Sẵn sàng ghép hồ sơ nhận nuôi"
+            tone="violet"
           />
-
           <StatCard
             icon={<InboxIcon />}
-            title="Tiếp nhận 1 tháng gần nhất"
-            value={dashboard.lastMonthReceptions}
-            note="Số trẻ được tiếp nhận trong 30 ngày gần đây"
-            tone="blue"
+            title="Trẻ đã nhận nuôi"
+            value={dashboard.childrenAdopted}
+            note="Tổng số trẻ đã được nhận nuôi thành công"
+            tone="green"
           />
         </div>
 
@@ -369,62 +302,29 @@ export default function ManagerDashboard() {
           <div className="space-y-6">
             <ChartCard
               title="Xu hướng hồ sơ"
-              subtitle="Dữ liệu tổng hợp theo từng tháng"
-              action={[
-                { label: '6 tháng', active: false },
-                { label: '1 năm', active: true },
-              ]}
+              subtitle="Dữ liệu tổng hợp theo từng tháng trong năm"
+              action="Năm hiện tại"
             >
               <div className="h-[360px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dashboard.monthlyTrend}>
                     <defs>
-                      <linearGradient id="receptionGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="managerRecGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#9BC7EC" stopOpacity={0.42} />
                         <stop offset="95%" stopColor="#9BC7EC" stopOpacity={0.04} />
                       </linearGradient>
-                      <linearGradient id="adoptionGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="managerAdpGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#1565A9" stopOpacity={0.24} />
                         <stop offset="95%" stopColor="#1565A9" stopOpacity={0.03} />
                       </linearGradient>
                     </defs>
-
                     <CartesianGrid vertical={false} stroke="#E7EDF4" strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="month"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#94A3B8' }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#94A3B8' }}
-                    />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      iconType="circle"
-                      wrapperStyle={{ paddingTop: 16 }}
-                    />
-
-                    <Area
-                      type="monotone"
-                      dataKey="reception"
-                      name="Tiếp nhận"
-                      stroke="#8CB9DF"
-                      strokeWidth={4}
-                      fill="url(#receptionGradient)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="adoption"
-                      name="Nhận nuôi"
-                      stroke="#1565A9"
-                      strokeWidth={4}
-                      fill="url(#adoptionGradient)"
-                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ paddingTop: 16 }} />
+                    <Area type="monotone" dataKey="reception" name="Tiếp nhận" stroke="#8CB9DF" strokeWidth={4} fill="url(#managerRecGrad)" />
+                    <Area type="monotone" dataKey="adoption" name="Nhận nuôi" stroke="#1565A9" strokeWidth={4} fill="url(#managerAdpGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -432,71 +332,39 @@ export default function ManagerDashboard() {
 
             <ChartCard
               title="Tình trạng xử lý hồ sơ"
-              subtitle="So sánh hồ sơ chờ duyệt và hồ sơ đã duyệt theo từng nhóm"
+              subtitle="So sánh hồ sơ chờ duyệt và đã duyệt theo từng nhóm"
               action="Tổng quan"
             >
               <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dashboard.statusChartData} barGap={12}>
                     <CartesianGrid vertical={false} stroke="#E7EDF4" strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#64748B' }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#64748B' }}
-                    />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      iconType="circle"
-                      wrapperStyle={{ paddingTop: 16 }}
-                    />
-                    <Bar
-                      dataKey="pending"
-                      name="Chờ duyệt"
-                      fill="#CFE1F3"
-                      radius={[10, 10, 0, 0]}
-                      maxBarSize={34}
-                    />
-                    <Bar
-                      dataKey="approved"
-                      name="Đã duyệt"
-                      fill="#2D86D6"
-                      radius={[10, 10, 0, 0]}
-                      maxBarSize={34}
-                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ paddingTop: 16 }} />
+                    <Bar dataKey="pending" name="Chờ duyệt" fill="#CFE1F3" radius={[10, 10, 0, 0]} maxBarSize={34} />
+                    <Bar dataKey="approved" name="Đã duyệt" fill="#2D86D6" radius={[10, 10, 0, 0]} maxBarSize={34} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </ChartCard>
           </div>
 
-          <div className="flex h-full flex-col justify-between rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+          <div className="flex h-full flex-col rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-[30px] font-bold leading-tight text-slate-800 max-sm:text-xl">
-                  Hồ sơ mới nhất
-                </h2>
-              </div>
-
-              <button
-                onClick={() => navigate('/truong-phong/cho-duyet')}
-                className="text-sm font-semibold text-[#1565A9] hover:underline"
-              >
+              <h2 className="text-[26px] font-bold leading-tight text-slate-800 max-sm:text-xl">
+                Hồ sơ mới nhất
+              </h2>
+              <button onClick={() => navigate('/truong-phong/cho-duyet')} className="text-sm font-semibold text-[#1565A9] hover:underline">
                 Xem tất cả
               </button>
             </div>
 
-            <div className="space-y-3 flex-1">
+            <div className="flex-1 space-y-3">
               {dashboard.latestRequests.length > 0 ? (
-                dashboard.latestRequests.map((item) => (
-                  <LatestRequestItem key={item.id} item={item} />
+                dashboard.latestRequests.map((item, idx) => (
+                  <LatestRequestItem key={`${item.type}-${item.id || idx}`} item={item} />
                 ))
               ) : (
                 <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">

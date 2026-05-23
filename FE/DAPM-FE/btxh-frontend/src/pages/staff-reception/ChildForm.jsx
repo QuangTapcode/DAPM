@@ -475,16 +475,10 @@ export default function ChildForm() {
 
         let data = null;
 
-        if (childApi?.getFormById) {
-          try {
-            data = await childApi.getFormById(normalizedId);
-          } catch {
-            data = null;
-          }
-        }
-
-        if (!data) {
-          data = getMockChildren().find((child) => child.MaTre === normalizedId);
+        try {
+          data = await childApi.getById(normalizedId);
+        } catch {
+          data = null;
         }
 
         if (!active) return;

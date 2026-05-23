@@ -12,15 +12,37 @@ import {
 import { useFetch } from '../../hooks/useFetch';
 import adminApi from '../../api/adminApi';
 
-// Dữ liệu mẫu khi chưa có API
-const SAMPLE_DATA = [
-  { month: 'T1', reception: 4, adoption: 2 },
-  { month: 'T2', reception: 6, adoption: 3 },
-  { month: 'T3', reception: 3, adoption: 5 },
-  { month: 'T4', reception: 8, adoption: 4 },
-  { month: 'T5', reception: 5, adoption: 6 },
-  { month: 'T6', reception: 7, adoption: 3 },
+const FALLBACK_DATA = [
+  { month: 'T1', reception: 0, adoption: 0 },
+  { month: 'T2', reception: 0, adoption: 0 },
+  { month: 'T3', reception: 0, adoption: 0 },
+  { month: 'T4', reception: 0, adoption: 0 },
+  { month: 'T5', reception: 0, adoption: 0 },
+  { month: 'T6', reception: 0, adoption: 0 },
 ];
+
+function buildChartData(raw) {
+  if (!raw) return FALLBACK_DATA;
+  const { send = [], adopt = [] } = raw;
+  const map = {};
+
+  send.forEach(({ month, count }) => {
+    const key = `T${month}`;
+    map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
+    map[key].reception += count;
+  });
+
+  adopt.forEach(({ month, count }) => {
+    const key = `T${month}`;
+    map[key] = map[key] ?? { month: key, reception: 0, adoption: 0 };
+    map[key].adoption += count;
+  });
+
+  const sorted = Object.values(map).sort(
+    (a, b) => Number(a.month.slice(1)) - Number(b.month.slice(1))
+  );
+  return sorted.length ? sorted : FALLBACK_DATA;
+}
 
 function CheckCircleIcon() {
   return (
@@ -41,26 +63,36 @@ function PercentIcon() {
   );
 }
 
-function StatCard({
-  icon,
-  title,
-  value,
-  note,
-  chip,
-  tone = 'blue',
-  featured = false,
-}) {
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="9" y1="13" x2="15" y2="13" />
+      <line x1="9" y1="17" x2="15" y2="17" />
+    </svg>
+  );
+}
+
+function StatCard({ icon, title, value, note, chip, tone = 'blue', featured = false }) {
   const toneMap = {
     blue: {
       shell: featured
         ? 'bg-gradient-to-br from-[#1F6FBE] to-[#4EA2F0] text-white'
         : 'bg-white border border-slate-200 text-slate-800',
-      iconWrap: featured
-        ? 'bg-white/15 text-white'
-        : 'bg-blue-100 text-[#1F6FBE]',
-      chip: featured
-        ? 'bg-white/20 text-white'
-        : 'bg-blue-100 text-[#1F6FBE]',
+      iconWrap: featured ? 'bg-white/15 text-white' : 'bg-blue-100 text-[#1F6FBE]',
+      chip: featured ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#1F6FBE]',
       note: featured ? 'text-white/80' : 'text-slate-500',
       deco: featured ? 'bg-white/10' : 'bg-blue-50',
     },
@@ -86,29 +118,19 @@ function StatCard({
       deco: 'bg-violet-50',
     },
   };
-
-  const c = toneMap[tone];
+  const colors = toneMap[tone];
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-3xl p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] ${c.shell}`}
-    >
-      <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full ${c.deco}`} />
+    <div className={`relative overflow-hidden rounded-3xl p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] ${colors.shell}`}>
+      <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full ${colors.deco}`} />
       <div className="relative">
         <div className="mb-8 flex items-start justify-between gap-3">
-          <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${c.iconWrap}`}>
-            {icon}
-          </div>
-          {chip && (
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${c.chip}`}>
-              {chip}
-            </span>
-          )}
+          {icon && <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${colors.iconWrap}`}>{icon}</div>}
+          {chip && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${colors.chip}`}>{chip}</span>}
         </div>
-
         <div className="text-sm font-medium opacity-90">{title}</div>
-        <div className="mt-2 text-5xl font-bold tracking-tight">{value}</div>
-        <div className={`mt-4 text-sm ${c.note}`}>{note}</div>
+        <div className="mt-2 text-5xl font-bold tracking-tight">{value ?? 0}</div>
+        <div className={`mt-4 text-sm ${colors.note}`}>{note}</div>
       </div>
     </div>
   );
@@ -135,7 +157,6 @@ function ChartCard({ title, subtitle, children, action }) {
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
-
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
       <p className="mb-2 text-sm font-semibold text-slate-700">{label}</p>
@@ -152,105 +173,115 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Statistics() {
-  const { data: stats } = useFetch(adminApi.getStats);
-  const chartData = stats?.monthlyData || SAMPLE_DATA;
+  const { data: stats, loading: statsLoading, error: statsError } = useFetch(() => adminApi.getStats());
+  const { data: monthlyRaw } = useFetch(() => adminApi.getRequestsByMonth());
 
-  const totalApplications =
-    (stats?.yearlyReceptions ?? 0) + (stats?.yearlyAdoptions ?? 0);
-
-  const pendingReviews =
-    stats?.pendingReviews ??
-    Math.max((stats?.yearlyReceptions ?? 0) - (stats?.yearlyAdoptions ?? 0), 0);
+  const chartData = buildChartData(monthlyRaw);
+  const totalProfiles = (stats?.totalReceptionProfiles ?? 0) + (stats?.totalAdoptionProfiles ?? 0);
+  const pendingProfiles = (stats?.pendingReceptionProfiles ?? 0) + (stats?.pendingAdoptionProfiles ?? 0);
+  const totalRequests = (stats?.totalSendRequests ?? 0) + (stats?.totalAdoptionRequests ?? 0);
+  const adoptionRate =
+    stats?.totalAdoptionRequests && stats?.totalAdoptionProfiles
+      ? Math.round((stats.totalAdoptionProfiles / stats.totalAdoptionRequests) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Thống kê báo cáo</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thống kê hồ sơ và trẻ</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Theo dõi tổng quan hồ sơ, tiến độ đánh giá và kết quả tiếp nhận.
+            Theo dõi tổng quan hồ sơ, tiến độ phê duyệt và tình trạng trẻ trong trung tâm.
           </p>
         </div>
 
-        {/* Summary cards */}
+        {statsError && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-700">
+            {statsError}
+          </div>
+        )}
+
+        {statsLoading && (
+          <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-700">
+            Đang tải số liệu thống kê...
+          </div>
+        )}
+
         <div className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            title="Đơn đăng ký mới"
-            value={totalApplications}
-            note="Tổng hồ sơ tiếp nhận trong kỳ báo cáo"
-            chip="+12% vs tháng trước"
+            icon={<FileIcon />}
+            title="Tổng hồ sơ"
+            value={totalProfiles}
+            note="Tổng hồ sơ tiếp nhận và nhận nuôi đã lập"
+            chip="Tất cả"
             tone="blue"
           />
-
           <StatCard
-            title="Số đơn đang đánh giá"
-            value={pendingReviews}
-            note="Trong giai đoạn xác minh hồ sơ"
-            chip="Đang tiến hành"
+            icon={<UsersIcon />}
+            title="Hồ sơ đang chờ duyệt"
+            value={pendingProfiles}
+            note="Đang trong giai đoạn xác minh và phê duyệt"
+            chip="Cần xử lý"
             tone="peach"
           />
-
           <StatCard
             icon={<CheckCircleIcon />}
-            title="Duyệt thành công"
-            value={stats?.yearlyAdoptions ?? 0}
-            note="Mang lại tổ ấm mới cho trẻ"
-            chip="Tháng này"
+            title="Tổng yêu cầu"
+            value={totalRequests}
+            note="Tổng yêu cầu gửi trẻ và nhận nuôi đã ghi nhận"
+            chip="Nguồn vào"
             tone="blue"
             featured
           />
-
           <StatCard
             icon={<PercentIcon />}
-            title="Tỷ lệ nhận nuôi"
-            value={`${stats?.adoptionRate ?? 0}%`}
-            note="Tính trên tổng hồ sơ đủ điều kiện"
+            title="Tỷ lệ lập hồ sơ nhận nuôi"
+            value={`${adoptionRate}%`}
+            note="Tính trên tổng yêu cầu nhận nuôi đã có hồ sơ"
             chip="Hiệu quả xử lý"
             tone="purple"
           />
         </div>
 
-        {/* Charts */}
+        <div className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <StatCard
+            title="Trẻ đang chăm sóc"
+            value={stats?.childrenInCare ?? 0}
+            note="Số trẻ hiện đang ở tại trung tâm"
+            tone="blue"
+          />
+          <StatCard
+            title="Trẻ chờ nhận nuôi"
+            value={stats?.childrenWaitingAdoption ?? 0}
+            note="Sẵn sàng ghép hồ sơ nhận nuôi"
+            tone="peach"
+          />
+          <StatCard
+            title="Trẻ đã nhận nuôi"
+            value={stats?.childrenAdopted ?? 0}
+            note="Đã về với gia đình mới"
+            tone="green"
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <ChartCard
             title="Tiếp nhận và nhận nuôi theo tháng"
-            subtitle="So sánh số hồ sơ tiếp nhận và số hồ sơ nhận nuôi thành công"
-            action="6 tháng"
+            subtitle="So sánh số yêu cầu gửi trẻ và nhận nuôi từng tháng"
+            action="Năm hiện tại"
           >
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barGap={10}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EAEFF5" />
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#64748b' }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#64748b' }}
-                  />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
-                  <Bar
-                    dataKey="reception"
-                    name="Tiếp nhận"
-                    fill="#93C5FD"
-                    radius={[10, 10, 0, 0]}
-                    maxBarSize={28}
-                  />
-                  <Bar
-                    dataKey="adoption"
-                    name="Nhận nuôi"
-                    fill="#60A5FA"
-                    radius={[10, 10, 0, 0]}
-                    maxBarSize={28}
-                  />
+                  <Bar dataKey="reception" name="Tiếp nhận" fill="#93C5FD" radius={[10, 10, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="adoption" name="Nhận nuôi" fill="#60A5FA" radius={[10, 10, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#93C5FD]" />
@@ -272,52 +303,26 @@ export default function Statistics() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
-                    <linearGradient id="receptionFill" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="statsRecFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#93C5FD" stopOpacity={0.35} />
                       <stop offset="95%" stopColor="#93C5FD" stopOpacity={0.03} />
                     </linearGradient>
-                    <linearGradient id="adoptionFill" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="statsAdpFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.25} />
                       <stop offset="95%" stopColor="#60A5FA" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EAEFF5" />
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#64748b' }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#64748b' }}
-                  />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="reception"
-                    name="Tiếp nhận"
-                    stroke="#93C5FD"
-                    strokeWidth={3}
-                    fill="url(#receptionFill)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="adoption"
-                    name="Nhận nuôi"
-                    stroke="#60A5FA"
-                    strokeWidth={3}
-                    fill="url(#adoptionFill)"
-                  />
+                  <Area type="monotone" dataKey="reception" name="Tiếp nhận" stroke="#93C5FD" strokeWidth={3} fill="url(#statsRecFill)" />
+                  <Area type="monotone" dataKey="adoption" name="Nhận nuôi" stroke="#60A5FA" strokeWidth={3} fill="url(#statsAdpFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-
             <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
-              Biểu đồ thể hiện xu hướng tiếp nhận và nhận nuôi theo thời gian, giúp theo dõi
-              tốc độ xử lý hồ sơ một cách trực quan hơn.
+              Biểu đồ hỗ trợ trưởng phòng theo dõi tốc độ xử lý hồ sơ và biến động yêu cầu theo thời gian.
             </div>
           </ChartCard>
         </div>
