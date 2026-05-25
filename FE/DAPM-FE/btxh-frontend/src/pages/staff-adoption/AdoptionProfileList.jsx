@@ -19,92 +19,6 @@ const primaryButton =
 const secondaryButton =
   'rounded-xl border border-[#CFE0F5] bg-white px-4 py-2 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
 
-const fallbackMeetings = [
-  {
-    MaLichGap: 'LHGM0001',
-    MaYeuCauNhan: 'YCNN0004',
-    MaTre: 'TRE00015',
-    TenTre: 'Bé Minh',
-    TenNguoiNhan: 'Lê Thanh Mai',
-    SDTNguoiNhan: '0987654321',
-    NgayGap: '2026-03-25',
-    GioGap: '09:00',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Chờ xác nhận',
-    KetQuaGapMat: '',
-    GhiChu: 'Đã chọn trẻ, chờ xác nhận lịch gặp.',
-  },
-  {
-    MaLichGap: 'LHGM0002',
-    MaYeuCauNhan: 'YCNN0005',
-    MaTre: 'TRE00012',
-    TenTre: 'Bé An',
-    TenNguoiNhan: 'Trần Quốc Huy',
-    SDTNguoiNhan: '0912345678',
-    NgayGap: '2026-03-22',
-    GioGap: '14:00',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Đã xác nhận',
-    KetQuaGapMat: '',
-    GhiChu: 'Chờ ghi nhận kết quả gặp mặt.',
-  },
-  {
-    MaLichGap: 'LHGM0003',
-    MaYeuCauNhan: 'YCNN0006',
-    MaTre: 'TRE00018',
-    TenTre: 'Bé Lan',
-    TenNguoiNhan: 'Nguyễn Minh Anh',
-    SDTNguoiNhan: '0901234567',
-    NgayGap: '2026-03-20',
-    GioGap: '08:30',
-    DiaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    TrangThai: 'Đã gặp mặt',
-    KetQuaGapMat: 'Cần gặp lại',
-    GhiChu: 'Cần sắp xếp buổi gặp tiếp theo.',
-  },
-];
-
-const fallbackProfiles = [
-  {
-    MaHoSoNhanNuoi: 'HSNN0001',
-    MaYeuCauNhan: 'YCNN0003',
-    MaTre: 'TRE00009',
-    TenTre: 'Bé Khôi',
-    TenNguoiNhan: 'Nguyễn Quốc Bảo',
-    SDTNguoiNhan: '0909090909',
-    NgayLap: '2026-03-18',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Chờ duyệt',
-    GhiChu: 'Hồ sơ đã lập và gửi trưởng phòng duyệt.',
-  },
-  {
-    MaHoSoNhanNuoi: 'HSNN0002',
-    MaYeuCauNhan: 'YCNN0002',
-    MaTre: 'TRE00011',
-    TenTre: 'Bé Nam',
-    TenNguoiNhan: 'Võ Thị Hạnh',
-    SDTNguoiNhan: '0977777777',
-    NgayLap: '2026-03-16',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Đã duyệt',
-    GhiChu: 'Trưởng phòng đã duyệt hồ sơ.',
-  },
-  {
-    MaHoSoNhanNuoi: 'HSNN0003',
-    MaYeuCauNhan: 'YCNN0001',
-    MaTre: 'TRE00008',
-    TenTre: 'Bé Mai',
-    TenNguoiNhan: 'Phạm Hoàng Nam',
-    SDTNguoiNhan: '0934567890',
-    NgayLap: '2026-03-10',
-    MaCanBoLap: 'ND000005',
-    TenCanBoLap: 'Cán bộ nhận nuôi',
-    TrangThai: 'Đã hoàn tất',
-    GhiChu: 'Đã hoàn tất thủ tục nhận nuôi.',
-  },
-];
 
 function normalizeMeeting(item) {
   // BE trả children: [{maTre, tenTre, ketQua, ghiChuCanBo}]
@@ -303,17 +217,15 @@ export default function AdoptionProfileList() {
     meetingApi.getAll({ page: 1, limit: 200 })
       .then((res) => {
         const items = res?.items ?? res ?? [];
-        if (Array.isArray(items) && items.length > 0) setMeetings(items.map(normalizeMeeting));
-        else setMeetings(fallbackMeetings);
+        setMeetings(Array.isArray(items) ? items.map(normalizeMeeting) : []);
       })
-      .catch(() => setMeetings(fallbackMeetings));
+      .catch(() => setMeetings([]));
     adoptionProfileApi.getAll({ page: 1, limit: 100 })
       .then((res) => {
         const items = res?.items ?? res ?? [];
-        if (Array.isArray(items) && items.length > 0) setProfiles(items.map(normalizeProfile));
-        else setProfiles(fallbackProfiles);
+        setProfiles(Array.isArray(items) ? items.map(normalizeProfile) : []);
       })
-      .catch(() => setProfiles(fallbackProfiles));
+      .catch(() => setProfiles([]));
   }, []);
 
   const filteredMeetings = useMemo(() => {

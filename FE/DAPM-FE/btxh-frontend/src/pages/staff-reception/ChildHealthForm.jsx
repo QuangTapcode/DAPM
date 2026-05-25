@@ -375,9 +375,21 @@ export default function ChildHealthForm() {
     }
   };
 
-  const saveVaccineRows = () => {
-    setVaccineEditing(false);
-    setMessage('Dữ liệu tiêm chủng đã được lưu.');
+  const saveVaccineRows = async () => {
+    try {
+      await Promise.all(vaccineRows.map((item) =>
+        axiosClient.put(`/vaccinations/${item.MaLSTiemChung}`, {
+          MuiSo: Number(item.MuiSo) || 0,
+          NgayTiem: item.NgayTiem || null,
+          GhiChu: item.GhiChu || null,
+        })
+      ));
+      setInitialVaccineRows(vaccineRows);
+      setVaccineEditing(false);
+      setMessage('Cập nhật dữ liệu tiêm chủng thành công.');
+    } catch {
+      setMessage('Lưu thất bại. Vui lòng thử lại.');
+    }
   };
 
   const cancelHealthEdit = () => {

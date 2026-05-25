@@ -69,31 +69,37 @@ export default function RoleManagement() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Đang tải...</td></tr>
-            ) : data?.items?.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{user.fullName}</td>
-                <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
-                    {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <select
-                      defaultValue={user.role}
-                      onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-xs"
-                    >
-                      {ROLE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                    {saving === user.id && <span className="text-xs text-gray-400">Đang lưu...</span>}
-                  </div>
-                </td>
-              </tr>
-            ))}
+            ) : !data?.items?.length ? (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Không có tài khoản nào.</td></tr>
+            ) : data?.items?.map((user) => {
+              const currentRole = user.role || (user.roles?.length ? user.roles[0] : '');
+              return (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">{user.hoTen || user.fullName || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500">{user.email}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                      {ROLE_OPTIONS.find(r => r.value === currentRole)?.label || currentRole || '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <select
+                        key={currentRole}
+                        defaultValue={currentRole}
+                        onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                        className="border rounded px-2 py-1 text-xs"
+                      >
+                        {ROLE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      {saving === user.id && <span className="text-xs text-gray-400">Đang lưu...</span>}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

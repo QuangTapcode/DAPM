@@ -13,9 +13,6 @@ import childApi from '../../api/childApi';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDate } from '../../utils/formatDate';
 
-const STORAGE_CHILD_KEY = 'mock_children';
-const STORAGE_PROFILE_KEY = 'mock_reception_profiles';
-
 const CHILD_STATUS = {
   CHO_TIEP_NHAN: 'Chờ tiếp nhận',
   DANG_CHAM_SOC: 'Đang chăm sóc',
@@ -59,9 +56,6 @@ const selectClass =
 const cardClass =
   'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
 
-const softCardClass =
-  'rounded-[22px] border border-[#E6EDF5] bg-[#FAFCFF]';
-
 const STATUS_META = {
   [CHILD_STATUS.CHO_TIEP_NHAN]: {
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -79,71 +73,6 @@ const STATUS_META = {
     cls: 'bg-slate-50 text-slate-700 border-slate-200',
   },
 };
-
-const DEMO_CHILDREN = [
-  {
-    MaTre: 'TRE00015',
-    HoTen: 'Nguyễn An',
-    NgaySinh: '2019-02-14',
-    GioiTinh: 'Nữ',
-    MaPhuongXa: 'PX0001',
-    DiaChiCuThe: '20 Lê Duẩn',
-    DanToc: 'Kinh',
-    TinhCach: 'Hòa đồng, ngoan ngoãn',
-    SoThich: 'Vẽ tranh, nghe nhạc',
-    DacDiemNhanDang: '',
-    TrangThai: 'Đang chăm sóc',
-    NgayTiepNhan: '2026-03-02',
-    NgayCapNhat: '',
-    NgayNhanNuoi: '',
-    GhiChu: 'Đã tiếp nhận chính thức vào trung tâm.',
-    MaNguoiCapNhat: '',
-    HinhAnh: '',
-  },
-  {
-    MaTre: 'TRE00016',
-    HoTen: 'Trần Văn Đức',
-    NgaySinh: '2019-08-20',
-    GioiTinh: 'Nam',
-    MaPhuongXa: 'PX0002',
-    DiaChiCuThe: 'Chưa cập nhật',
-    DanToc: 'Kinh',
-    TinhCach: '',
-    SoThich: '',
-    DacDiemNhanDang: '',
-    TrangThai: 'Đang chăm sóc',
-    NgayTiepNhan: '2026-04-05',
-    NgayCapNhat: '',
-    NgayNhanNuoi: '',
-    GhiChu: '',
-    MaNguoiCapNhat: '',
-    HinhAnh: '',
-  },
-];
-
-const DEMO_RECEPTION_PROFILES = [
-  {
-    MaHSTiepNhan: 'HSTN0002',
-    MaYeuCauGuiTre: 'YCGT0001',
-    MaTre: 'TRE00015',
-    TrangThai: 'Đã duyệt',
-    NgayDuyet: '2026-03-02',
-  },
-];
-
-function safeReadStorage(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = JSON.parse(raw || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function safeWriteStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
 
 function normalizeChildCode(value) {
   if (!value) return '';
@@ -165,30 +94,6 @@ function normalizeUserCode(value) {
 
   if (match) return `ND${match[1].padStart(6, '0')}`;
   if (/^\d+$/.test(text)) return `ND${text.padStart(6, '0')}`;
-
-  return text;
-}
-
-function normalizeProfileCode(value) {
-  if (!value) return '';
-
-  const text = String(value).trim().toUpperCase();
-  const match = text.match(/^HSTN(\d+)$/);
-
-  if (match) return `HSTN${match[1].padStart(4, '0')}`;
-  if (/^\d+$/.test(text)) return `HSTN${text.padStart(4, '0')}`;
-
-  return text;
-}
-
-function normalizeRequestCode(value) {
-  if (!value) return '';
-
-  const text = String(value).trim().toUpperCase();
-  const match = text.match(/^YCGT(\d+)$/);
-
-  if (match) return `YCGT${match[1].padStart(4, '0')}`;
-  if (/^\d+$/.test(text)) return `YCGT${text.padStart(4, '0')}`;
 
   return text;
 }
@@ -279,89 +184,6 @@ function normalizeChild(item) {
   };
 }
 
-function getChildrenFromApprovedProfiles() {
-  const profiles = safeReadStorage(STORAGE_PROFILE_KEY);
-
-  return profiles
-    .filter((profile) => profile.TrangThai === 'Đã duyệt' && profile.MaTre)
-    .map((profile) => {
-      const source = profile.tre || profile.thongTinTreTam || {};
-
-      return normalizeChild({
-        MaTre: profile.MaTre,
-        HoTen:
-          profile.TenTre ||
-          profile.TenTreTam ||
-          source.HoTen ||
-          source.hoTen ||
-          profile.childName,
-        NgaySinh: source.NgaySinh || source.ngaySinh,
-        GioiTinh: source.GioiTinh || source.gioiTinh,
-        DanToc: source.DanToc || source.danToc,
-        MaPhuongXa: source.MaPhuongXa || source.maPhuongXa,
-        DiaChiCuThe: source.DiaChiCuThe || source.diaChiCuThe,
-        TrangThai: CHILD_STATUS.DANG_CHAM_SOC,
-        NgayTiepNhan: profile.NgayDuyet || profile.NgayTiepNhan,
-        GhiChu: 'Được tạo từ hồ sơ tiếp nhận đã duyệt.',
-        HinhAnh: source.HinhAnh || source.hinhAnh || '',
-      });
-    });
-}
-
-function getMockChildren() {
-  const storedChildren = safeReadStorage(STORAGE_CHILD_KEY);
-  const approvedChildren = getChildrenFromApprovedProfiles();
-  const merged = [...storedChildren, ...approvedChildren, ...DEMO_CHILDREN];
-
-  const uniqueMap = new Map();
-
-  merged.forEach((item) => {
-    const child = normalizeChild(item);
-    if (child.MaTre && !uniqueMap.has(child.MaTre)) {
-      uniqueMap.set(child.MaTre, child);
-    }
-  });
-
-  return Array.from(uniqueMap.values());
-}
-
-function updateMockChild(id, payload) {
-  const normalizedId = normalizeChildCode(id);
-  const currentChildren = getMockChildren();
-
-  const exists = currentChildren.some((child) => child.MaTre === normalizedId);
-
-  const nextChildren = exists
-    ? currentChildren.map((child) =>
-      child.MaTre === normalizedId ? { ...child, ...payload, MaTre: normalizedId } : child
-    )
-    : [{ ...payload, MaTre: normalizedId }, ...currentChildren];
-
-  safeWriteStorage(STORAGE_CHILD_KEY, nextChildren);
-
-  return nextChildren.find((child) => child.MaTre === normalizedId);
-}
-
-function getRelatedReceptionProfile(childId) {
-  const profiles = [...safeReadStorage(STORAGE_PROFILE_KEY), ...DEMO_RECEPTION_PROFILES];
-  const normalizedChildId = normalizeChildCode(childId);
-
-  const found = profiles.find(
-    (item) => normalizeChildCode(item.MaTre || item.childId) === normalizedChildId
-  );
-
-  if (!found) return null;
-
-  return {
-    MaHSTiepNhan: normalizeProfileCode(found.MaHSTiepNhan || found.id),
-    MaYeuCauGuiTre: normalizeRequestCode(
-      found.MaYeuCauGuiTre || found.requestId || found.yeuCauGuiTre?.MaYeuCauGuiTre
-    ),
-    TrangThai: found.TrangThai || found.status || '',
-    NgayDuyet: toDateInput(found.NgayDuyet || found.approvedAt),
-  };
-}
-
 function FormField({ label, children, error, className = '' }) {
   return (
     <div className={className}>
@@ -442,7 +264,6 @@ export default function ChildForm() {
   const [editing, setEditing] = useState(false);
   const [initialData, setInitialData] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [relatedProfile, setRelatedProfile] = useState(null);
 
   const {
     register,
@@ -502,7 +323,6 @@ export default function ChildForm() {
 
         reset(formData);
         setInitialData(formData);
-        setRelatedProfile(getRelatedReceptionProfile(normalizedId));
         setEditing(false);
       } finally {
         if (active) setLoading(false);
@@ -534,11 +354,7 @@ export default function ChildForm() {
     };
 
     try {
-      if (childApi?.update) {
-        await childApi.update(normalizedId, payload);
-      }
-
-      updateMockChild(normalizedId, payload);
+      await childApi.update(normalizedId, payload);
 
       const normalizedPayload = normalizeChild(payload);
 
@@ -548,6 +364,7 @@ export default function ChildForm() {
       setSuccessMessage('Cập nhật thông tin trẻ thành công.');
     } catch (error) {
       console.error('Lỗi cập nhật thông tin trẻ:', error);
+      setSuccessMessage('Lưu thất bại. Vui lòng thử lại.');
     }
   };
 

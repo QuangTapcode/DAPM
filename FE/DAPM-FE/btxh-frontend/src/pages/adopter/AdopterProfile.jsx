@@ -74,7 +74,17 @@ export default function AdopterProfile() {
 
   const handleSave = async (payload) => {
     try {
-      const res = await authApi.updateProfile(payload);
+      const userId = profile?.id || profile?.maNguoiDung || profile?.MaNguoiDung;
+      const bePayload = {
+        HoTen: payload.fullName,
+        SDT: payload.phone,
+        CCCD: payload.nationalId,
+        GioiTinh: payload.gender,
+        NgaySinh: payload.dateOfBirth || null,
+        DiaChiCuThe: payload.addressDetail,
+        MaXaPhuong: payload.maXaPhuong || null,
+      };
+      const res = await authApi.updateProfile(userId, bePayload);
 
       setProfile(res);
       alert('Cập nhật thông tin thành công');

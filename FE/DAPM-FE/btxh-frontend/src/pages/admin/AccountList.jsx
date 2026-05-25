@@ -45,7 +45,7 @@ const ROLE_OPTIONS = [
 const BLANK_FORM = { fullName: '', email: '', role: 'staff-reception', password: '', confirmPassword: '' };
 
 function RoleModal({ user, onClose, onConfirm }) {
-  const [selected, setSelected] = useState(user?.role || 'staff-reception');
+  const [selected, setSelected] = useState(user?.role || (user?.roles?.length ? user.roles[0] : 'staff-reception'));
   if (!user) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -60,7 +60,7 @@ function RoleModal({ user, onClose, onConfirm }) {
         </div>
         <h2 className="text-xl font-bold text-[#0D47A1] text-center">Phân quyền người dùng</h2>
         <p className="text-sm text-[#8FA0B8] text-center mt-1 mb-6">
-          Vai trò cho: <span className="font-semibold text-[#334155]">{user.fullName}</span>
+          Vai trò cho: <span className="font-semibold text-[#334155]">{user.hoTen || user.fullName || '—'}</span>
         </p>
         <div className="space-y-2">
           {ROLE_OPTIONS.map(opt => (
@@ -188,7 +188,7 @@ export default function AccountList() {
   const totalPages = data?.totalPages || 1;
 
   const filtered = search
-    ? items.filter(u => u.fullName?.toLowerCase().includes(search.toLowerCase()) || u.email?.includes(search))
+    ? items.filter(u => (u.hoTen || u.fullName)?.toLowerCase().includes(search.toLowerCase()) || u.email?.includes(search))
     : items;
 
   const activeCount = items.filter(checkActive).length;
@@ -222,7 +222,7 @@ export default function AccountList() {
     const user = items.find(u => u.id === id);
     const newStatus = !checkActive(user);
     try {
-      await adminApi.updateUser(id, { trangThaiTK: newStatus });
+      await adminApi.setUserStatus(id, newStatus);
       if (refetch) refetch();
     } catch (err) {
       alert('Có lỗi xảy ra khi thay đổi trạng thái');
@@ -338,9 +338,11 @@ export default function AccountList() {
               </thead>
               <tbody className="divide-y divide-[#F0F5FC]">
                 {filtered.map(u => {
-                  const initials = u.fullName?.split(' ').map(w => w[0]).slice(-2).join('') || '?';
-                  const roleLabel = ROLE_LABEL[u.role] || u.role;
-                  const rolePill  = ROLE_PILL[u.role]  || 'bg-[#EAF3FF] text-[#0D47A1] border border-[#DCE8F7]';
+                  const displayName = u.hoTen || u.fullName || '';
+                  const initials = displayName.split(' ').map(w => w[0]).filter(Boolean).slice(-2).join('') || '?';
+                  const userRole  = u.role || (u.roles?.length ? u.roles[0] : '');
+                  const roleLabel = ROLE_LABEL[userRole] || userRole;
+                  const rolePill  = ROLE_PILL[userRole]  || 'bg-[#EAF3FF] text-[#0D47A1] border border-[#DCE8F7]';
                   const isUserActive = checkActive(u);
                   return (
                     <tr key={u.id} className="hover:bg-[#F5F9FE] transition-colors">
@@ -350,7 +352,7 @@ export default function AccountList() {
                             {initials}
                           </div>
                           <div>
-                            <p className="font-semibold text-[15px] text-[#334155]">{u.fullName}</p>
+                            <p className="font-semibold text-[15px] text-[#334155]">{displayName || '—'}</p>
                             <p className="text-[11px] text-[#8FA0B8]">ID: DG-{1000 + u.id}</p>
                           </div>
                         </div>
