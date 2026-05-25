@@ -1,31 +1,19 @@
-/**
- * Button — BTXH Design System
- *
- * Variants:
- *  primary   — xanh dương (#1d4ed8)   dùng cho hành động chính trong nội dung
- *  accent    — cam (#f97316)           dùng cho nút submit / CTA quan trọng nhất
- *  secondary — trắng viền xám         dùng cho Hủy, Lưu nháp
- *  outline   — trắng viền xanh        dùng cho hành động phụ có màu
- *  danger    — đỏ                     dùng cho Từ chối, Xóa
- *  success   — xanh lá               dùng cho Duyệt
- *  ghost     — trong suốt xám        dùng cho icon-only, breadcrumb action
- */
 const VARIANTS = {
-  primary: 'btn-primary-gradient text-white shadow-sm',
-  accent: 'btn-accent-gradient text-white shadow-sm',
-  secondary: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm',
-  outline: 'bg-white hover:bg-blue-50 text-[var(--c-primary-start)] border border-[var(--c-primary-start)]',
-  danger: 'bg-[#dc2626] hover:bg-[#b91c1c] text-white shadow-sm',
-  success: 'bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm',
-  ghost: 'bg-transparent hover:bg-gray-100 text-gray-600',
+  primary:   'btn-primary-gradient text-white',
+  accent:    'btn-accent-gradient text-white',
+  secondary: 'bg-white text-[#334155] border border-[#D5E0EE] shadow-sm hover:bg-[#F5F9FE] hover:border-[#B8D0EC] active:scale-[0.98]',
+  outline:   'bg-white text-[#0D47A1] border border-[#0D47A1]/30 hover:bg-[#EEF4FC] hover:border-[#0D47A1] active:scale-[0.98]',
+  danger:    'bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-[0_4px_14px_rgba(220,38,38,0.3)] hover:from-red-600 hover:to-rose-700 hover:shadow-[0_8px_20px_rgba(220,38,38,0.35)] active:scale-[0.98]',
+  success:   'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_4px_14px_rgba(16,185,129,0.28)] hover:from-emerald-600 hover:to-teal-700 hover:shadow-[0_8px_20px_rgba(16,185,129,0.34)] active:scale-[0.98]',
+  ghost:     'bg-transparent text-[#5C728A] hover:bg-[#EEF4FC] hover:text-[#0D47A1] active:scale-[0.97]',
 };
 
 const SIZES = {
-  xs: 'px-2.5 py-1 text-xs rounded',
-  sm: 'px-3.5 py-1.5 text-sm rounded',
-  md: 'px-5 py-2 text-sm rounded-lg',
-  lg: 'px-6 py-2.5 text-base rounded-lg',
-  xl: 'px-8 py-3 text-base rounded-lg',
+  xs: 'px-2.5 py-1    text-[11px] rounded-lg  font-semibold',
+  sm: 'px-3.5 py-1.5  text-xs     rounded-xl  font-semibold',
+  md: 'px-5   py-2.5  text-sm     rounded-2xl font-semibold',
+  lg: 'px-6   py-3    text-sm     rounded-2xl font-bold',
+  xl: 'px-8   py-3.5  text-base   rounded-2xl font-bold',
 };
 
 const Spinner = () => (
@@ -49,9 +37,9 @@ export default function Button({
   return (
     <button
       className={[
-        'inline-flex items-center justify-center gap-2 font-medium transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-1',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center gap-2 transition-all duration-200',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D47A1]/50 focus-visible:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none',
         VARIANTS[variant] ?? VARIANTS.primary,
         SIZES[size] ?? SIZES.md,
         fullWidth ? 'w-full' : '',
