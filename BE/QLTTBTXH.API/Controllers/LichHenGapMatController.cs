@@ -172,6 +172,13 @@ public class LichHenGapMatController : ControllerBase
         if (dto.PhanHoiNguoiNhan != null) l.PhanHoiNguoiNhan = dto.PhanHoiNguoiNhan;
         if (dto.ThoiGianDeXuatMoi.HasValue) l.ThoiGianDeXuatMoi = dto.ThoiGianDeXuatMoi;
 
+        // Khi trạng thái chuyển khỏi 'Yêu cầu đổi lịch', xóa đề xuất cũ
+        if (dto.TrangThai != null && dto.TrangThai != "Yêu cầu đổi lịch")
+        {
+            l.ThoiGianDeXuatMoi = null;
+            l.PhanHoiNguoiNhan = null;
+        }
+
         l.NgayCapNhat = DateTime.Now;
 
         // Cập nhật kết quả đánh giá cho từng trẻ (nếu có)

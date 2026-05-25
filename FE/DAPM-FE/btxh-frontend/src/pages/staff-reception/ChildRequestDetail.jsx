@@ -729,7 +729,7 @@ export default function ChildRequestDetail() {
       .catch(() => setApiDocs([]));
   }, [id]);
 
-  const sourceRequest = localRequest || data || (!loading ? DEMO_REQUEST_DETAIL : null);
+  const sourceRequest = localRequest || data || null;
 
   const request = useMemo(() => {
     return mapRequestDetail(sourceRequest);

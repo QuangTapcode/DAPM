@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import family from '../../assets/sender.jpg';
 import receptionApi from '../../api/receptionApi';
 import authApi from '../../api/authApi';
+import lookupApi from '../../api/lookupApi';
 
 const SENDER_TYPES = [
   { code: 'CME', label: 'Cha hoặc mẹ ruột', requireDocs: true },
@@ -59,42 +60,6 @@ const BASE_DOCS = [
   },
 ];
 
-/**
- * Dữ liệu mẫu để lọc xã/phường theo tỉnh.
- * Khi nối dữ liệu thật, thay phần này bằng API hoặc danh mục địa giới hành chính.
- */
-const LOCATION_DATA = [
-  {
-    provinceCode: '48',
-    provinceName: 'Thành phố Đà Nẵng',
-    wards: [
-      { wardCode: '20194', wardName: 'Phường Hòa Khánh Bắc' },
-      { wardCode: '20197', wardName: 'Phường Hòa Khánh Nam' },
-      { wardCode: '20200', wardName: 'Phường Hòa Minh' },
-      { wardCode: '20203', wardName: 'Phường Hòa Hiệp Nam' },
-    ],
-  },
-  {
-    provinceCode: '01',
-    provinceName: 'Thành phố Hà Nội',
-    wards: [
-      { wardCode: '00001', wardName: 'Phường Phúc Xá' },
-      { wardCode: '00004', wardName: 'Phường Trúc Bạch' },
-      { wardCode: '00006', wardName: 'Phường Vĩnh Phúc' },
-      { wardCode: '00007', wardName: 'Phường Cống Vị' },
-    ],
-  },
-  {
-    provinceCode: '79',
-    provinceName: 'Thành phố Hồ Chí Minh',
-    wards: [
-      { wardCode: '26734', wardName: 'Phường Bến Nghé' },
-      { wardCode: '26737', wardName: 'Phường Bến Thành' },
-      { wardCode: '26740', wardName: 'Phường Cầu Kho' },
-      { wardCode: '26743', wardName: 'Phường Cầu Ông Lãnh' },
-    ],
-  },
-];
 
 const labelClass =
   'block text-[13px] font-semibold uppercase tracking-wide text-[#44474E] mb-2';
@@ -220,8 +185,8 @@ function ApplicantSection({
           >
             <option value="">Chọn tỉnh/thành</option>
             {senderProvinceOptions.map((item) => (
-              <option key={item.provinceCode} value={item.provinceCode}>
-                {item.provinceName}
+              <option key={item.maTinhTP} value={item.maTinhTP}>
+                {item.tenTinhTP}
               </option>
             ))}
           </select>
@@ -238,8 +203,8 @@ function ApplicantSection({
           >
             <option value="">Chọn xã/phường</option>
             {senderWardOptions.map((item) => (
-              <option key={item.wardCode} value={item.wardCode}>
-                {item.wardName}
+              <option key={item.maPhuongXa} value={item.maPhuongXa}>
+                {item.tenPhuongXa}
               </option>
             ))}
           </select>
@@ -337,8 +302,8 @@ function ChildSection({
           >
             <option value="">Chọn tỉnh/thành</option>
             {childProvinceOptions.map((item) => (
-              <option key={item.provinceCode} value={item.provinceCode}>
-                {item.provinceName}
+              <option key={item.maTinhTP} value={item.maTinhTP}>
+                {item.tenTinhTP}
               </option>
             ))}
           </select>
@@ -355,8 +320,8 @@ function ChildSection({
           >
             <option value="">Chọn xã/phường</option>
             {childWardOptions.map((item) => (
-              <option key={item.wardCode} value={item.wardCode}>
-                {item.wardName}
+              <option key={item.maPhuongXa} value={item.maPhuongXa}>
+                {item.tenPhuongXa}
               </option>
             ))}
           </select>
@@ -590,6 +555,9 @@ function ImageCard() {
 export default function CreateChildRequest() {
   const navigate = useNavigate();
   const [docs, setDocs] = useState({});
+  const [provinces, setProvinces] = useState([]);
+  const [senderWards, setSenderWards] = useState([]);
+  const [childWards, setChildWards] = useState([]);
 
   const {
     register,
@@ -627,36 +595,38 @@ export default function CreateChildRequest() {
       if (profile?.phone || profile?.sdt) setValue('senderPhone', profile.phone || profile.sdt);
       if (profile?.diaChiCuThe) setValue('senderAddressDetail', profile.diaChiCuThe);
     }).catch(() => {});
+
+    lookupApi.getTinhTp().then((res) => {
+      setProvinces(Array.isArray(res) ? res : []);
+    }).catch(() => {});
   }, [setValue]);
 
   const senderTypeCode = watch('senderTypeCode');
   const senderProvinceCode = watch('senderProvinceCode');
   const childProvinceCode = watch('childProvinceCode');
 
-  const senderProvinceOptions = LOCATION_DATA;
-  const childProvinceOptions = LOCATION_DATA;
-
-  const senderWardOptions = useMemo(() => {
-    const selected = LOCATION_DATA.find(
-      (item) => item.provinceCode === senderProvinceCode
-    );
-    return selected?.wards ?? [];
-  }, [senderProvinceCode]);
-
-  const childWardOptions = useMemo(() => {
-    const selected = LOCATION_DATA.find(
-      (item) => item.provinceCode === childProvinceCode
-    );
-    return selected?.wards ?? [];
-  }, [childProvinceCode]);
-
   useEffect(() => {
     setValue('senderWardCode', '');
+    setSenderWards([]);
+    if (!senderProvinceCode) return;
+    lookupApi.getPhuongXa(senderProvinceCode).then((res) => {
+      setSenderWards(Array.isArray(res) ? res : []);
+    }).catch(() => setSenderWards([]));
   }, [senderProvinceCode, setValue]);
 
   useEffect(() => {
     setValue('childWardCode', '');
+    setChildWards([]);
+    if (!childProvinceCode) return;
+    lookupApi.getPhuongXa(childProvinceCode).then((res) => {
+      setChildWards(Array.isArray(res) ? res : []);
+    }).catch(() => setChildWards([]));
   }, [childProvinceCode, setValue]);
+
+  const senderProvinceOptions = provinces;
+  const childProvinceOptions = provinces;
+  const senderWardOptions = senderWards;
+  const childWardOptions = childWards;
 
   const selectedSenderType = SENDER_TYPES.find(
     (item) => item.code === senderTypeCode
@@ -715,8 +685,8 @@ export default function CreateChildRequest() {
       senderNationalId: data.senderNationalId,
       senderPhone: data.senderPhone,
       senderAddressDetail: data.senderAddressDetail,
-      senderWardName: senderWardOptions.find(w => w.wardCode === data.senderWardCode)?.wardName || '',
-      senderProvinceName: senderProvinceOptions.find(p => p.provinceCode === data.senderProvinceCode)?.provinceName || '',
+      senderWardName: senderWardOptions.find(w => w.maPhuongXa === data.senderWardCode)?.tenPhuongXa || '',
+      senderProvinceName: senderProvinceOptions.find(p => p.maTinhTP === data.senderProvinceCode)?.tenTinhTP || '',
       // Child info
       thongTinTre: result?.thongTinTre || {
         tenTre: data.childName,
@@ -725,8 +695,8 @@ export default function CreateChildRequest() {
         danToc: data.ethnicity,
       },
       childAddressDetail: data.childAddressDetail,
-      childWardName: childWardOptions.find(w => w.wardCode === data.childWardCode)?.wardName || '',
-      childProvinceName: childProvinceOptions.find(p => p.provinceCode === data.childProvinceCode)?.provinceName || '',
+      childWardName: childWardOptions.find(w => w.maPhuongXa === data.childWardCode)?.tenPhuongXa || '',
+      childProvinceName: childProvinceOptions.find(p => p.maTinhTP === data.childProvinceCode)?.tenTinhTP || '',
       healthStatus: data.healthStatus,
       // Reason
       reason: data.reason,

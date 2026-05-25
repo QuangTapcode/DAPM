@@ -5,8 +5,8 @@ const lookupApi = {
         return axiosClient.get('/lookups/tinh-tp');
     },
 
-    getPhuongXa: () => {
-        return axiosClient.get('/lookups/phuong-xa');
+    getPhuongXa: (maTinhTP) => {
+        return axiosClient.get('/lookups/phuong-xa', { params: maTinhTP ? { maTinhTP } : {} });
     },
 
     getGiayToBatBuocNhanNuoi: () => {

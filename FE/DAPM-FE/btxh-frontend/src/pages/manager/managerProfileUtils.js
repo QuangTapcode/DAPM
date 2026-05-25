@@ -91,8 +91,8 @@ export function compareProfilesByDateDesc(a, b) {
 export function normalizeDocument(doc = {}, index = 0) {
   return {
     id: getField(doc, ['id', 'Id', 'maGiayTo', 'MaGiayTo'], `DOC-${index + 1}`),
-    name: getField(doc, ['name', 'Name', 'tenGiayTo', 'TenGiayTo'], `Giấy tờ ${index + 1}`),
-    type: getField(doc, ['type', 'Type', 'loaiGiayTo', 'LoaiGiayTo'], 'Giấy tờ'),
+    name: getField(doc, ['name', 'Name', 'tenGiayTo', 'TenGiayTo', 'tenLoaiGiayTo', 'TenLoaiGiayTo'], `Giấy tờ ${index + 1}`),
+    type: getField(doc, ['type', 'Type', 'loaiGiayTo', 'LoaiGiayTo', 'maLoaiGiayTo', 'MaLoaiGiayTo'], 'Giấy tờ'),
     status: getField(doc, ['status', 'Status', 'trangThai', 'TrangThai'], 'Chờ xác minh'),
     url: getField(doc, ['url', 'Url', 'duongDanFile', 'DuongDanFile']),
     updatedAt: getField(doc, ['ngayCapNhat', 'NgayCapNhat']),
