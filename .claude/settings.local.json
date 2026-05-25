@@ -47,7 +47,20 @@
       "PowerShell(Invoke-RestMethod -Uri \"http://localhost:8080/api/receptions?page=1&limit=1\" -ErrorAction SilentlyContinue)",
       "Bash(Get-ChildItem -Recurse -Path \"D:\\\\HocTap\\\\DAPM\\\\FE\\\\DAPM-FE\\\\btxh-frontend\\\\src\" -Include \"*.jsx\",\"*.js\",\"*.css\")",
       "Bash(Sort-Object)",
-      "PowerShell($token = \\(Invoke-RestMethod -Uri \"http://localhost:8080/api/auth/login\" -Method Post -ContentType \"application/json\" -Body '{\"email\":\"admin@ttbt.vn\",\"password\":\"123456\"}'\\).data.token; Invoke-RestMethod -Uri \"http://localhost:8080/api/stats/requests-by-month\" -Headers @{ Authorization = \"Bearer $token\" } | ConvertTo-Json -Depth 5)"
+      "PowerShell($token = \\(Invoke-RestMethod -Uri \"http://localhost:8080/api/auth/login\" -Method Post -ContentType \"application/json\" -Body '{\"email\":\"admin@ttbt.vn\",\"password\":\"123456\"}'\\).data.token; Invoke-RestMethod -Uri \"http://localhost:8080/api/stats/requests-by-month\" -Headers @{ Authorization = \"Bearer $token\" } | ConvertTo-Json -Depth 5)",
+      "PowerShell($token = \\(Invoke-RestMethod -Uri \"http://localhost:8080/api/auth/login\" -Method Post -ContentType \"application/json\" -Body '{\"email\":\"tiepnhan@ttbt.vn\",\"password\":\"123456\"}'\\).data.token; $r = Invoke-RestMethod -Uri \"http://localhost:8080/api/lookups/vacxin\" -Headers @{ Authorization = \"Bearer $token\" }; $r.data | ConvertTo-Json -Depth 3)",
+      "Bash(Remove-Item -Recurse -Force obj -ErrorAction SilentlyContinue)",
+      "Bash(Select-String \"error|warning|succeeded|failed\")",
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-Content \"D:\\\\HocTap\\\\DAPM\\\\FE\\\\DAPM-FE\\\\btxh-frontend\\\\src\\\\pages\\\\adopter\\\\UpdateAdoptionRequest.jsx\" -TotalCount 5)",
+      "Bash(python3 -c \"f=open\\(r'D:\\\\HocTap\\\\DAPM\\\\FE\\\\DAPM-FE\\\\btxh-frontend\\\\src\\\\pages\\\\adopter\\\\UpdateAdoptionRequest.jsx'\\); print\\(f.read\\(3000\\)\\)\")",
+      "Bash(Get-Process -Name \"dotnet\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Id, ProcessName, CPU, StartTime)",
+      "PowerShell(Get-Process -Name \"dotnet\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match \"dotnet|DAPM|btxh|aspnet\" } | Select-Object Id, ProcessName, CPU)",
+      "Bash(Get-ChildItem -Path \"D:\\\\HocTap\\\\DAPM\\\\BE\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-Table -AutoSize)"
     ]
   }
 }
