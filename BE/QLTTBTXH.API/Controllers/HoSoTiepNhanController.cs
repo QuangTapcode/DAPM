@@ -110,15 +110,51 @@ public class HoSoTiepNhanController : ControllerBase
     }
 
     [HttpPost("{id}/approve")]
-    [Authorize(Roles = Roles.ADMIN + "," + Roles.TIEP_NHAN + "," + Roles.TRUONG_PHONG)]
+    [Authorize(Roles = Roles.ADMIN + "," + Roles.TRUONG_PHONG)]
     public async Task<ActionResult<ApiResponse<bool>>> Approve(string id)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var h = await _db.HOSOTIEPNHANTRE.FirstOrDefaultAsync(x => x.MaHSTiepNhan == id);
         if (h is null) return NotFound(ApiResponse<bool>.Fail("Not found"));
+        if (h.TrangThai == "Đã duyệt") return BadRequest(ApiResponse<bool>.Fail("Hồ sơ đã được duyệt trước đó"));
+
+        var y = await _db.YEUCAUGUITRE
+            .Include(x => x.ThongTinTreTam)
+            .Include(x => x.NguoiGui)
+            .FirstOrDefaultAsync(x => x.MaYeuCauGuiTre == h.MaYeuCauGuiTre);
+        if (y is null) return BadRequest(ApiResponse<bool>.Fail("Không tìm thấy yêu cầu gửi trẻ"));
+        if (y.ThongTinTreTam is null) return BadRequest(ApiResponse<bool>.Fail("Thiếu thông tin trẻ tạm"));
+
+        using var tx = await _db.Database.BeginTransactionAsync();
+
+        var maTre = await _code.NextTreAsync();
+        _db.TRE.Add(new Models.Entities.Tre
+        {
+            MaTre = maTre,
+            HoTen = y.ThongTinTreTam.TenTre,
+            NgaySinh = y.ThongTinTreTam.NgaySinh,
+            GioiTinh = y.ThongTinTreTam.GioiTinh,
+            DanToc = y.ThongTinTreTam.DanToc,
+            MaPhuongXa = y.NguoiGui?.MaPhuongXa,
+            DiaChiCuThe = y.NguoiGui?.DiaChiCuThe,
+            TrangThai = "Đang chăm sóc",
+            NgayTiepNhan = DateTime.Today,
+            NgayCapNhat = DateTime.Now,
+            GhiChu = "Tạo tự động khi duyệt hồ sơ tiếp nhận",
+            MaNguoiCapNhat = userId
+        });
+
+        h.MaTre = maTre;
         h.TrangThai = "Đã duyệt";
         h.NgayDuyet = DateTime.Today;
+
+        y.TrangThaiYC = "Đã tiếp nhận";
+        y.NgayCapNhat = DateTime.Now;
+
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<bool>.Ok(true, "Đã duyệt hồ sơ"));
+        await tx.CommitAsync();
+
+        return Ok(ApiResponse<bool>.Ok(true, "Đã duyệt hồ sơ tiếp nhận, trẻ đã được thêm vào hệ thống"));
     }
 
     [HttpPost("{id}/reject")]

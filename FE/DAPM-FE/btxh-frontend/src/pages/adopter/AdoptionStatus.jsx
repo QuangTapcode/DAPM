@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import adoptionApi from '../../api/adoptionApi';
 import documentApi from '../../api/documentApi';
 import lookupApi from '../../api/lookupApi';
+import meetingApi from '../../api/meetingApi';
 import { formatDate } from '../../utils/formatDate';
 
 import { STATUS, getCurrentStep, getProgressWidth } from '../../utils/statusHelpers';
@@ -140,6 +141,201 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
     </div>
   );
 }
+function MeetingSection({ requestId }) {
+  const [meeting, setMeeting] = useState(null);
+  const [loadingMeeting, setLoadingMeeting] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newDateTime, setNewDateTime] = useState('');
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!requestId) return;
+    setLoadingMeeting(true);
+    meetingApi.getAll({ maYeuCauNhan: requestId, page: 1, limit: 1 })
+      .then((res) => setMeeting(res?.items?.[0] || null))
+      .catch(() => setMeeting(null))
+      .finally(() => setLoadingMeeting(false));
+  }, [requestId]);
+
+  const handleConfirm = async () => {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Đã xác nhận' });
+      setMeeting(updated);
+    } catch (err) {
+      alert(err?.message || 'Không thể xác nhận lịch hẹn.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelProposal = async () => {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, {
+        trangThai: 'Chờ xác nhận',
+        thoiGianDeXuatMoi: null,
+        phanHoiNguoiNhan: null,
+      });
+      setMeeting(updated);
+    } catch (err) {
+      alert(err?.message || 'Không thể hủy đề xuất.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!meeting || !newDateTime) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, {
+        thoiGianDeXuatMoi: newDateTime,
+        phanHoiNguoiNhan: note || 'Đề xuất đổi lịch hẹn',
+        trangThai: 'Đề xuất đổi lịch',
+      });
+      setMeeting(updated);
+      setShowForm(false);
+      setNewDateTime('');
+      setNote('');
+    } catch (err) {
+      alert(err?.message || 'Không thể gửi đề xuất đổi lịch.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loadingMeeting || !meeting) return null;
+
+  const status = meeting.trangThai;
+  const isPending = status === 'Chờ xác nhận';
+  const isProposed = status === 'Đề xuất đổi lịch';
+
+  return (
+    <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-[#F8FAFC] p-5">
+      <h4 className="mb-4 flex items-center gap-2 text-[15px] font-bold !text-[#0D47A1]">
+        <CalendarDays size={16} />
+        Lịch hẹn gặp mặt
+      </h4>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-[#E3ECF8] bg-white p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8EA0B8]">Thời gian</p>
+          <p className="mt-1 text-sm font-semibold text-[#27406B]">
+            {meeting.thoiGian ? new Date(meeting.thoiGian).toLocaleString('vi-VN') : 'Chưa xác định'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-[#E3ECF8] bg-white p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8EA0B8]">Địa điểm</p>
+          <p className="mt-1 text-sm font-semibold text-[#27406B]">{meeting.diaDiem || 'Chưa cập nhật'}</p>
+        </div>
+        <div className="rounded-xl border border-[#E3ECF8] bg-white p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8EA0B8]">Cán bộ phụ trách</p>
+          <p className="mt-1 text-sm font-semibold text-[#27406B]">{meeting.tenCanBo || 'Chưa cập nhật'}</p>
+        </div>
+        <div className="rounded-xl border border-[#E3ECF8] bg-white p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8EA0B8]">Trạng thái</p>
+          <p className="mt-1 text-sm font-semibold text-[#27406B]">{status}</p>
+        </div>
+      </div>
+
+      {isProposed && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <p>Đề xuất đổi lịch của bạn đang chờ cán bộ xem xét.</p>
+          {meeting.thoiGianDeXuatMoi && (
+            <p className="mt-1 font-semibold">
+              Thời gian đề xuất: {new Date(meeting.thoiGianDeXuatMoi).toLocaleString('vi-VN')}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={handleCancelProposal}
+            disabled={saving}
+            className="mt-3 inline-flex h-9 items-center rounded-xl border border-amber-300 bg-white px-4 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+          >
+            Hủy đề xuất
+          </button>
+        </div>
+      )}
+      {status === 'Đã xác nhận' && (
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          Lịch hẹn đã được xác nhận. Vui lòng đến đúng giờ.
+        </div>
+      )}
+      {status === 'Đã gặp mặt' && (
+        <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
+          Buổi gặp mặt đã diễn ra. Cán bộ đang xử lý kết quả.
+        </div>
+      )}
+
+      {isPending && !showForm && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={saving}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#0D47A1] px-5 text-sm font-bold text-white transition hover:bg-[#083778] disabled:opacity-60"
+          >
+            Xác nhận lịch hẹn
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#CFE0F5] bg-white px-5 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+          >
+            Đổi lịch hẹn
+          </button>
+        </div>
+      )}
+
+      {isPending && showForm && (
+        <div className="mt-4 space-y-3 rounded-xl border border-[#E3ECF8] bg-white p-4">
+          <p className="text-sm font-semibold text-[#27406B]">Đề xuất thời gian mới</p>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase text-[#8EA0B8]">Thời gian mới</label>
+            <input
+              type="datetime-local"
+              value={newDateTime}
+              onChange={(e) => setNewDateTime(e.target.value)}
+              className="w-full rounded-xl border border-[#E3ECF8] bg-[#F7FBFF] px-3 py-2.5 text-sm text-[#27406B] outline-none focus:border-[#93c5fd]"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase text-[#8EA0B8]">Lý do (tùy chọn)</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Lý do muốn đổi lịch..."
+              className="w-full rounded-xl border border-[#E3ECF8] bg-[#F7FBFF] px-3 py-2.5 text-sm text-[#27406B] outline-none focus:border-[#93c5fd]"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleReschedule}
+              disabled={saving || !newDateTime}
+              className="inline-flex h-9 items-center rounded-xl bg-[#0D47A1] px-4 text-sm font-bold text-white transition hover:bg-[#083778] disabled:opacity-60"
+            >
+              Gửi đề xuất
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setNewDateTime(''); setNote(''); }}
+              className="inline-flex h-9 items-center rounded-xl border border-[#CFE0F5] bg-white px-4 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function mapApiItemToDisplay(item) {
   if (!item) return null;
 
@@ -193,6 +389,7 @@ export default function AdoptionStatus() {
 
   const [apiItems, setApiItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refetchKey, setRefetchKey] = useState(0);
 
   useEffect(() => {
     const loadAdoptions = async () => {
@@ -220,7 +417,7 @@ export default function AdoptionStatus() {
     };
 
     loadAdoptions();
-  }, [user?.id]);
+  }, [user?.id, refetchKey]);
   const mergedItems = useMemo(() => {
     return apiItems.map(mapApiItemToDisplay);
   }, [apiItems]);
@@ -424,10 +621,10 @@ export default function AdoptionStatus() {
               <DocumentUploader
                 requestId={selectedRequest.id}
                 readOnly={!canUpdate}
-                onUploadSuccess={() => {
-                  window.location.reload();
-                }}
+                onUploadSuccess={() => setRefetchKey((k) => k + 1)}
               />
+
+              <MeetingSection requestId={selectedRequest.id} />
             </div>
           )}
         </div>

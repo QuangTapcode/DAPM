@@ -28,6 +28,10 @@ public class HoSoNhanNuoiController : ControllerBase
         TenTre = h.Tre?.HoTen,
         MaCanBo = h.MaCanBo ?? string.Empty,
         TenCanBo = h.CanBo?.HoTen,
+        TenNguoiNhan = h.YeuCauNhanNuoi?.NguoiNhan?.HoTen,
+        SDTNguoiNhan = h.YeuCauNhanNuoi?.NguoiNhan?.SDT,
+        LyDoNhanNuoi = h.YeuCauNhanNuoi?.LyDoNhanNuoi,
+        ThuNhapHangThang = h.YeuCauNhanNuoi?.ThuNhapHangThang,
         NgayLap = h.NgayLap,
         NgayDuyet = h.NgayDuyet,
         TrangThai = h.TrangThai,
@@ -37,7 +41,11 @@ public class HoSoNhanNuoiController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<HoSoNhanNuoiDto>>>> GetAll([FromQuery] QueryParams q)
     {
-        var query = _db.HOSONHANNUOI.Include(h => h.Tre).Include(h => h.CanBo).AsQueryable();
+        var query = _db.HOSONHANNUOI
+            .Include(h => h.Tre)
+            .Include(h => h.CanBo)
+            .Include(h => h.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(q.Status)) query = query.Where(h => h.TrangThai == q.Status);
 
         var total = await query.CountAsync();
@@ -55,7 +63,10 @@ public class HoSoNhanNuoiController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<HoSoNhanNuoiDto>>> GetById(string id)
     {
-        var h = await _db.HOSONHANNUOI.Include(x => x.Tre).Include(x => x.CanBo)
+        var h = await _db.HOSONHANNUOI
+            .Include(x => x.Tre)
+            .Include(x => x.CanBo)
+            .Include(x => x.YeuCauNhanNuoi).ThenInclude(y => y!.NguoiNhan)
             .FirstOrDefaultAsync(x => x.MaHSNhanNuoi == id);
         if (h is null) return NotFound(ApiResponse<HoSoNhanNuoiDto>.Fail("Not found"));
         return Ok(ApiResponse<HoSoNhanNuoiDto>.Ok(Map(h)));
@@ -92,13 +103,6 @@ public class HoSoNhanNuoiController : ControllerBase
         if (isChildInOtherActiveProfile)
             return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Trẻ đã được liên kết với một hồ sơ nhận nuôi khác đang trong quá trình xử lý hoặc đã hoàn tất."));
 
-        // 5. Kiểm tra lịch hẹn gặp mặt phải có trạng thái "Đã gặp mặt" và kết quả đánh giá trẻ phải là "Phù hợp"
-        var hasSuitableMeeting = await _db.LICHHENGAPMATNHANNUOI
-            .Where(l => l.MaYeuCauNhan == dto.MaYeuCauNhan && l.TrangThai == "Đã gặp mặt")
-            .AnyAsync(l => _db.CHITIETGAPMAT.Any(c => c.MaLichGap == l.MaLichGap && c.MaTre == dto.MaTre && c.KetQua == "Phù hợp"));
-
-        if (!hasSuitableMeeting)
-            return BadRequest(ApiResponse<HoSoNhanNuoiDto>.Fail("Không tìm thấy lịch hẹn gặp mặt ở trạng thái 'Đã gặp mặt' và đánh giá trẻ là 'Phù hợp' cho yêu cầu này."));
 
         var h = new HoSoNhanNuoi
         {
@@ -107,7 +111,7 @@ public class HoSoNhanNuoiController : ControllerBase
             MaTre = dto.MaTre,
             MaCanBo = dto.MaCanBo ?? userId,
             NgayLap = DateTime.Today,
-            TrangThai = "Đang lập",
+            TrangThai = "Chờ duyệt",
             GhiChu = dto.GhiChu
         };
 
@@ -136,6 +140,7 @@ public class HoSoNhanNuoiController : ControllerBase
     {
         var h = await _db.HOSONHANNUOI.Include(x => x.Tre).FirstOrDefaultAsync(x => x.MaHSNhanNuoi == id);
         if (h is null) return NotFound(ApiResponse<bool>.Fail("Not found"));
+        if (h.TrangThai == "Đã duyệt") return BadRequest(ApiResponse<bool>.Fail("Hồ sơ đã được duyệt trước đó"));
 
         h.TrangThai = "Đã duyệt";
         h.NgayDuyet = DateTime.Today;

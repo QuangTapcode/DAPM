@@ -27,6 +27,7 @@ public class GiayToController : ControllerBase
     {
         MaGiayTo = g.MaGiayTo,
         MaLoaiGiayTo = g.MaLoaiGiayTo,
+        TenLoaiGiayTo = g.LoaiGiayToBatBuoc?.TenLoaiGiayTo,
         DuongDanFile = g.DuongDanFile,
         TrangThai = g.TrangThai,
         MaYeuCauGuiTre = g.MaYeuCauGuiTre,
@@ -41,7 +42,7 @@ public class GiayToController : ControllerBase
         [FromQuery] string? maYeuCauNhan = null,
         [FromQuery] string? status = null)
     {
-        var query = _db.GIAYTOPHAPLY.AsQueryable();
+        var query = _db.GIAYTOPHAPLY.Include(g => g.LoaiGiayToBatBuoc).AsQueryable();
         if (!string.IsNullOrEmpty(maYeuCauGuiTre)) query = query.Where(g => g.MaYeuCauGuiTre == maYeuCauGuiTre);
         if (!string.IsNullOrEmpty(maYeuCauNhan)) query = query.Where(g => g.MaYeuCauNhan == maYeuCauNhan);
         if (!string.IsNullOrEmpty(status)) query = query.Where(g => g.TrangThai == status);
@@ -53,7 +54,7 @@ public class GiayToController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<GiayToDto>>> GetById(string id)
     {
-        var g = await _db.GIAYTOPHAPLY.FirstOrDefaultAsync(x => x.MaGiayTo == id);
+        var g = await _db.GIAYTOPHAPLY.Include(x => x.LoaiGiayToBatBuoc).FirstOrDefaultAsync(x => x.MaGiayTo == id);
         if (g is null) return NotFound(ApiResponse<GiayToDto>.Fail("Not found"));
         return Ok(ApiResponse<GiayToDto>.Ok(Map(g)));
     }
@@ -83,7 +84,7 @@ public class GiayToController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<GiayToDto>>> Update(string id, [FromBody] UpdateGiayToDto dto)
     {
-        var g = await _db.GIAYTOPHAPLY.FirstOrDefaultAsync(x => x.MaGiayTo == id);
+        var g = await _db.GIAYTOPHAPLY.Include(x => x.LoaiGiayToBatBuoc).FirstOrDefaultAsync(x => x.MaGiayTo == id);
         if (g is null) return NotFound(ApiResponse<GiayToDto>.Fail("Not found"));
 
         if (dto.MaLoaiGiayTo != null) g.MaLoaiGiayTo = dto.MaLoaiGiayTo;

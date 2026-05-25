@@ -1,22 +1,15 @@
 import axiosClient from './axiosClient';
 
 const meetingApi = {
-  getAll: (params = {}) => axiosClient.get('/adoption-meetings', { params }),
+  getAll: (params = {}) => axiosClient.get('/meetings', { params }),
 
-  getByRequest: (maYeuCauNhan) =>
-    axiosClient.get(`/adoption-meetings/by-request/${maYeuCauNhan}`),
+  getById: (id) => axiosClient.get(`/meetings/${id}`),
 
-  getById: (id) => axiosClient.get(`/adoption-meetings/${id}`),
+  create: (data) => axiosClient.post('/meetings', data),
 
-  create: (data) => axiosClient.post('/adoption-meetings', data),
+  update: (id, data) => axiosClient.put(`/meetings/${id}`, data),
 
-  update: (id, data) => axiosClient.put(`/adoption-meetings/${id}`, data),
-
-  confirm: (id) => axiosClient.post(`/adoption-meetings/${id}/confirm`),
-
-  recordResult: (id, data) => axiosClient.post(`/adoption-meetings/${id}/result`, data),
-
-  delete: (id) => axiosClient.delete(`/adoption-meetings/${id}`),
+  delete: (id) => axiosClient.delete(`/meetings/${id}`),
 };
 
 export default meetingApi;

@@ -1,11 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, CheckCircle2, FileText } from 'lucide-react';
 
-import { useAuth } from '../../hooks/useAuth';
 import { useFetch } from '../../hooks/useFetch';
 import receptionApi from '../../api/receptionApi';
+import receptionProfileApi from '../../api/receptionProfileApi';
+import documentApi from '../../api/documentApi';
 import { formatDate } from '../../utils/formatDate';
 
 const pageClass = 'min-h-screen bg-[#F5F7FB]';
@@ -40,10 +41,7 @@ const DOCUMENT_STATUS = {
   CAN_BO_SUNG: 'Cần bổ sung',
   HET_HAN: 'Hết hạn',
 };
-const MANAGER_APPROVER = {
-  MaNguoiDung: 'ND000004',
-  HoTen: 'Trưởng phòng Nguyễn Văn A',
-};
+
 const DEMO_REQUEST_DETAIL = {
   MaYeuCauGuiTre: 'YCGT0002',
   MaNguoiGui: 'ND000012',
@@ -202,81 +200,53 @@ function mapRequestDetail(item) {
   if (!item) return null;
 
   const sender = item.nguoiGui || item.NguoiGui || {};
-  const child = item.thongTinTreTam || item.ThongTinTreTam || item.treTam || {};
-  const rawDocs = item.giayTo || item.GiayTo || item.documents || [];
+  const child = item.thongTinTre || item.thongTinTreTam || item.ThongTinTreTam || item.treTam || {};
+  const rawDocs = item.giayTos || item.giayTo || item.GiayTo || item.documents || [];
 
   return {
-    id: item.MaYeuCauGuiTre || item.id,
-    MaYeuCauGuiTre: item.MaYeuCauGuiTre || item.id || '',
-    MaLoaiNguoiGui: item.MaLoaiNguoiGui || item.senderTypeCode || '',
-    QuanHeVoiTre: item.QuanHeVoiTre || item.relationship || '',
-    LyDoGui: item.LyDoGui || item.reason || '',
-    TrangThaiYC: normalizeRequestStatus(item.TrangThaiYC || item.status),
-    NgayTao: item.NgayTao || item.createdAt || '',
-    NgayCapNhat: item.NgayCapNhat || item.updatedAt || '',
-    GhiChuYeuCau: item.GhiChu || item.note || '',
+    id: item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.id,
+    MaYeuCauGuiTre: item.maYeuCauGuiTre || item.MaYeuCauGuiTre || item.id || '',
+    MaLoaiNguoiGui: item.maLoaiNguoiGui || item.MaLoaiNguoiGui || item.senderTypeCode || '',
+    QuanHeVoiTre: item.quanHeVoiTre || item.QuanHeVoiTre || item.relationship || '',
+    LyDoGui: item.lyDoGui || item.LyDoGui || item.reason || '',
+    TrangThaiYC: normalizeRequestStatus(item.trangThaiYC || item.TrangThaiYC || item.status),
+    NgayTao: item.ngayTao || item.NgayTao || item.createdAt || '',
+    NgayCapNhat: item.ngayCapNhat || item.NgayCapNhat || item.updatedAt || '',
+    GhiChuYeuCau: item.ghiChu || item.GhiChu || item.note || '',
 
     nguoiGui: {
       MaNguoiGui:
-        item.MaNguoiGui ||
-        sender.MaNguoiDung ||
-        sender.id ||
-        sender.MaNguoiGui ||
-        '',
+        item.maNguoiGui || item.MaNguoiGui ||
+        sender.maNguoiDung || sender.MaNguoiDung ||
+        sender.id || sender.MaNguoiGui || '',
       HoTen:
-        sender.HoTen ||
-        sender.hoTen ||
-        item.TenNguoiGui ||
-        item.senderName ||
-        '',
+        sender.hoTen || sender.HoTen ||
+        item.tenNguoiGui || item.TenNguoiGui || item.senderName || '',
       CCCD:
-        sender.CCCD ||
-        sender.SoCCCD ||
-        item.senderIdentityNumber ||
-        item.senderCccd ||
-        '',
+        item.senderCccd || item.SenderCccd ||
+        sender.CCCD || sender.SoCCCD || '',
       SoDienThoai:
-        sender.SoDienThoai ||
-        sender.phone ||
-        item.senderPhone ||
-        '',
-      Email: sender.Email || sender.email || item.senderEmail || '',
-      TenTinhTP: sender.TenTinhTP || item.senderProvinceName || '',
-      TenXaPhuong: sender.TenXaPhuong || item.senderWardName || '',
-      DiaChiCuThe: sender.DiaChiCuThe || item.senderAddressDetail || '',
+        item.senderPhone || item.SenderPhone ||
+        sender.SoDienThoai || sender.phone || '',
+      Email: item.senderEmail || item.SenderEmail || sender.Email || sender.email || '',
+      TenTinhTP: item.senderProvince || item.SenderProvince || sender.TenTinhTP || '',
+      TenXaPhuong: item.senderWard || item.SenderWard || sender.TenXaPhuong || '',
+      DiaChiCuThe: item.senderAddress || item.SenderAddress || sender.DiaChiCuThe || '',
     },
 
     tre: {
-      MaTreTam: child.MaTreTam || child.id || '',
+      MaTreTam: child.maThongTin || child.MaThongTin || child.MaTreTam || child.id || '',
       HoTen:
-        child.HoTen ||
-        child.hoTen ||
-        item.TenTreTam ||
-        item.childName ||
-        '',
-      NgaySinh:
-        child.NgaySinh ||
-        child.ngaySinh ||
-        item.childBirthDate ||
-        '',
-      GioiTinh:
-        child.GioiTinh ||
-        child.gioiTinh ||
-        item.childGender ||
-        '',
-      DanToc:
-        child.DanToc ||
-        child.danToc ||
-        item.childEthnicity ||
-        '',
-      TenTinhTP: child.TenTinhTP || item.childProvinceName || '',
-      TenXaPhuong: child.TenXaPhuong || item.childWardName || '',
-      DiaChiCuThe: child.DiaChiCuThe || item.childAddressDetail || '',
+        child.tenTre || child.TenTre || child.HoTen || child.hoTen ||
+        item.TenTreTam || item.childName || '',
+      NgaySinh: child.ngaySinh || child.NgaySinh || item.childBirthDate || '',
+      GioiTinh: child.gioiTinh || child.GioiTinh || item.childGender || '',
+      DanToc: child.danToc || child.DanToc || item.childEthnicity || '',
+      TenTinhTP: child.tenTinhTP || child.TenTinhTP || item.childProvinceName || '',
+      TenXaPhuong: child.tenXaPhuong || child.TenXaPhuong || item.childWardName || '',
+      DiaChiCuThe: child.diaChiCuThe || child.DiaChiCuThe || item.childAddressDetail || '',
       TinhTrangSucKhoe:
-        child.TinhTrangSucKhoe ||
-        child.tinhTrangSucKhoe ||
-        item.childHealthStatus ||
-        '',
+        child.tinhTrangSucKhoe || child.TinhTrangSucKhoe || item.childHealthStatus || '',
     },
 
     documents: Array.isArray(rawDocs) ? rawDocs.map(mapDocument) : [],
@@ -402,8 +372,6 @@ export default function CreateReceptionProfile() {
   const { requestId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-
   const stateRequest = location.state?.request || null;
 
   const { data: raw, loading } = useFetch(
@@ -415,6 +383,28 @@ export default function CreateReceptionProfile() {
     stateRequest || raw || (!loading ? DEMO_REQUEST_DETAIL : null);
 
   const request = useMemo(() => mapRequestDetail(sourceRequest), [sourceRequest]);
+
+  const [apiDocs, setApiDocs] = useState(null);
+
+  useEffect(() => {
+    if (!requestId) return;
+    documentApi.getDocuments({ maYeuCauGuiTre: requestId })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setApiDocs(items.map((doc) => ({
+          MaGiayTo: doc.maGiayTo || doc.MaGiayTo || '',
+          TenGiayTo: doc.tenLoaiGiayTo || doc.tenGiayTo || doc.TenGiayTo || 'Giấy tờ',
+          LoaiGiayTo: doc.maLoaiGiayTo || doc.LoaiGiayTo || 'Giấy tờ',
+          DuongDanFile: doc.duongDanFile || doc.DuongDanFile || '',
+          TrangThai: doc.trangThai || doc.TrangThai || DOCUMENT_STATUS.CHO_XAC_MINH,
+          NgayCapNhat: doc.ngayCapNhat || doc.NgayCapNhat || '',
+          GhiChu: doc.ghiChu || doc.GhiChu || '',
+        })));
+      })
+      .catch(() => setApiDocs([]));
+  }, [requestId]);
+
+  const displayDocs = apiDocs !== null ? apiDocs : (request?.documents ?? []);
 
   const {
     register,
@@ -436,91 +426,33 @@ export default function CreateReceptionProfile() {
   }, [reset, requestId]);
 
   const allDocumentsValid =
-    request?.documents?.length > 0 &&
-    request.documents.every((doc) => doc.TrangThai === DOCUMENT_STATUS.HOP_LE);
+    displayDocs.length > 0 &&
+    displayDocs.every((doc) => doc.TrangThai === DOCUMENT_STATUS.HOP_LE);
 
   const canSubmit =
     !!request &&
-    request.TrangThaiYC === REQUEST_STATUS.DA_TIEP_NHAN &&
-    allDocumentsValid;
-
-  const createMockReceptionProfile = (formData) => {
-    const newProfile = {
-      MaHSTiepNhan: `HSTN${String(Date.now()).slice(-4)}`,
-      MaYeuCauGuiTre: request.MaYeuCauGuiTre,
-      MaTre: null,
-
-      MaCanBoTiepNhan: MANAGER_APPROVER.MaNguoiDung,
-      TenCanBoTiepNhan: MANAGER_APPROVER.HoTen,
-
-      NgayTiepNhan: formData.NgayTiepNhan,
-      NgayDuyet: null,
-      TrangThai: 'Chờ duyệt',
-      GhiChu: formData.GhiChu || '',
-
-      TenTreTam: request.tre.HoTen,
-      TenNguoiGui: request.nguoiGui.HoTen,
-
-      yeuCauGuiTre: {
-        MaYeuCauGuiTre: request.MaYeuCauGuiTre,
-        MaNguoiGui: request.nguoiGui.MaNguoiGui,
-        MaLoaiNguoiGui: request.MaLoaiNguoiGui,
-        QuanHeVoiTre: request.QuanHeVoiTre,
-        LyDoGui: request.LyDoGui,
-        TrangThaiYC: REQUEST_STATUS.DA_TIEP_NHAN,
-        NgayTao: request.NgayTao,
-        NgayCapNhat: request.NgayCapNhat,
-      },
-
-      nguoiGui: request.nguoiGui,
-      thongTinTreTam: request.tre,
-      tre: null,
-      giayTo: request.documents,
-    };
-
-    const savedProfiles = JSON.parse(
-      localStorage.getItem('mock_reception_profiles') || '[]'
-    );
-
-    localStorage.setItem(
-      'mock_reception_profiles',
-      JSON.stringify([newProfile, ...savedProfiles])
-    );
-
-    return newProfile;
-  };
+    (request.TrangThaiYC === REQUEST_STATUS.DANG_XEM_XET ||
+      request.TrangThaiYC === REQUEST_STATUS.DA_TIEP_NHAN);
 
   const onSubmit = async (formData) => {
     if (!canSubmit) return;
 
-    if (typeof receptionApi.createReceptionProfile === 'function') {
-      const res = await receptionApi.createReceptionProfile({
-        MaYeuCauGuiTre: request.MaYeuCauGuiTre,
-        MaCanBoTiepNhan: MANAGER_APPROVER.MaNguoiDung,
-        NgayTiepNhan: formData.NgayTiepNhan,
-        GhiChu: formData.GhiChu || null,
+    try {
+      const res = await receptionProfileApi.create({
+        maYeuCauGuiTre: request.MaYeuCauGuiTre,
+        ghiChu: formData.GhiChu || null,
       });
 
       navigate('/can-bo-tiep-nhan/ho-so-tiep-nhan', {
         replace: true,
         state: {
-          message: 'Tạo hồ sơ tiếp nhận thành công. Hồ sơ đang chờ duyệt.',
-          createdProfileId: res?.MaHSTiepNhan,
+          message: 'Tạo hồ sơ tiếp nhận thành công. Hồ sơ đang chờ trưởng phòng duyệt.',
+          createdProfileId: res?.maHSTiepNhan || res?.MaHSTiepNhan,
         },
       });
-
-      return;
+    } catch (err) {
+      alert(err?.message || 'Không thể tạo hồ sơ tiếp nhận. Vui lòng thử lại.');
     }
-
-    const newProfile = createMockReceptionProfile(formData);
-
-    navigate('/can-bo-tiep-nhan/ho-so-tiep-nhan', {
-      replace: true,
-      state: {
-        message: 'Tạo hồ sơ tiếp nhận thành công. Hồ sơ đang chờ duyệt.',
-        createdProfileId: newProfile.MaHSTiepNhan,
-      },
-    });
   };
 
   if (loading && !stateRequest) {
@@ -619,7 +551,7 @@ export default function CreateReceptionProfile() {
 
                   <DisplayField
                     label="Người duyệt hồ sơ"
-                    value={MANAGER_APPROVER.HoTen}
+                    value="Trưởng phòng"
                   />
                 </div>
               </SectionBlock>
@@ -700,9 +632,9 @@ export default function CreateReceptionProfile() {
                     </h3>
                   </div>
 
-                  {request.documents.length > 0 ? (
+                  {displayDocs.length > 0 ? (
                     <div className="space-y-3">
-                      {request.documents.map((item) => (
+                      {displayDocs.map((item) => (
                         <DocumentItem key={item.MaGiayTo} item={item} />
                       ))}
                     </div>

@@ -199,7 +199,7 @@ export default function ProfileApproval() {
         const params = isAdoption
           ? { maYeuCauNhan: profile.requestId }
           : { maYeuCauGuiTre: profile.requestId };
-        const result = await documentApi.getAll(params);
+        const result = await documentApi.getDocuments(params);
         if (!cancelled) setDocuments((result ?? []).map(normalizeDocument));
       } catch (err) {
         if (!cancelled) {

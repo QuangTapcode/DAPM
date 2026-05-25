@@ -211,6 +211,11 @@ export default function PendingProfileList() {
   const handleBulkApprove = async () => {
     if (selectedRows.length === 0 || saving) return;
 
+    const confirmed = window.confirm(
+      `Xác nhận phê duyệt ${selectedRows.length} hồ sơ đã chọn?\n\nHành động này không thể hoàn tác.`
+    );
+    if (!confirmed) return;
+
     try {
       setSaving(true);
       for (const rowKey of selectedRows) {

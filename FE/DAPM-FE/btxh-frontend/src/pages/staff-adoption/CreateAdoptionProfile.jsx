@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
+import adoptionProfileApi from '../../api/adoptionProfileApi';
+import childApi from '../../api/childApi';
+import meetingApi from '../../api/meetingApi';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDate } from '../../utils/formatDate';
 import Badge from '../../components/common/Badge';
@@ -168,7 +171,7 @@ function normalizeChild(child = {}) {
 function getProfileStatus(selectedChild, meeting, meetingResult) {
   if (!selectedChild) return 'Chưa gán trẻ';
   if (!meeting) return 'Chưa tạo lịch gặp';
-  if (meeting.TrangThai !== 'Đã xác nhận') return 'Chờ xác nhận lịch';
+  if (meeting.trangThai !== 'Đã xác nhận') return 'Chờ xác nhận lịch';
   if (!meetingResult.result) return 'Chưa ghi nhận kết quả';
   if (meetingResult.result === 'Phù hợp') return 'Đủ điều kiện gửi duyệt';
   if (meetingResult.result === 'Cần gặp lại') return 'Cần gặp lại';
@@ -327,6 +330,7 @@ function EmptyState({ children }) {
 
 export default function CreateAdoptionProfile() {
   const { requestId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [request, setRequest] = useState(() =>
@@ -338,12 +342,10 @@ export default function CreateAdoptionProfile() {
 
   const [meeting, setMeeting] = useState(null);
   const [meetingForm, setMeetingForm] = useState({
-    meetingDate: '',
-    meetingTime: '',
-    location: 'Phòng tư vấn nhận nuôi - Trung tâm',
-    officer: 'Cán bộ nhận nuôi',
-    note: '',
+    thoiGian: '',
+    diaDiem: 'Phòng tư vấn nhận nuôi - Trung tâm',
   });
+  const [meetingCreating, setMeetingCreating] = useState(false);
 
   const [meetingResult, setMeetingResult] = useState({
     result: '',
@@ -352,6 +354,7 @@ export default function CreateAdoptionProfile() {
 
   const [staffNote, setStaffNote] = useState('');
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!requestId) return;
@@ -364,7 +367,7 @@ export default function CreateAdoptionProfile() {
 
         const [requestRes, childrenRes] = await Promise.all([
           adoptionApi.getById(requestId),
-          adoptionApi.getMatchingChildren(requestId),
+          childApi.getAll({ status: 'Chờ nhận nuôi', limit: 100 }),
         ]);
 
         if (!active) return;
@@ -412,13 +415,9 @@ export default function CreateAdoptionProfile() {
     meetingResult
   );
 
-  const canRecordResult = meeting && meeting.TrangThai === 'Đã xác nhận';
+  const canRecordResult = meeting && meeting.trangThai === 'Đã xác nhận';
 
-  const canSubmitProfile =
-    selectedChild &&
-    meeting &&
-    meeting.TrangThai === 'Đã xác nhận' &&
-    meetingResult.result === 'Phù hợp';
+  const canSubmitProfile = selectedChild !== null;
 
   const officerName =
     user?.HoTen ||
@@ -434,45 +433,56 @@ export default function CreateAdoptionProfile() {
     setMeetingResult({ result: '', note: '' });
   }
 
-  function handleCreateMeeting(e) {
+  async function handleCreateMeeting(e) {
     e.preventDefault();
-
-    if (!selectedChild) return;
-
-    setMeeting({
-      MaLichGap: `LHGM${String(Date.now()).slice(-4)}`,
-      MaYeuCauNhan: request.MaYeuCauNhan,
-      MaTre: selectedChild.MaTre,
-      TenTre: selectedChild.HoTen,
-      TrangThai: 'Chờ xác nhận',
-      ...meetingForm,
-    });
+    if (!selectedChild || meetingCreating) return;
+    setMeetingCreating(true);
+    try {
+      const created = await meetingApi.create({
+        maYeuCauNhan: request.MaYeuCauNhan,
+        thoiGian: meetingForm.thoiGian,
+        diaDiem: meetingForm.diaDiem,
+        maTres: [selectedChild.MaTre],
+      });
+      setMeeting(created);
+    } catch (err) {
+      alert('Lỗi tạo lịch gặp: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setMeetingCreating(false);
+    }
   }
 
-  function handleSubmitProfile() {
+  async function handleConfirmMeeting() {
+    if (!meeting?.maLichGap || meetingCreating) return;
+    setMeetingCreating(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Đã xác nhận' });
+      setMeeting(updated);
+    } catch (err) {
+      alert('Lỗi xác nhận lịch: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setMeetingCreating(false);
+    }
+  }
+
+  async function handleSubmitProfile() {
     setSubmitAttempted(true);
+    if (!canSubmitProfile || submitting) return;
 
-    if (!canSubmitProfile) return;
-
-    const payload = {
-      maYeuCauNhan: request.MaYeuCauNhan,
-      maTre: selectedChild.MaTre,
-      maCanBo:
-        user?.MaNguoiDung ||
-        user?.maNguoiDung ||
-        user?.id ||
-        user?.maNguoiNhan ||
-        '',
-      ngayLap: new Date().toISOString(),
-      trangThai: 'Đang lập',
-      ghiChu: staffNote,
-    };
-
-    console.log('Payload lập hồ sơ nhận nuôi:', payload);
-
-    alert(
-      'Đã đủ dữ liệu lập hồ sơ. Cần nối payload này với API tạo hồ sơ nhận nuôi.'
-    );
+    setSubmitting(true);
+    try {
+      await adoptionProfileApi.create({
+        maYeuCauNhan: request.MaYeuCauNhan,
+        maTre: selectedChild.MaTre,
+        maCanBo: user?.MaNguoiDung || user?.maNguoiDung || user?.id || '',
+        ghiChu: staffNote,
+      });
+      navigate('/can-bo-nhan-nuoi/ho-so');
+    } catch (err) {
+      alert('Lỗi tạo hồ sơ: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -743,7 +753,7 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Khu vực chọn trẻ"
-                description="Danh sách trẻ phù hợp được lấy từ API ghép trẻ của yêu cầu nhận nuôi."
+                description="Danh sách trẻ đang chờ nhận nuôi. Chọn trẻ để gán vào hồ sơ."
               />
 
               <div className="mt-5 max-h-[680px] space-y-4 overflow-y-auto pr-1">
@@ -779,88 +789,33 @@ export default function CreateAdoptionProfile() {
 
               {selectedChild && !meeting && (
                 <form onSubmit={handleCreateMeeting} className="mt-5 grid gap-5">
-                  <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Ngày gặp</label>
-                      <input
-                        type="date"
-                        required
-                        value={meetingForm.meetingDate}
-                        onChange={(e) =>
-                          setMeetingForm((prev) => ({
-                            ...prev,
-                            meetingDate: e.target.value,
-                          }))
-                        }
-                        className={inputClass}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Giờ gặp</label>
-                      <input
-                        type="time"
-                        required
-                        value={meetingForm.meetingTime}
-                        onChange={(e) =>
-                          setMeetingForm((prev) => ({
-                            ...prev,
-                            meetingTime: e.target.value,
-                          }))
-                        }
-                        className={inputClass}
-                      />
-                    </div>
+                  <div>
+                    <label className={labelClass}>Thời gian gặp</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={meetingForm.thoiGian}
+                      onChange={(e) =>
+                        setMeetingForm((prev) => ({ ...prev, thoiGian: e.target.value }))
+                      }
+                      className={inputClass}
+                    />
                   </div>
 
                   <div>
                     <label className={labelClass}>Địa điểm</label>
                     <input
                       required
-                      value={meetingForm.location}
+                      value={meetingForm.diaDiem}
                       onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          location: e.target.value,
-                        }))
+                        setMeetingForm((prev) => ({ ...prev, diaDiem: e.target.value }))
                       }
                       className={inputClass}
                     />
                   </div>
 
-                  <div>
-                    <label className={labelClass}>Cán bộ phụ trách</label>
-                    <input
-                      required
-                      value={meetingForm.officer}
-                      onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          officer: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>Ghi chú lịch gặp</label>
-                    <textarea
-                      rows={4}
-                      value={meetingForm.note}
-                      onChange={(e) =>
-                        setMeetingForm((prev) => ({
-                          ...prev,
-                          note: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                      placeholder="Nhập ghi chú nếu có..."
-                    />
-                  </div>
-
-                  <button type="submit" className={`${primaryButton} w-full`}>
-                    Tạo lịch gặp mặt
+                  <button type="submit" disabled={meetingCreating} className={`${primaryButton} w-full`}>
+                    {meetingCreating ? 'Đang tạo...' : 'Tạo lịch gặp mặt'}
                   </button>
                 </form>
               )}
@@ -869,17 +824,19 @@ export default function CreateAdoptionProfile() {
                 <div className="mt-5 rounded-2xl border border-[#E1ECF8] bg-[#FAFCFF] p-5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#1F2A3D]">
-                      {meeting.MaLichGap}
+                      {meeting.maLichGap}
                     </p>
-                    <Badge status={meeting.TrangThai} size="sm" />
+                    <Badge status={meeting.trangThai} size="sm" />
                   </div>
 
                   <p className="mt-3 text-sm leading-7 text-[#5F738F]">
-                    {meeting.meetingDate} · {meeting.meetingTime}
+                    {meeting.thoiGian
+                      ? new Date(meeting.thoiGian).toLocaleString('vi-VN')
+                      : 'Chưa có'}
                   </p>
 
                   <p className="text-sm leading-7 text-[#5F738F]">
-                    {meeting.location}
+                    {meeting.diaDiem}
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-3">
@@ -894,18 +851,16 @@ export default function CreateAdoptionProfile() {
                       Cập nhật lịch
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMeeting((prev) => ({
-                          ...prev,
-                          TrangThai: 'Đã xác nhận',
-                        }))
-                      }
-                      className={primaryButton}
-                    >
-                      Xác nhận lịch
-                    </button>
+                    {meeting.trangThai !== 'Đã xác nhận' && (
+                      <button
+                        type="button"
+                        onClick={handleConfirmMeeting}
+                        disabled={meetingCreating}
+                        className={primaryButton}
+                      >
+                        {meetingCreating ? 'Đang xác nhận...' : 'Xác nhận lịch'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -923,7 +878,7 @@ export default function CreateAdoptionProfile() {
                 </div>
               )}
 
-              {meeting && meeting.TrangThai !== 'Đã xác nhận' && (
+              {meeting && meeting.trangThai !== 'Đã xác nhận' && (
                 <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
                   Cần xác nhận lịch gặp trước khi ghi nhận kết quả.
                 </p>
@@ -988,17 +943,17 @@ export default function CreateAdoptionProfile() {
 
               {submitAttempted && !canSubmitProfile && (
                 <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-700">
-                  Cần gán trẻ, xác nhận lịch gặp và ghi nhận kết quả phù hợp
-                  trước khi gửi hồ sơ duyệt.
+                  Cần chọn trẻ trước khi gửi hồ sơ duyệt.
                 </p>
               )}
 
               <button
                 type="button"
                 onClick={handleSubmitProfile}
+                disabled={submitting || !canSubmitProfile}
                 className={`${primaryButton} mt-5 w-full`}
               >
-                Lập hồ sơ và gửi trưởng phòng duyệt
+                {submitting ? 'Đang tạo hồ sơ...' : 'Lập hồ sơ và gửi trưởng phòng duyệt'}
               </button>
             </section>
           </aside>

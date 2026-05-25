@@ -30,6 +30,9 @@ public class YeuCauGuiTreDto
     /// <summary>Mã trẻ thực sau khi yêu cầu được duyệt (null nếu chưa duyệt).</summary>
     public string? MaTre { get; set; }
 
+    /// <summary>Mã hồ sơ tiếp nhận nếu đã được tạo.</summary>
+    public string? MaHSTiepNhan { get; set; }
+
     // FE compatibility aliases
     public string Id => MaYeuCauGuiTre;
     public string Status => TrangThaiYC;

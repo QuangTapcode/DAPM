@@ -30,6 +30,9 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ICodeGenerator, CodeGenerator>();
 
+// Background jobs
+builder.Services.AddHostedService<ExpiredRequestCleanupService>();
+
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];

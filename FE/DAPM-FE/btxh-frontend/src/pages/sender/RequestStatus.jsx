@@ -12,6 +12,7 @@ import {
 } from '../../utils/statusHelpers';
 
 import receptionApi from '../../api/receptionApi';
+import documentApi from '../../api/documentApi';
 
 import StatusListPanel from '../../components/request-status/StatusListPanel';
 import StatusProgress from '../../components/request-status/StatusProgress';
@@ -241,12 +242,24 @@ export default function RequestStatus() {
   }, [apiItems, tempRequestFromState, tempRequestFromStorage]);
 
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedDocs, setSelectedDocs] = useState([]);
 
   useEffect(() => {
     if (mergedItems.length > 0 && !selectedId) {
       setSelectedId(mergedItems[0].id);
     }
   }, [mergedItems, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    setSelectedDocs([]);
+    documentApi.getDocuments({ maYeuCauGuiTre: selectedId })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setSelectedDocs(items);
+      })
+      .catch(() => setSelectedDocs([]));
+  }, [selectedId]);
 
   const selectedRequest =
     mergedItems.find((item) => String(item.id) === String(selectedId)) ||
@@ -456,24 +469,19 @@ export default function RequestStatus() {
                   Tài liệu đã tải lên
                 </h4>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <DocumentCard
-                    title="Giấy khai sinh"
-                    value={selectedRequest.formData?.documents?.birthCert || '-'}
-                  />
-                  <DocumentCard
-                    title="CCCD/CMND người gửi"
-                    value={selectedRequest.formData?.documents?.senderID || '-'}
-                  />
-                  <DocumentCard
-                    title="Giấy sức khỏe"
-                    value={selectedRequest.formData?.documents?.healthCert || '-'}
-                  />
-                  <DocumentCard
-                    title="Giấy tờ khác"
-                    value={selectedRequest.formData?.documents?.otherDocs || '-'}
-                  />
-                </div>
+                {selectedDocs.length === 0 ? (
+                  <p className="text-sm text-slate-400">Chưa có giấy tờ nào được tải lên.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {selectedDocs.map((doc) => (
+                      <DocumentCard
+                        key={doc.maGiayTo || doc.MaGiayTo}
+                        title={doc.tenLoaiGiayTo || doc.tenGiayTo || 'Giấy tờ'}
+                        value={doc.trangThai || 'Chờ xác minh'}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {canUpdate && (

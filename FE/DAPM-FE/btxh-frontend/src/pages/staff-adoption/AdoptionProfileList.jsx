@@ -107,19 +107,22 @@ const fallbackProfiles = [
 ];
 
 function normalizeMeeting(item) {
+  // BE trả children: [{maTre, tenTre, ketQua, ghiChuCanBo}]
+  const children = item.children || item.Children || [];
+  const firstChild = children[0] || {};
+
   return {
-    MaLichGap: item.MaLichGap || item.maLichGap || item.id || '',
-    MaYeuCauNhan: item.MaYeuCauNhan || item.maYeuCauNhan || '',
-    MaTre: item.MaTre || item.maTre || '',
-    TenTre: item.TenTre || item.tenTre || '',
-    TenNguoiNhan: item.TenNguoiNhan || item.tenNguoiNhan || '',
-    SDTNguoiNhan: item.SDTNguoiNhan || item.sDTNguoiNhan || item.sdtNguoiNhan || '',
-    NgayGap: item.NgayGap || item.ngayGap || '',
-    GioGap: item.GioGap || item.gioGap || '',
-    DiaDiem: item.DiaDiem || item.diaDiem || '',
-    TrangThai: item.TrangThai || item.trangThai || '',
-    KetQuaGapMat: item.KetQuaGapMat || item.ketQuaGapMat || item.KetQua || item.ketQua || '',
-    GhiChu: item.GhiChu || item.ghiChu || item.GhiChuCanBo || item.ghiChuCanBo || '',
+    MaLichGap: item.maLichGap || item.MaLichGap || item.id || '',
+    MaYeuCauNhan: item.maYeuCauNhan || item.MaYeuCauNhan || '',
+    MaTre: firstChild.maTre || firstChild.MaTre || item.maTre || item.MaTre || '',
+    TenTre: firstChild.tenTre || firstChild.TenTre || item.tenTre || item.TenTre || '',
+    TenNguoiNhan: item.tenNguoiNhan || item.TenNguoiNhan || '',
+    SDTNguoiNhan: item.sdtNguoiNhan || item.sDTNguoiNhan || item.SDTNguoiNhan || '',
+    ThoiGian: item.thoiGian || item.ThoiGian || item.ngayGapMat || item.NgayGapMat || '',
+    DiaDiem: item.diaDiem || item.DiaDiem || '',
+    TrangThai: item.trangThai || item.TrangThai || '',
+    KetQuaGapMat: firstChild.ketQua || firstChild.KetQua || item.ketQuaGapMat || item.KetQuaGapMat || '',
+    GhiChu: firstChild.ghiChuCanBo || firstChild.GhiChuCanBo || item.ghiChu || item.GhiChu || '',
   };
 }
 
@@ -367,44 +370,31 @@ export default function AdoptionProfileList() {
   }, [profiles, keyword, profileStatus]);
   async function confirmMeeting(meetingId) {
     try {
-      await meetingApi.confirm(meetingId);
-      setMeetings((prev) =>
-        prev.map((item) =>
-          item.MaLichGap === meetingId
-            ? { ...item, TrangThai: 'Đã xác nhận' }
-            : item
-        )
-      );
+      await meetingApi.update(meetingId, { trangThai: 'Đã xác nhận' });
     } catch {
-      // fallback: cập nhật UI dù API lỗi
-      setMeetings((prev) =>
-        prev.map((item) =>
-          item.MaLichGap === meetingId
-            ? { ...item, TrangThai: 'Đã xác nhận' }
-            : item
-        )
-      );
+      // ignore — cập nhật UI dưới dù API lỗi
     }
+    setMeetings((prev) =>
+      prev.map((item) =>
+        item.MaLichGap === meetingId
+          ? { ...item, TrangThai: 'Đã xác nhận' }
+          : item
+      )
+    );
   }
 
   async function completeProfile(profileId) {
     try {
-      await adoptionProfileApi.approve(profileId);
+      await adoptionProfileApi.update(profileId, { trangThai: 'Đã hoàn tất' });
       setProfiles((prev) =>
         prev.map((item) =>
           (item.MaHoSoNhanNuoi || item.MaHSNhanNuoi) === profileId
-            ? { ...item, TrangThai: 'Đã duyệt', GhiChu: 'Đã duyệt hồ sơ nhận nuôi.' }
+            ? { ...item, TrangThai: 'Đã hoàn tất' }
             : item
         )
       );
     } catch {
-      setProfiles((prev) =>
-        prev.map((item) =>
-          (item.MaHoSoNhanNuoi || item.MaHSNhanNuoi) === profileId
-            ? { ...item, TrangThai: 'Đã duyệt', GhiChu: 'Đã duyệt hồ sơ nhận nuôi.' }
-            : item
-        )
-      );
+      // ignore — status remains unchanged on error
     }
   }
 
@@ -557,10 +547,12 @@ export default function AdoptionProfileList() {
 
                         <td className="px-6 py-5">
                           <p className="font-semibold text-[#26364A]">
-                            {formatDate(item.NgayGap)}
+                            {item.ThoiGian
+                              ? new Date(item.ThoiGian).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+                              : '-'}
                           </p>
                           <p className="mt-1 text-xs text-[#8FA0B8]">
-                            {item.GioGap} · {item.DiaDiem}
+                            {item.DiaDiem}
                           </p>
                         </td>
 

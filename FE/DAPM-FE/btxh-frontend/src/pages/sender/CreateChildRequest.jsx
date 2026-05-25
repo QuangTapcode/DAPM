@@ -11,6 +11,27 @@ const SENDER_TYPES = [
   { code: 'CQDP', label: 'Cơ quan địa phương', requireDocs: false },
 ];
 
+const REASON_LABELS = {
+  mo_coi: 'Trẻ mồ côi (cha mẹ qua đời)',
+  kinh_te: 'Hoàn cảnh kinh tế khó khăn',
+  suc_khoe: 'Cha / Mẹ bệnh nặng, không thể chăm sóc',
+  xa_hoi: 'Hoàn cảnh xã hội đặc biệt',
+  khac: 'Lý do khác',
+};
+
+const RELATION_BY_SENDER_TYPE = {
+  CME: 'Cha/mẹ ruột',
+  NTH: 'Người thân',
+  CQDP: 'Đại diện cơ quan',
+};
+
+const DOC_TYPE_MAP = {
+  birthCert: 'KHAISI',
+  senderID: 'CCCDG',
+  healthCert: 'SKYTE',
+  otherDocs: 'KHAC',
+};
+
 const BASE_DOCS = [
   {
     key: 'birthCert',
@@ -653,10 +674,11 @@ export default function CreateChildRequest() {
   ).length;
 
   const onSubmit = async (data) => {
+    const reasonLabel = REASON_LABELS[data.reason] || data.reason;
     const payload = {
       maLoaiNguoiGui: data.senderTypeCode,
-      quanHeVoiTre: data.senderTypeCode,
-      lyDoGui: `${data.reason}: ${data.reasonDetail}`,
+      quanHeVoiTre: RELATION_BY_SENDER_TYPE[data.senderTypeCode] || data.senderTypeCode,
+      lyDoGui: `${reasonLabel}: ${data.reasonDetail}`,
       ghiChu: data.healthStatus || null,
       thongTinTre: {
         tenTre: data.childName,
@@ -667,6 +689,21 @@ export default function CreateChildRequest() {
     };
 
     const result = await receptionApi.create(payload);
+
+    const maYeuCauGuiTre = result?.maYeuCauGuiTre || result?.id;
+    if (maYeuCauGuiTre) {
+      for (const [key, file] of Object.entries(docs)) {
+        if (!file) continue;
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('maLoaiGiayTo', DOC_TYPE_MAP[key] || key);
+        try {
+          await receptionApi.uploadDocument(maYeuCauGuiTre, fd);
+        } catch {
+          // upload errors are non-fatal — request was created
+        }
+      }
+    }
 
     const snapshot = {
       requestId: result?.id || result?.maYeuCauGuiTre || null,

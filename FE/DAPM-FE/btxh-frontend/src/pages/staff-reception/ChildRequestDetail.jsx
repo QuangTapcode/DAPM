@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
 
 import { useFetch } from '../../hooks/useFetch';
 import receptionApi from '../../api/receptionApi';
+import documentApi from '../../api/documentApi';
 import { formatDate } from '../../utils/formatDate';
 import { useBasePath } from '../../hooks/useBasePath';
 
@@ -257,6 +258,7 @@ function mapRequestDetail(item) {
     NgayCapNhat: item.ngayCapNhat || item.NgayCapNhat || item.updatedAt || '',
     MaTre: item.maTre || item.MaTre || '',
     MaHSTiepNhan:
+      item.maHSTiepNhan ||
       item.MaHSTiepNhan ||
       item.hoSoTiepNhan?.MaHSTiepNhan ||
       item.hoSoTiepNhan?.id ||
@@ -702,11 +704,30 @@ export default function ChildRequestDetail() {
 
   const [previewDoc, setPreviewDoc] = useState(null);
   const [localRequest, setLocalRequest] = useState(null);
+  const [apiDocs, setApiDocs] = useState(null);
 
   const { data, loading, error } = useFetch(
     () => receptionApi.getById(id),
     [id]
   );
+
+  useEffect(() => {
+    if (!id) return;
+    documentApi.getDocuments({ maYeuCauGuiTre: id })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setApiDocs(items.map((doc) => ({
+          MaGiayTo: doc.maGiayTo || doc.MaGiayTo || '',
+          TenGiayTo: doc.tenLoaiGiayTo || doc.tenGiayTo || doc.TenGiayTo || 'Giấy tờ',
+          LoaiGiayTo: doc.maLoaiGiayTo || doc.LoaiGiayTo || 'Giấy tờ',
+          DuongDanFile: doc.duongDanFile || doc.DuongDanFile || '',
+          TrangThai: doc.trangThai || doc.TrangThai || DOCUMENT_STATUS.CHO_XAC_MINH,
+          NgayCapNhat: doc.ngayCapNhat || doc.NgayCapNhat || '',
+          GhiChu: doc.ghiChu || doc.GhiChu || '',
+        })));
+      })
+      .catch(() => setApiDocs([]));
+  }, [id]);
 
   const sourceRequest = localRequest || data || (!loading ? DEMO_REQUEST_DETAIL : null);
 
@@ -714,12 +735,14 @@ export default function ChildRequestDetail() {
     return mapRequestDetail(sourceRequest);
   }, [sourceRequest]);
 
+  const displayDocs = apiDocs !== null ? apiDocs : (request?.documents ?? []);
+
   const allDocumentsValid = useMemo(() => {
     return (
-      request?.documents?.length > 0 &&
-      request.documents.every((doc) => doc.TrangThai === DOCUMENT_STATUS.HOP_LE)
+      displayDocs.length > 0 &&
+      displayDocs.every((doc) => doc.TrangThai === DOCUMENT_STATUS.HOP_LE)
     );
-  }, [request]);
+  }, [displayDocs]);
 
   async function handleStartReview() {
     try {
@@ -751,65 +774,27 @@ export default function ChildRequestDetail() {
   }
 
   async function handleMarkDocument(document, status) {
-    const source = localRequest || data || DEMO_REQUEST_DETAIL;
-    const docs = source.giayTo || source.GiayTo || source.documents || [];
-
-    const nextDocs = docs.map((doc, index) => {
-      const mapped = mapDocument(doc, index);
-
-      if (mapped.MaGiayTo !== document.MaGiayTo) return doc;
-
-      return {
-        ...doc,
-        MaGiayTo: mapped.MaGiayTo,
-        TenGiayTo: mapped.TenGiayTo,
-        LoaiGiayTo: mapped.LoaiGiayTo,
-        DuongDanFile: mapped.DuongDanFile,
-        TrangThai: status,
-        NgayCapNhat: new Date().toISOString(),
-        GhiChu:
-          status === DOCUMENT_STATUS.HOP_LE
-            ? ''
-            : status === DOCUMENT_STATUS.CAN_BO_SUNG
-              ? 'Cần bổ sung hoặc thay thế giấy tờ.'
-              : 'Giấy tờ chưa đạt yêu cầu.',
-      };
-    });
-
-    setLocalRequest({
-      ...source,
-      giayTo: nextDocs,
-    });
+    try {
+      await documentApi.update(document.MaGiayTo, { trangThai: status });
+      setApiDocs((prev) =>
+        (prev || []).map((doc) =>
+          doc.MaGiayTo === document.MaGiayTo
+            ? { ...doc, TrangThai: status, NgayCapNhat: new Date().toISOString() }
+            : doc
+        )
+      );
+    } catch (err) {
+      alert(err?.message || 'Không thể cập nhật trạng thái giấy tờ.');
+    }
   }
 
-  async function handleCreateProfile() {
+  function handleCreateProfile() {
     if (!allDocumentsValid || request.TrangThaiYC !== STATUS_DB.DANG_XEM_XET) {
       return;
     }
 
-    try {
-      await receptionApi.approve(id);
-    } catch (err) {
-      alert(err?.message || 'Không thể tiếp nhận yêu cầu.');
-      return;
-    }
-
-    const acceptedRequest = {
-      ...request,
-      TrangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-      NgayCapNhat: new Date().toISOString(),
-      GhiChu: 'Yêu cầu đã được tiếp nhận. Cán bộ chuyển sang lập hồ sơ tiếp nhận trẻ.',
-    };
-
-    setLocalRequest((prev) => ({
-      ...(prev || data || DEMO_REQUEST_DETAIL),
-      trangThaiYC: STATUS_DB.DA_TIEP_NHAN,
-      ngayCapNhat: acceptedRequest.NgayCapNhat,
-      ghiChu: acceptedRequest.GhiChu,
-    }));
-
     navigate(`${basePath}/tao-ho-so/${request.id}`, {
-      state: { request: acceptedRequest },
+      state: { request },
     });
   }
 
@@ -951,9 +936,9 @@ export default function ChildRequestDetail() {
                 title="Giấy tờ pháp lý"
                 description="Giấy tờ được load từ GIAYTOPHAPLY theo MaYeuCauGuiTre. Cán bộ xác minh giấy tờ tại đây."
               >
-                {request.documents.length > 0 ? (
+                {displayDocs.length > 0 ? (
                   <div className="space-y-4">
-                    {request.documents.map((doc) => (
+                    {displayDocs.map((doc) => (
                       <DocumentCard
                         key={doc.MaGiayTo}
                         document={doc}

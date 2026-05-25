@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import adoptionApi from '../../api/adoptionApi';
 import documentApi from '../../api/documentApi';
+import meetingApi from '../../api/meetingApi';
 import { formatDate } from '../../utils/formatDate';
 import Badge from '../../components/common/Badge';
 
@@ -282,6 +283,217 @@ function DocumentPreviewModal({ document, onClose }) {
   );
 }
 
+function StaffMeetingPanel({ requestId, requestStatus }) {
+  const [meeting, setMeeting] = useState(null);
+  const [loadingMeeting, setLoadingMeeting] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createDateTime, setCreateDateTime] = useState('');
+  const [createLocation, setCreateLocation] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!requestId) return;
+    setLoadingMeeting(true);
+    meetingApi.getAll({ maYeuCauNhan: requestId, page: 1, limit: 1 })
+      .then((res) => setMeeting(res?.items?.[0] || null))
+      .catch(() => setMeeting(null))
+      .finally(() => setLoadingMeeting(false));
+  }, [requestId]);
+
+  const handleCreate = async () => {
+    if (!createDateTime || !createLocation) return;
+    setSaving(true);
+    try {
+      const created = await meetingApi.create({
+        maYeuCauNhan: requestId,
+        thoiGian: createDateTime,
+        diaDiem: createLocation,
+      });
+      setMeeting(created);
+      setShowCreate(false);
+    } catch (err) {
+      alert(err?.message || 'Không thể tạo lịch hẹn.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAcceptReschedule = async () => {
+    if (!meeting?.thoiGianDeXuatMoi) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, {
+        thoiGian: meeting.thoiGianDeXuatMoi,
+        trangThai: 'Đã xác nhận',
+      });
+      setMeeting(updated);
+    } catch (err) {
+      alert(err?.message || 'Không thể chấp nhận đề xuất.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeclineReschedule = async () => {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Chờ xác nhận' });
+      setMeeting(updated);
+    } catch (err) {
+      alert(err?.message || 'Không thể từ chối đề xuất.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkMet = async () => {
+    if (!meeting) return;
+    setSaving(true);
+    try {
+      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Đã gặp mặt' });
+      setMeeting(updated);
+    } catch (err) {
+      alert(err?.message || 'Không thể cập nhật trạng thái.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const canCreate = !meeting && (requestStatus === REQUEST_STATUS.APPROVED || requestStatus === REQUEST_STATUS.MATCHING_CHILD);
+  const hasProposal = meeting?.trangThai === 'Đề xuất đổi lịch';
+  const canMarkMet = meeting?.trangThai === 'Đã xác nhận';
+
+  return (
+    <section className={`${cardClass} overflow-hidden`}>
+      <div className="border-b border-[#E4EAF2] px-6 py-6 lg:px-7">
+        <SectionTitle
+          title="Lịch hẹn gặp mặt"
+          description="Sắp xếp lịch gặp giữa cán bộ và người nhận nuôi. Hai bên tương tác qua trạng thái lịch hẹn."
+        />
+      </div>
+
+      <div className="p-6 lg:p-7">
+        {loadingMeeting && (
+          <p className="text-sm text-[#8FA0B8]">Đang tải...</p>
+        )}
+
+        {!loadingMeeting && !meeting && !showCreate && (
+          <div className="rounded-2xl border border-dashed border-[#D7E5F7] bg-[#FAFCFF] p-8 text-center">
+            <p className="text-sm text-[#8FA0B8]">Chưa có lịch hẹn nào được tạo.</p>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => setShowCreate(true)}
+                className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#0D47A1] px-5 text-sm font-bold text-white transition hover:bg-[#083778]"
+              >
+                Tạo lịch hẹn
+              </button>
+            )}
+            {!canCreate && (
+              <p className="mt-2 text-xs text-[#8FA0B8]">Chỉ tạo lịch hẹn khi yêu cầu đã được duyệt.</p>
+            )}
+          </div>
+        )}
+
+        {!loadingMeeting && !meeting && showCreate && (
+          <div className="space-y-4">
+            <div>
+              <label className={labelClass}>Thời gian gặp mặt</label>
+              <input
+                type="datetime-local"
+                value={createDateTime}
+                onChange={(e) => setCreateDateTime(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[#E3ECF8] bg-[#F7FBFF] px-3 py-2.5 text-sm text-[#26364A] outline-none focus:border-[#93c5fd]"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Địa điểm</label>
+              <input
+                type="text"
+                value={createLocation}
+                onChange={(e) => setCreateLocation(e.target.value)}
+                placeholder="Phòng họp, địa chỉ..."
+                className="mt-1 w-full rounded-xl border border-[#E3ECF8] bg-[#F7FBFF] px-3 py-2.5 text-sm text-[#26364A] outline-none focus:border-[#93c5fd]"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={saving || !createDateTime || !createLocation}
+                className="inline-flex h-10 items-center rounded-xl bg-[#0D47A1] px-5 text-sm font-bold text-white transition hover:bg-[#083778] disabled:opacity-60"
+              >
+                {saving ? 'Đang lưu...' : 'Tạo lịch hẹn'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="inline-flex h-10 items-center rounded-xl border border-[#CFE0F5] bg-white px-5 text-sm font-bold text-[#0D47A1] transition hover:bg-[#EEF6FF]"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!loadingMeeting && meeting && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <InfoItem label="Thời gian" value={new Date(meeting.thoiGian).toLocaleString('vi-VN')} />
+              <InfoItem label="Địa điểm" value={meeting.diaDiem || 'Chưa cập nhật'} />
+              <InfoItem label="Cán bộ" value={meeting.tenCanBo || 'Chưa cập nhật'} />
+              <InfoItem label="Trạng thái" value={meeting.trangThai} />
+            </div>
+
+            {hasProposal && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-bold text-amber-800">Người nhận nuôi đề xuất đổi lịch</p>
+                <p className="mt-1 text-sm text-amber-700">
+                  Thời gian đề xuất:{' '}
+                  {new Date(meeting.thoiGianDeXuatMoi).toLocaleString('vi-VN')}
+                </p>
+                {meeting.phanHoiNguoiNhan && (
+                  <p className="mt-1 text-sm text-amber-700">Lý do: {meeting.phanHoiNguoiNhan}</p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAcceptReschedule}
+                    disabled={saving}
+                    className="inline-flex h-9 items-center rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    Chấp nhận đổi lịch
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeclineReschedule}
+                    disabled={saving}
+                    className="inline-flex h-9 items-center rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                  >
+                    Giữ lịch cũ
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {canMarkMet && (
+              <button
+                type="button"
+                onClick={handleMarkMet}
+                disabled={saving}
+                className="inline-flex h-10 items-center rounded-xl bg-[#0D47A1] px-5 text-sm font-bold text-white transition hover:bg-[#083778] disabled:opacity-60"
+              >
+                Xác nhận đã gặp mặt
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function AdoptionRequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -380,6 +592,8 @@ export default function AdoptionRequestDetail() {
     status === REQUEST_STATUS.MATCHING_CHILD ||
     status === REQUEST_STATUS.PRE_REJECTED;
 
+  const canManualApprove = canReviewDocuments && documents.length > 0 && !saving;
+
   async function updateRequestStatus(newStatus) {
     if (!request?.maYeuCauNhan) return;
 
@@ -475,6 +689,33 @@ export default function AdoptionRequestDetail() {
     } catch (error) {
       console.error('Lỗi cập nhật trạng thái giấy tờ:', error);
       alert('Không thể cập nhật trạng thái giấy tờ.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleManualApprove() {
+    if (!request?.maYeuCauNhan || saving) return;
+    const confirmed = window.confirm(
+      'Xác nhận hoàn tất xác minh hồ sơ?\n\nTất cả giấy tờ sẽ được đánh dấu hợp lệ và yêu cầu chuyển sang bước tiếp theo.'
+    );
+    if (!confirmed) return;
+    setSaving(true);
+    try {
+      for (const doc of documents) {
+        if (doc.trangThai !== DOCUMENT_STATUS.VALID) {
+          await documentApi.update(doc.maGiayTo, {
+            maLoaiGiayTo: doc.maLoaiGiayTo,
+            duongDanFile: doc.duongDanFile,
+            trangThai: DOCUMENT_STATUS.VALID,
+          });
+        }
+      }
+      await adoptionApi.approve(request.maYeuCauNhan);
+      setRequest((prev) => prev ? { ...prev, trangThai: REQUEST_STATUS.APPROVED } : prev);
+      setDocuments((prev) => prev.map((d) => ({ ...d, trangThai: DOCUMENT_STATUS.VALID })));
+    } catch (error) {
+      alert('Không thể xác minh hồ sơ: ' + (error?.message || 'Lỗi không xác định'));
     } finally {
       setSaving(false);
     }
@@ -802,6 +1043,8 @@ export default function AdoptionRequestDetail() {
                 })}
               </div>
             </section>
+
+            <StaffMeetingPanel requestId={id} requestStatus={request?.trangThai} />
           </main>
 
           <aside className="space-y-6 lg:col-span-4">
@@ -857,6 +1100,17 @@ export default function AdoptionRequestDetail() {
                       Cần xác minh đủ giấy tờ hợp lệ
                     </button>
                   )}
+
+                {canManualApprove && (
+                  <button
+                    type="button"
+                    onClick={handleManualApprove}
+                    disabled={saving}
+                    className="w-full rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {saving ? 'Đang xử lý...' : 'Xác minh hồ sơ'}
+                  </button>
+                )}
 
                 {canOpenMatching && (
                   <button

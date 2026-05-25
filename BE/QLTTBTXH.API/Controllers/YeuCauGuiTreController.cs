@@ -35,6 +35,7 @@ public class YeuCauGuiTreController : ControllerBase
         GhiChu = y.GhiChu,
         GiayTos = giayTos,
         MaTre = maTre ?? y.HoSoTiepNhan?.MaTre,
+        MaHSTiepNhan = y.HoSoTiepNhan?.MaHSTiepNhan,
         SenderCccd = y.NguoiGui?.CCCD,
         SenderPhone = y.NguoiGui?.SDT,
         SenderEmail = y.NguoiGui?.Email,
