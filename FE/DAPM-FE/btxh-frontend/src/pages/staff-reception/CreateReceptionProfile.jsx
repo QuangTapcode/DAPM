@@ -42,68 +42,6 @@ const DOCUMENT_STATUS = {
   HET_HAN: 'Hết hạn',
 };
 
-const DEMO_REQUEST_DETAIL = {
-  MaYeuCauGuiTre: 'YCGT0002',
-  MaNguoiGui: 'ND000012',
-  MaLoaiNguoiGui: 'CME',
-  QuanHeVoiTre: 'Cha ruột',
-  LyDoGui: 'Cha/mẹ bệnh nặng, chưa thể chăm sóc trẻ.',
-  TrangThaiYC: 'Đã tiếp nhận',
-  NgayTao: '2026-04-10T08:30:00',
-  NgayCapNhat: '2026-04-10T09:00:00',
-  GhiChu: 'Yêu cầu đã được tiếp nhận sau khi xác minh giấy tờ hợp lệ.',
-
-  nguoiGui: {
-    MaNguoiDung: 'ND000012',
-    HoTen: 'Nguyễn Văn Minh',
-    CCCD: '048201012345',
-    SoDienThoai: '0905123456',
-    Email: 'minh@example.com',
-    TenTinhTP: 'Đà Nẵng',
-    TenXaPhuong: 'Hải Châu',
-    DiaChiCuThe: '12 Nguyễn Văn Linh',
-  },
-
-  thongTinTreTam: {
-    MaTreTam: 'TTT00002',
-    HoTen: 'Nguyễn Minh Khang',
-    NgaySinh: '2020-06-12',
-    GioiTinh: 'Nam',
-    DanToc: 'Kinh',
-    TenTinhTP: 'Đà Nẵng',
-    TenXaPhuong: 'Hải Châu',
-    DiaChiCuThe: '12 Nguyễn Văn Linh',
-    TinhTrangSucKhoe: 'Sức khỏe ổn định, cần theo dõi dinh dưỡng.',
-  },
-
-  giayTo: [
-    {
-      MaGiayTo: 'GT000101',
-      TenGiayTo: 'Giấy khai sinh của trẻ',
-      LoaiGiayTo: 'Giấy khai sinh',
-      TrangThai: 'Hợp lệ',
-      NgayCapNhat: '2026-04-10T09:00:00',
-      GhiChu: '',
-    },
-    {
-      MaGiayTo: 'GT000102',
-      TenGiayTo: 'CCCD người gửi trẻ',
-      LoaiGiayTo: 'Tùy thân',
-      TrangThai: 'Hợp lệ',
-      NgayCapNhat: '2026-04-10T09:00:00',
-      GhiChu: '',
-    },
-    {
-      MaGiayTo: 'GT000103',
-      TenGiayTo: 'Sổ hộ khẩu / giấy tờ cư trú',
-      LoaiGiayTo: 'Cư trú',
-      TrangThai: 'Hợp lệ',
-      NgayCapNhat: '2026-04-10T09:00:00',
-      GhiChu: '',
-    },
-  ],
-};
-
 function normalizeRequestStatus(value) {
   const status = String(value || '').trim();
 
@@ -379,8 +317,7 @@ export default function CreateReceptionProfile() {
     [requestId, stateRequest]
   );
 
-  const sourceRequest =
-    stateRequest || raw || (!loading ? DEMO_REQUEST_DETAIL : null);
+  const sourceRequest = stateRequest || raw || null;
 
   const request = useMemo(() => mapRequestDetail(sourceRequest), [sourceRequest]);
 

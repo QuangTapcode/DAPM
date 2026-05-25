@@ -13,11 +13,30 @@ export default function UpdateChildRequest() {
   const formRef = useScrollReveal({ threshold: 0.1 });
 
   useEffect(() => {
-    receptionApi.getById(id).then(reset).catch(console.error);
+    receptionApi.getById(id).then((res) => {
+      const item = res?.thongTinTre || res?.ThongTinTre || {};
+      reset({
+        childName: item.tenTre || item.TenTre || '',
+        childDob: item.ngaySinh
+          ? new Date(item.ngaySinh).toISOString().slice(0, 10)
+          : item.NgaySinh
+          ? new Date(item.NgaySinh).toISOString().slice(0, 10)
+          : '',
+        healthStatus: res?.ghiChu || res?.GhiChu || '',
+        reason: res?.lyDoGui || res?.LyDoGui || '',
+      });
+    }).catch(console.error);
   }, [id, reset]);
 
   const onSubmit = async (data) => {
-    await receptionApi.update(id, data);
+    await receptionApi.update(id, {
+      lyDoGui: data.reason,
+      ghiChu: data.healthStatus,
+      thongTinTre: {
+        tenTre: data.childName,
+        ngaySinh: data.childDob || null,
+      },
+    });
     navigate('/gui-tre/trang-thai');
   };
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import adoptionApi from '../../api/adoptionApi';
+import adoptionProfileApi from '../../api/adoptionProfileApi';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
 
@@ -17,90 +17,6 @@ const primaryButton =
 
 const secondaryButton =
     'inline-flex items-center justify-center rounded-2xl border border-[#CFE0F5] bg-white px-5 py-3 text-sm font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
-
-const fallbackProfile = {
-    MaHSNhanNuoi: 'HSNN0002',
-    MaYeuCauNhan: 'YCNN0002',
-    MaTre: 'TRE00011',
-
-    // HOSONHANNUOI
-    MaCanBo: 'ND000001', // trưởng phòng/người duyệt
-    NgayLap: '2026-03-16',
-    NgayDuyet: '2026-03-18',
-    TrangThai: 'Đã duyệt',
-    GhiChu: 'Hồ sơ đã được trưởng phòng duyệt, chờ hoàn tất quy trình theo quy định.',
-
-    // Lấy từ YEUCAUNHANNUOI thông qua MaYeuCauNhan
-    CanBoLapTuYeuCau: {
-        MaNguoiDung: 'ND000005',
-        HoTen: 'Hoàng Văn Nuôi',
-    },
-
-    // Lấy từ HOSONHANNUOI.MaCanBo join NGUOIDUNG
-    NguoiDuyetHoSo: {
-        MaNguoiDung: 'ND000001',
-        HoTen: 'Trần Minh Quang',
-        ChucVu: 'Trưởng phòng',
-    },
-
-    NguoiNhanNuoi: {
-        HoTen: 'Võ Thị Hạnh',
-        SoDienThoai: '0977777777',
-        NgaySinh: '1989-07-12',
-        NgheNghiep: 'Nhân viên kế toán',
-        ThuNhapHangThang: 25000000,
-        DiaChi: 'Hải Châu, Đà Nẵng',
-        LyDoNhanNuoi:
-            'Mong muốn xây dựng gia đình và chăm sóc trẻ lâu dài trong môi trường ổn định.',
-        MongMuonVeTre:
-            'Ưu tiên trẻ có độ tuổi nhỏ, phù hợp với điều kiện chăm sóc hiện tại.',
-    },
-
-    TreNhanNuoi: {
-        MaTre: 'TRE00011',
-        HoTen: 'Bé Nam',
-        NgaySinh: '2020-06-10',
-        GioiTinh: 'Nam',
-        SucKhoe: 'Ổn định',
-        TrangThai: 'Đang xử lý nhận nuôi',
-        GhiChu: 'Trẻ hòa đồng, sức khỏe ổn định.',
-    },
-
-    GiayTo: [
-        {
-            MaGiayTo: 'GT000021',
-            TenGiayTo: 'Ảnh CCCD người nhận nuôi',
-            LoaiGiayTo: 'Tùy thân',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/cccd.jpg',
-            NgayCapNhat: '2026-03-10',
-        },
-        {
-            MaGiayTo: 'GT000022',
-            TenGiayTo: 'Giấy khám sức khỏe',
-            LoaiGiayTo: 'Sức khỏe',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/suckhoe.pdf',
-            NgayCapNhat: '2026-03-10',
-        },
-        {
-            MaGiayTo: 'GT000023',
-            TenGiayTo: 'Giấy xác nhận tình trạng hôn nhân',
-            LoaiGiayTo: 'Hôn nhân',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/honnhan.pdf',
-            NgayCapNhat: '2026-03-11',
-        },
-        {
-            MaGiayTo: 'GT000024',
-            TenGiayTo: 'Minh chứng thu nhập',
-            LoaiGiayTo: 'Tài chính',
-            TrangThai: 'Hợp lệ',
-            DuongDanFile: '/uploads/giayto/hsnn0002/thunhap.pdf',
-            NgayCapNhat: '2026-03-11',
-        },
-    ],
-};
 
 const PROFILE_STEPS = ['Đang lập', 'Chờ duyệt', 'Đã duyệt', 'Đã hoàn tất'];
 
@@ -158,77 +74,56 @@ function getProgressIndex(status) {
 function normalizeProfile(raw, profileId) {
     if (!raw) {
         return {
-            ...fallbackProfile,
-            MaHSNhanNuoi: profileId || fallbackProfile.MaHSNhanNuoi,
+            MaHSNhanNuoi: profileId || '',
+            MaYeuCauNhan: '',
+            MaTre: '',
+            MaCanBo: '',
+            NgayLap: '',
+            NgayDuyet: '',
+            TrangThai: '',
+            GhiChu: '',
+            CanBoLapTuYeuCau: null,
+            NguoiDuyetHoSo: null,
+            NguoiNhanNuoi: null,
+            TreNhanNuoi: null,
+            GiayTo: [],
         };
     }
 
-    const yeuCau = raw.YeuCauNhanNuoi || raw.yeuCauNhanNuoi || {};
-    const canBoLap =
-        raw.CanBoLapTuYeuCau ||
-        raw.canBoLapTuYeuCau ||
-        yeuCau.CanBoXuLy ||
-        yeuCau.canBoXuLy ||
-        yeuCau.CanBoLap ||
-        yeuCau.canBoLap ||
-        fallbackProfile.CanBoLapTuYeuCau;
-
-    const nguoiDuyet =
-        raw.NguoiDuyetHoSo ||
-        raw.nguoiDuyetHoSo ||
-        raw.TruongPhongDuyet ||
-        raw.truongPhongDuyet ||
-        fallbackProfile.NguoiDuyetHoSo;
-
     return {
-        MaHSNhanNuoi:
-            raw.MaHSNhanNuoi ||
-            raw.MaHoSoNhanNuoi ||
-            raw.maHSNhanNuoi ||
-            raw.id ||
-            profileId ||
-            fallbackProfile.MaHSNhanNuoi,
-        MaYeuCauNhan:
-            raw.MaYeuCauNhan ||
-            raw.maYeuCauNhan ||
-            yeuCau.MaYeuCauNhan ||
-            fallbackProfile.MaYeuCauNhan,
-        MaTre: raw.MaTre || raw.maTre || fallbackProfile.MaTre,
-
-        MaCanBo:
-            raw.MaCanBo ||
-            raw.maCanBo ||
-            nguoiDuyet?.MaNguoiDung ||
-            fallbackProfile.MaCanBo,
-        NgayLap: raw.NgayLap || raw.ngayLap || fallbackProfile.NgayLap,
-        NgayDuyet: raw.NgayDuyet || raw.ngayDuyet || fallbackProfile.NgayDuyet,
-        TrangThai: raw.TrangThai || raw.trangThai || fallbackProfile.TrangThai,
-        GhiChu: raw.GhiChu || raw.ghiChu || fallbackProfile.GhiChu,
-
-        CanBoLapTuYeuCau: canBoLap,
-        NguoiDuyetHoSo: nguoiDuyet,
-
-        NguoiNhanNuoi:
-            raw.NguoiNhanNuoi ||
-            raw.nguoiNhanNuoi ||
-            yeuCau.NguoiNhanNuoi ||
-            yeuCau.nguoiNhanNuoi ||
-            fallbackProfile.NguoiNhanNuoi,
-
-        TreNhanNuoi:
-            raw.TreNhanNuoi ||
-            raw.treNhanNuoi ||
-            raw.Tre ||
-            raw.tre ||
-            fallbackProfile.TreNhanNuoi,
-
-        GiayTo:
-            raw.GiayTo ||
-            raw.giayTo ||
-            raw.documents ||
-            yeuCau.GiayTo ||
-            yeuCau.documents ||
-            fallbackProfile.GiayTo,
+        MaHSNhanNuoi: raw.MaHSNhanNuoi || raw.maHSNhanNuoi || profileId || '',
+        MaYeuCauNhan: raw.MaYeuCauNhan || raw.maYeuCauNhan || '',
+        MaTre: raw.MaTre || raw.maTre || '',
+        MaCanBo: raw.MaCanBo || raw.maCanBo || '',
+        NgayLap: raw.NgayLap || raw.ngayLap || '',
+        NgayDuyet: raw.NgayDuyet || raw.ngayDuyet || '',
+        TrangThai: raw.TrangThai || raw.trangThai || '',
+        GhiChu: raw.GhiChu || raw.ghiChu || '',
+        CanBoLapTuYeuCau: {
+            MaNguoiDung: raw.MaCanBo || raw.maCanBo || '',
+            HoTen: raw.TenCanBo || raw.tenCanBo || '',
+        },
+        NguoiDuyetHoSo: null,
+        NguoiNhanNuoi: {
+            HoTen: raw.TenNguoiNhan || raw.tenNguoiNhan || '',
+            SoDienThoai: raw.SDTNguoiNhan || raw.sDTNguoiNhan || '',
+            NgaySinh: '',
+            NgheNghiep: '',
+            ThuNhapHangThang: raw.ThuNhapHangThang ?? raw.thuNhapHangThang ?? null,
+            DiaChi: '',
+            LyDoNhanNuoi: raw.LyDoNhanNuoi || raw.lyDoNhanNuoi || '',
+            MongMuonVeTre: '',
+        },
+        TreNhanNuoi: {
+            MaTre: raw.MaTre || raw.maTre || '',
+            HoTen: raw.TenTre || raw.tenTre || '',
+            NgaySinh: '',
+            GioiTinh: '',
+            SucKhoe: '',
+            TrangThai: '',
+            GhiChu: '',
+        },
+        GiayTo: [],
     };
 }
 
@@ -491,20 +386,20 @@ export default function AdoptionProfileDetail() {
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(
-        normalizeProfile(fallbackProfile, profileId)
+        normalizeProfile(null, profileId)
     );
     const [previewDoc, setPreviewDoc] = useState(null);
 
     useEffect(() => {
         if (!profileId) return;
 
-        adoptionApi
+        adoptionProfileApi
             .getById(profileId)
             .then((res) => {
                 setProfile(normalizeProfile(res, profileId));
             })
             .catch(() => {
-                setProfile(normalizeProfile(fallbackProfile, profileId));
+                setProfile(normalizeProfile(null, profileId));
             });
     }, [profileId]);
 
