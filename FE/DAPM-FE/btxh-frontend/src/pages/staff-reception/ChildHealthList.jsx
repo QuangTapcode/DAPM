@@ -9,7 +9,7 @@ import {
 
 import { formatDate } from '../../utils/formatDate';
 import childApi from '../../api/childApi';
-import axiosClient from '../../api/axiosClient';
+import healthApi from '../../api/healthApi';
 
 
 function normalizeChildCode(value) {
@@ -161,7 +161,7 @@ export default function ChildHealthList() {
       })
       .catch(() => setRawChildren([]));
 
-    axiosClient.get('/health-records')
+    healthApi.getAll()
       .then((res) => {
         const items = Array.isArray(res) ? res : (res?.items || []);
         setRawRecords(items);

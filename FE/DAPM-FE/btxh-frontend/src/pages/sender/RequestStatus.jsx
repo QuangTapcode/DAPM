@@ -33,15 +33,6 @@ const SENDER_TYPE_LABELS = {
   CQDP: 'Cơ quan địa phương',
 };
 
-function getStoredRequest() {
-  try {
-    const raw = sessionStorage.getItem('child-request-status');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 function getSenderTypeLabel(code) {
   if (!code) return 'Chưa cập nhật';
   return SENDER_TYPE_LABELS[code] || code;
@@ -202,12 +193,10 @@ export default function RequestStatus() {
 
   const apiItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
   const tempRequestFromState = location.state?.request || null;
-  const tempRequestFromStorage = getStoredRequest();
 
   const mergedItems = useMemo(() => {
     const mappedApiItems = apiItems.map(mapApiItemToDisplay);
-    const tempSource = tempRequestFromState || tempRequestFromStorage;
-    const mappedTemp = mapSnapshotToDisplay(tempSource);
+    const mappedTemp = mapSnapshotToDisplay(tempRequestFromState);
 
     if (!mappedTemp) return mappedApiItems;
 
@@ -217,31 +206,13 @@ export default function RequestStatus() {
         String(item.code) === String(mappedTemp.code)
     );
 
-    if (existedIndex !== -1) {
-      // Merge: giữ status/approver từ API, lấy form data từ snapshot
-      const merged = [...mappedApiItems];
-      merged[existedIndex] = {
-        ...merged[existedIndex],
-        formData: {
-          ...merged[existedIndex].formData,
-          // Ưu tiên snapshot cho các trường BE không lưu
-          senderNationalId: mappedTemp.formData.senderNationalId || merged[existedIndex].formData.senderNationalId,
-          senderPhone: mappedTemp.formData.senderPhone || merged[existedIndex].formData.senderPhone,
-          senderAddress: mappedTemp.formData.senderAddress || merged[existedIndex].formData.senderAddress,
-          childAddress: mappedTemp.formData.childAddress || merged[existedIndex].formData.childAddress,
-          reasonDetail: mappedTemp.formData.reasonDetail || merged[existedIndex].formData.reasonDetail,
-          reason: mappedTemp.formData.reason || merged[existedIndex].formData.reason,
-          healthStatus: mappedTemp.formData.healthStatus || merged[existedIndex].formData.healthStatus,
-          documents: mappedTemp.formData.documents,
-        },
-      };
-      return merged;
-    }
+    if (existedIndex !== -1) return mappedApiItems;
 
     return [mappedTemp, ...mappedApiItems];
-  }, [apiItems, tempRequestFromState, tempRequestFromStorage]);
+  }, [apiItems, tempRequestFromState]);
 
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null);
   const [selectedDocs, setSelectedDocs] = useState([]);
 
   useEffect(() => {
@@ -252,7 +223,16 @@ export default function RequestStatus() {
 
   useEffect(() => {
     if (!selectedId) return;
+    setSelectedDetail(null);
     setSelectedDocs([]);
+
+    const idStr = String(selectedId);
+    if (!idStr.startsWith('temp-')) {
+      receptionApi.getById(selectedId)
+        .then((res) => setSelectedDetail(mapApiItemToDisplay(res)))
+        .catch(() => {});
+    }
+
     documentApi.getDocuments({ maYeuCauGuiTre: selectedId })
       .then((res) => {
         const items = Array.isArray(res) ? res : (res?.items || []);
@@ -262,6 +242,7 @@ export default function RequestStatus() {
   }, [selectedId]);
 
   const selectedRequest =
+    selectedDetail ||
     mergedItems.find((item) => String(item.id) === String(selectedId)) ||
     mergedItems[0] ||
     null;

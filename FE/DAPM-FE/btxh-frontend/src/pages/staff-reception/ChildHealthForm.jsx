@@ -12,14 +12,16 @@ import {
 
 import { formatDate } from '../../utils/formatDate';
 import childApi from '../../api/childApi';
-import axiosClient from '../../api/axiosClient';
+import healthApi from '../../api/healthApi';
+import vaccinationApi from '../../api/vaccinationApi';
+import lookupApi from '../../api/lookupApi';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
 const emptyHealth = {
   MaTheoDoi: '',
   MaTre: '',
-  MaNguoiCapNhat: 'ND000005',
+  MaNguoiCapNhat: '',
   NgayCapNhat: '',
   CanNang: '',
   ChieuCao: '',
@@ -305,9 +307,9 @@ export default function ChildHealthForm() {
       try {
         const [childData, healthData, vaccineHistData, vacxinList] = await Promise.all([
           childApi.getById(fixedChildId).catch(() => null),
-          axiosClient.get('/health-records', { params: { maTre: fixedChildId } }).catch(() => []),
-          axiosClient.get('/vaccinations', { params: { maTre: fixedChildId } }).catch(() => []),
-          axiosClient.get('/lookups/vacxin').catch(() => []),
+          healthApi.getAll({ maTre: fixedChildId }).catch(() => []),
+          vaccinationApi.getAll({ maTre: fixedChildId }).catch(() => []),
+          lookupApi.getVacxin().catch(() => []),
         ]);
         if (!active) return;
 
@@ -357,7 +359,7 @@ export default function ChildHealthForm() {
   const saveHealthRows = async () => {
     try {
       await Promise.all(healthRows.map((item) =>
-        axiosClient.put(`/health-records/${item.MaTheoDoi}`, {
+        healthApi.update(item.MaTheoDoi, {
           CanNang: item.CanNang || null,
           ChieuCao: item.ChieuCao || null,
           NhipTim: item.NhipTim || null,
@@ -378,7 +380,7 @@ export default function ChildHealthForm() {
   const saveVaccineRows = async () => {
     try {
       await Promise.all(vaccineRows.map((item) =>
-        axiosClient.put(`/vaccinations/${item.MaLSTiemChung}`, {
+        vaccinationApi.update(item.MaLSTiemChung, {
           MuiSo: Number(item.MuiSo) || 0,
           NgayTiem: item.NgayTiem || null,
           GhiChu: item.GhiChu || null,
@@ -404,7 +406,7 @@ export default function ChildHealthForm() {
 
   const addHealthRecord = async () => {
     try {
-      const created = await axiosClient.post('/health-records', {
+      const created = await healthApi.create({
         MaTre: fixedChildId,
         CanNang: newHealth.CanNang ? Number(newHealth.CanNang) : null,
         ChieuCao: newHealth.ChieuCao ? Number(newHealth.ChieuCao) : null,
@@ -432,7 +434,7 @@ export default function ChildHealthForm() {
       return;
     }
     try {
-      const created = await axiosClient.post('/vaccinations', {
+      const created = await vaccinationApi.create({
         MaTre: fixedChildId,
         MaVacxin: newVaccine.MaVacxin,
         MuiSo: Number(newVaccine.MuiSo) || 0,

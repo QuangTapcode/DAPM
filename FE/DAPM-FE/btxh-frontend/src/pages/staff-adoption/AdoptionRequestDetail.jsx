@@ -494,6 +494,115 @@ function StaffMeetingPanel({ requestId, requestStatus }) {
   );
 }
 
+function MatchingModal({ requestId, onClose, onSelectChild }) {
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+
+  useEffect(() => {
+    adoptionApi.getMatchingChildren(requestId)
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setChildren(items);
+      })
+      .catch(() => setChildren([]))
+      .finally(() => setLoading(false));
+  }, [requestId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
+      <div className="flex max-h-[90vh] w-full max-w-[860px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E4EAF2] px-6 py-5">
+          <div>
+            <h3 className="text-lg font-bold text-[#1F2A3D]">Trẻ phù hợp để ghép</h3>
+            <p className="mt-1 text-sm text-[#7D90AA]">Chọn một trẻ để tiến hành tạo hồ sơ nhận nuôi.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#D7E1EE] px-4 py-2 text-sm font-bold text-[#5F738F] transition hover:bg-[#F6F8FC]"
+          >
+            Đóng
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-6">
+          {loading && (
+            <p className="text-center text-sm text-[#8FA0B8]">Đang tải danh sách trẻ phù hợp...</p>
+          )}
+
+          {!loading && children.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-[#D7E5F7] bg-[#FAFCFF] p-10 text-center text-sm text-[#7D90AA]">
+              Không có trẻ phù hợp với tiêu chí của yêu cầu này.
+            </div>
+          )}
+
+          {!loading && children.length > 0 && (
+            <div className="space-y-3">
+              {children.map((child) => {
+                const maTre = child.maTre || child.MaTre || child.id || '';
+                const hoTen = child.hoTen || child.HoTen || child.tenTre || 'Chưa cập nhật';
+                const gioiTinh = child.gioiTinh || child.GioiTinh || '';
+                const ngaySinh = child.ngaySinh || child.NgaySinh || '';
+                const trangThai = child.trangThai || child.TrangThai || '';
+                const diemPhuHop = child.diemPhuHop ?? child.DiemPhuHop ?? null;
+                const isSelected = selectedId === maTre;
+
+                return (
+                  <button
+                    key={maTre}
+                    type="button"
+                    onClick={() => setSelectedId(maTre)}
+                    className={`w-full rounded-[20px] border p-5 text-left transition ${isSelected
+                      ? 'border-[#0D47A1] bg-[#EAF3FF] ring-2 ring-[#0D47A1]/20'
+                      : 'border-[#E1ECF8] bg-[#FAFCFF] hover:border-[#93c5fd] hover:bg-white'
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-bold text-[#1F2A3D]">{hoTen}</p>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#7D90AA]">
+                          <span>Mã: {maTre}</span>
+                          {gioiTinh && <span>Giới tính: {gioiTinh}</span>}
+                          {ngaySinh && <span>Ngày sinh: {ngaySinh.slice(0, 10)}</span>}
+                          {trangThai && <span>Trạng thái: {trangThai}</span>}
+                        </div>
+                      </div>
+                      {diemPhuHop !== null && (
+                        <span className="shrink-0 rounded-full bg-[#EAF3FF] px-3 py-1 text-xs font-bold text-[#0D47A1]">
+                          Điểm: {diemPhuHop}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-[#E4EAF2] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#CFE0F5] bg-white px-5 py-2.5 text-sm font-bold text-[#0D47A1] transition hover:bg-[#EEF6FF]"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            disabled={!selectedId}
+            onClick={() => selectedId && onSelectChild(selectedId)}
+            className="rounded-xl bg-[#0D47A1] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#083778] disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Tạo hồ sơ nhận nuôi
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdoptionRequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -504,6 +613,7 @@ export default function AdoptionRequestDetail() {
   const [viewedDocs, setViewedDocs] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showMatchingModal, setShowMatchingModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -721,16 +831,32 @@ export default function AdoptionRequestDetail() {
     }
   }
 
-  function handleOpenMatching() {
-    if (
-      request?.trangThai !== REQUEST_STATUS.APPROVED &&
-      request?.trangThai !== REQUEST_STATUS.MATCHING_CHILD
-    ) {
+  async function handleOpenMatching() {
+    if (!canOpenMatching) {
       alert('Chỉ yêu cầu đã duyệt mới được ghép trẻ.');
       return;
     }
+    setSaving(true);
+    try {
+      if (request.trangThai === REQUEST_STATUS.APPROVED) {
+        await adoptionApi.startMatching(request.maYeuCauNhan);
+        setRequest((prev) =>
+          prev ? { ...prev, trangThai: REQUEST_STATUS.MATCHING_CHILD } : prev
+        );
+      }
+      setShowMatchingModal(true);
+    } catch (err) {
+      alert('Không thể mở ghép trẻ: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setSaving(false);
+    }
+  }
 
-    navigate(`/can-bo-nhan-nuoi/tao-ho-so/${request.maYeuCauNhan}`);
+  function handleSelectMatchingChild(maTre) {
+    setShowMatchingModal(false);
+    navigate(`/can-bo-nhan-nuoi/tao-ho-so/${request.maYeuCauNhan}`, {
+      state: { maTre },
+    });
   }
 
   if (loading) {
@@ -1145,6 +1271,14 @@ export default function AdoptionRequestDetail() {
         document={previewDoc}
         onClose={() => setPreviewDoc(null)}
       />
+
+      {showMatchingModal && (
+        <MatchingModal
+          requestId={request.maYeuCauNhan}
+          onClose={() => setShowMatchingModal(false)}
+          onSelectChild={handleSelectMatchingChild}
+        />
+      )}
     </div>
   );
 }

@@ -53,6 +53,12 @@ const ICONS = {
         d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
     </svg>
   ),
+  calendar: (
+    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
 };
 
 const MENU_BY_ROLE = {
@@ -71,6 +77,7 @@ const MENU_BY_ROLE = {
     { path: '/can-bo-nhan-nuoi/dashboard', label: 'Tổng quan', icon: ICONS.dashboard },
     { path: '/can-bo-nhan-nuoi/danh-sach', label: 'Yêu cầu nhận nuôi', icon: ICONS.folder },
     { path: '/can-bo-nhan-nuoi/ho-so', label: 'Theo dõi nhận nuôi', icon: ICONS.child },
+    { path: '/can-bo-nhan-nuoi/lich-hen', label: 'Lịch hẹn gặp mặt', icon: ICONS.calendar },
   ],
   [ROLES.MANAGER]: [
     { path: '/truong-phong/dashboard', label: 'Tổng quan', icon: ICONS.dashboard },

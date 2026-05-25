@@ -45,6 +45,7 @@ import AdoptionRequestDetail from '../pages/staff-adoption/AdoptionRequestDetail
 import CreateAdoptionProfile from '../pages/staff-adoption/CreateAdoptionProfile';
 import AdoptionProfileList from '../pages/staff-adoption/AdoptionProfileList';
 import AdoptionProfileDetail from '../pages/staff-adoption/AdoptionProfileDetail';
+import MeetingList from '../pages/staff-adoption/MeetingList';
 // ─── Manager ──────────────────────────────────────────
 import ManagerDashboard from '../pages/manager/ManagerDashboard';
 import PendingProfileList from '../pages/manager/PendingProfileList';
@@ -229,6 +230,7 @@ export default function AppRouter() {
           <Route path="/can-bo-nhan-nuoi/tao-ho-so/:requestId" element={<CreateAdoptionProfile />} />
           <Route path="/can-bo-nhan-nuoi/ho-so" element={<AdoptionProfileList />} />
           <Route path="/can-bo-nhan-nuoi/ho-so/:profileId" element={<AdoptionProfileDetail />} />
+          <Route path="/can-bo-nhan-nuoi/lich-hen" element={<MeetingList />} />
         </Route>
 
         {/* ── Manager /truong-phong/* ─────────────────── */}

@@ -16,6 +16,10 @@ const lookupApi = {
     getGiayToBatBuocGuiTre: () => {
         return axiosClient.get('/lookups/loai-giay-to-bat-buoc-gui-tre');
     },
+
+    getVacxin: () => {
+        return axiosClient.get('/lookups/vacxin');
+    },
 };
 
 export default lookupApi;
