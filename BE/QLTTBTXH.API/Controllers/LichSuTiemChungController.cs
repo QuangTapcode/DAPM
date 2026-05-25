@@ -22,10 +22,11 @@ public class LichSuTiemChungController : ControllerBase
     private static LichSuTiemChungDto Map(LichSuTiemChung l) => new()
     {
         MaLSTiemChung = l.MaLSTiemChung,
-        MaTre = l.MaTre,
-        MaVacxin = l.MaVacxin,
+        MaTre = l.MaTre.Trim(),
+        MaVacxin = l.MaVacxin.Trim(),
         TenVacxin = l.Vacxin?.TenVacxin,
         PhongBenh = l.Vacxin?.PhongBenh,
+        MuiSo = l.MuiSo,
         NgayTiem = l.NgayTiem,
         GhiChu = l.GhiChu
     };
@@ -48,6 +49,7 @@ public class LichSuTiemChungController : ControllerBase
             MaLSTiemChung = await _code.NextLichSuTiemChungAsync(),
             MaTre = dto.MaTre,
             MaVacxin = dto.MaVacxin,
+            MuiSo = dto.MuiSo,
             NgayTiem = dto.NgayTiem,
             GhiChu = dto.GhiChu
         };
@@ -63,6 +65,7 @@ public class LichSuTiemChungController : ControllerBase
         var l = await _db.LICHSUTIEMCHUNG.FirstOrDefaultAsync(x => x.MaLSTiemChung == id);
         if (l is null) return NotFound(ApiResponse<LichSuTiemChungDto>.Fail("Not found"));
         if (dto.MaVacxin != null) l.MaVacxin = dto.MaVacxin;
+        if (dto.MuiSo.HasValue) l.MuiSo = dto.MuiSo.Value;
         if (dto.NgayTiem.HasValue) l.NgayTiem = dto.NgayTiem.Value;
         if (dto.GhiChu != null) l.GhiChu = dto.GhiChu;
         await _db.SaveChangesAsync();

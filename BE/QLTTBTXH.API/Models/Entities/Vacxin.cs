@@ -7,8 +7,8 @@ namespace QLTTBTXH.API.Models.Entities;
 public class Vacxin
 {
     [Key]
-    [Column("MaVacxin", TypeName = "char(4)")]
-    [MaxLength(4)]
+    [Column("MaVacxin", TypeName = "char(5)")]
+    [MaxLength(5)]
     public string MaVacxin { get; set; } = null!;
 
     [Column("TenVacxin")]

@@ -361,7 +361,7 @@ function StaffMeetingPanel({ requestId, requestStatus }) {
   };
 
   const canCreate = !meeting && (requestStatus === REQUEST_STATUS.APPROVED || requestStatus === REQUEST_STATUS.MATCHING_CHILD);
-  const hasProposal = meeting?.trangThai === 'Đề xuất đổi lịch';
+  const hasProposal = meeting?.trangThai === 'Yêu cầu đổi lịch';
   const canMarkMet = meeting?.trangThai === 'Đã xác nhận';
 
   return (
@@ -448,7 +448,7 @@ function StaffMeetingPanel({ requestId, requestStatus }) {
 
             {hasProposal && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-bold text-amber-800">Người nhận nuôi đề xuất đổi lịch</p>
+                <p className="text-sm font-bold text-amber-800">Người nhận nuôi yêu cầu đổi lịch</p>
                 <p className="mt-1 text-sm text-amber-700">
                   Thời gian đề xuất:{' '}
                   {new Date(meeting.thoiGianDeXuatMoi).toLocaleString('vi-VN')}

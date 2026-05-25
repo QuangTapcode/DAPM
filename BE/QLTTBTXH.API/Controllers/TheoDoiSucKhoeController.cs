@@ -22,15 +22,15 @@ public class TheoDoiSucKhoeController : ControllerBase
 
     private static TheoDoiSucKhoeDto Map(TheoDoiSucKhoe h) => new()
     {
-        MaTheoDoi = h.MaTheoDoi,
-        MaTre = h.MaTre,
+        MaTheoDoi = h.MaTheoDoi.Trim(),
+        MaTre = h.MaTre.Trim(),
         TenTre = h.Tre?.HoTen,
-        MaNguoiCapNhat = h.MaNguoiCapNhat,
+        MaNguoiCapNhat = h.MaNguoiCapNhat?.Trim(),
         NgayCapNhat = h.NgayCapNhat,
         CanNang = h.CanNang,
         ChieuCao = h.ChieuCao,
         NhipTim = h.NhipTim,
-        NhomMau = h.NhomMau,
+        NhomMau = h.NhomMau?.Trim(),
         NhietDo = h.NhietDo,
         KetLuan = h.KetLuan,
         TinhTrangChiTiet = h.TinhTrangChiTiet

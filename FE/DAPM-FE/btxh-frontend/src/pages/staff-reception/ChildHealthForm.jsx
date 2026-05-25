@@ -178,7 +178,7 @@ function normalizeHealthRecord(item) {
     CanNang: toNumberOrEmpty(item.CanNang || item.canNang || item.weight),
     ChieuCao: toNumberOrEmpty(item.ChieuCao || item.chieuCao || item.height),
     NhipTim: toNumberOrEmpty(item.NhipTim || item.nhipTim || item.heartRate),
-    NhomMau: item.NhomMau || item.nhomMau || item.bloodType || '',
+    NhomMau: (item.NhomMau || item.nhomMau || item.bloodType || '').trim(),
     NhietDo: toNumberOrEmpty(item.NhietDo || item.nhietDo || item.temperature),
     KetLuan: item.KetLuan || item.ketLuan || item.conclusion || '',
     TinhTrangChiTiet:
@@ -423,6 +423,7 @@ export default function ChildHealthForm() {
       const created = await axiosClient.post('/vaccinations', {
         MaTre: fixedChildId,
         MaVacxin: newVaccine.MaVacxin,
+        MuiSo: Number(newVaccine.MuiSo) || 0,
         NgayTiem: newVaccine.NgayTiem || new Date().toISOString().slice(0, 10),
         GhiChu: newVaccine.GhiChu || null,
       });

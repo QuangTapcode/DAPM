@@ -15,9 +15,12 @@ public class LichSuTiemChung
     [MaxLength(8)]
     public string MaTre { get; set; } = null!;
 
-    [Column("MaVacxin", TypeName = "char(4)")]
-    [MaxLength(4)]
+    [Column("MaVacxin", TypeName = "char(5)")]
+    [MaxLength(5)]
     public string MaVacxin { get; set; } = null!;
+
+    [Column("MuiSo")]
+    public int MuiSo { get; set; }
 
     [Column("NgayTiem", TypeName = "date")]
     public DateTime NgayTiem { get; set; }

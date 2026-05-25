@@ -41,9 +41,9 @@ public class DanhMucController : ControllerBase
     [HttpGet("vacxin")]
     public async Task<ActionResult<ApiResponse<List<VacxinDto>>>> Vacxins()
     {
-        var list = await _db.VACXIN.Select(v => new VacxinDto
-        { MaVacxin = v.MaVacxin, TenVacxin = v.TenVacxin, PhongBenh = v.PhongBenh })
-            .OrderBy(x => x.TenVacxin).ToListAsync();
+        var list = (await _db.VACXIN.OrderBy(v => v.TenVacxin).ToListAsync())
+            .Select(v => new VacxinDto { MaVacxin = v.MaVacxin.Trim(), TenVacxin = v.TenVacxin, PhongBenh = v.PhongBenh })
+            .ToList();
         return Ok(ApiResponse<List<VacxinDto>>.Ok(list));
     }
 

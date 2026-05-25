@@ -195,7 +195,7 @@ function MeetingSection({ requestId }) {
       const updated = await meetingApi.update(meeting.maLichGap, {
         thoiGianDeXuatMoi: newDateTime,
         phanHoiNguoiNhan: note || 'Đề xuất đổi lịch hẹn',
-        trangThai: 'Đề xuất đổi lịch',
+        trangThai: 'Yêu cầu đổi lịch',
       });
       setMeeting(updated);
       setShowForm(false);
@@ -212,7 +212,7 @@ function MeetingSection({ requestId }) {
 
   const status = meeting.trangThai;
   const isPending = status === 'Chờ xác nhận';
-  const isProposed = status === 'Đề xuất đổi lịch';
+  const isProposed = status === 'Yêu cầu đổi lịch';
 
   return (
     <div className="mt-8 rounded-[24px] border border-[#E7EEF9] bg-[#F8FAFC] p-5">
@@ -244,7 +244,7 @@ function MeetingSection({ requestId }) {
 
       {isProposed && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          <p>Đề xuất đổi lịch của bạn đang chờ cán bộ xem xét.</p>
+          <p>Yêu cầu đổi lịch của bạn đang chờ cán bộ xem xét.</p>
           {meeting.thoiGianDeXuatMoi && (
             <p className="mt-1 font-semibold">
               Thời gian đề xuất: {new Date(meeting.thoiGianDeXuatMoi).toLocaleString('vi-VN')}
