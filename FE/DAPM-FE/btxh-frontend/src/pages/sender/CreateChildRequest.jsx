@@ -226,7 +226,7 @@ function ApplicantSection({
 
       {selectedSenderType?.code === 'CQDP' && (
         <div className="mt-4 rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-4 py-3">
-          <p className="text-sm font-medium text-[#1d4ed8]">
+          <p className="text-sm font-medium text-[#0D47A1]">
             Bạn đang chọn loại người gửi là <b>Cơ quan địa phương</b>. Hệ thống sẽ
             không bắt buộc tải lên giấy tờ khi nộp hồ sơ.
           </p>
@@ -506,7 +506,7 @@ function SubmitCard({ isSubmitting, requiredMissing, onCancel }) {
       <button
         type="submit"
         disabled={isSubmitting || requiredMissing > 0}
-        className="w-full rounded-xl bg-[#1976D2] hover:bg-[#1f5fbf] text-white text-sm font-semibold py-3 px-4 transition disabled:opacity-70 disabled:cursor-not-allowed"
+        className="w-full rounded-xl bg-[#0D47A1] hover:bg-[#0a3880] text-white text-sm font-semibold py-3 px-4 transition active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {isSubmitting ? 'Đang xử lý...' : 'Gửi yêu cầu'}
       </button>
