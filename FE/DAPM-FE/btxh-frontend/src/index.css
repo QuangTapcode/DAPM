@@ -1,6 +1,40 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════
+   Tailwind v4 theme tokens
+   Exposes the brand palette as utilities (bg-brand,
+   text-brand, border-line, rounded-card, …) so pages
+   stop hardcoding hex. Refine here, applies everywhere.
+   ═══════════════════════════════════════════════ */
+@theme {
+  --color-brand:          #0D47A1;
+  --color-brand-dark:     #0a3880;
+  --color-brand-light:    #1565C0;
+  --color-brand-50:       #EEF4FC;
+  --color-brand-100:      #DCE9F8;
+  --color-accent:         #2979FF;
+
+  --color-ink:            #1A2B4B;
+  --color-ink-soft:       #5C728A;
+  --color-ink-muted:      #94A8BF;
+
+  --color-surface:        #FFFFFF;
+  --color-canvas:         #F5F8FD;
+  --color-line:           #E2EAF4;
+  --color-line-soft:      #EEF3FB;
+
+  --radius-card:          16px;
+  --radius-panel:         22px;
+
+  /* Tinted, restrained elevation — no "AI glow" */
+  --shadow-soft:  0 1px 2px rgba(16,42,90,.05), 0 1px 3px rgba(16,42,90,.04);
+  --shadow-card:  0 2px 8px rgba(16,42,90,.06);
+  --shadow-pop:   0 8px 28px rgba(16,42,90,.12);
+
+  --ease-out:     cubic-bezier(.22,1,.36,1);
+}
+
+/* ═══════════════════════════════════════════════
    BTXH Design Tokens
    ═══════════════════════════════════════════════ */
 :root {
@@ -37,11 +71,11 @@
   --c-warning:        #d97706;
   --c-info:           #0284c7;
 
-  /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(10,56,128,.06);
-  --shadow-md:  0 4px 16px rgba(10,56,128,.09);
-  --shadow-lg:  0 12px 32px rgba(10,56,128,.13);
-  --shadow-xl:  0 24px 48px rgba(10,56,128,.18);
+  /* Shadows — restrained, tinted to brand hue */
+  --shadow-sm:  0 1px 2px rgba(16,42,90,.05), 0 1px 3px rgba(16,42,90,.04);
+  --shadow-md:  0 2px 8px rgba(16,42,90,.06);
+  --shadow-lg:  0 8px 28px rgba(16,42,90,.10);
+  --shadow-xl:  0 16px 40px rgba(16,42,90,.14);
 
   /* Radii */
   --r-sm:  6px;
@@ -72,34 +106,53 @@ p { margin: 0; }
 ::-webkit-scrollbar-thumb { background: #BDD0E8; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #9AB8D9; }
 
+/* ─── Accessibility & global behaviour ───────── */
+html { scroll-behavior: smooth; }
+
+/* Visible keyboard focus everywhere, never on mouse click */
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    Gradient Buttons
    ═══════════════════════════════════════════════ */
 .btn-primary-gradient {
   color: #fff;
-  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 60%, #1a237e 100%);
-  box-shadow: 0 4px 14px rgba(13,71,161,0.35);
-  transition: all 0.22s cubic-bezier(.22,1,.36,1);
+  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  box-shadow: 0 1px 2px rgba(13,71,161,0.20);
+  transition: background .2s var(--ease-out), box-shadow .2s var(--ease-out), transform .12s var(--ease-out);
 }
 .btn-primary-gradient:hover {
-  background: linear-gradient(135deg, #1976D2 0%, #1565C0 60%, #0D47A1 100%);
-  box-shadow: 0 8px 20px rgba(13,71,161,0.40);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+  box-shadow: 0 3px 10px rgba(13,71,161,0.22);
 }
-.btn-primary-gradient:active { transform: translateY(0) scale(0.98); }
+.btn-primary-gradient:active { transform: translateY(1px) scale(0.985); }
 
 .btn-accent-gradient {
   color: #fff;
   background: linear-gradient(135deg, #2979FF 0%, #1565C0 100%);
-  box-shadow: 0 4px 14px rgba(41,121,255,0.32);
-  transition: all 0.22s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 1px 2px rgba(41,121,255,0.20);
+  transition: background .2s var(--ease-out), box-shadow .2s var(--ease-out), transform .12s var(--ease-out);
 }
 .btn-accent-gradient:hover {
   background: linear-gradient(135deg, #448AFF 0%, #2979FF 100%);
-  box-shadow: 0 8px 20px rgba(41,121,255,0.38);
-  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(41,121,255,0.22);
 }
-.btn-accent-gradient:active { transform: translateY(0) scale(0.98); }
+.btn-accent-gradient:active { transform: translateY(1px) scale(0.985); }
 
 /* ═══════════════════════════════════════════════
    Cards
@@ -116,8 +169,8 @@ p { margin: 0; }
               border-color 0.2s;
 }
 .card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
   border-color: #C5D9F0;
 }
 
