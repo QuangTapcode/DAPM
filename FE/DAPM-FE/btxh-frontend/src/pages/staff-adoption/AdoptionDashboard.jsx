@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ClipboardList, Search, Handshake, CheckCircle2, Ban } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useFetch } from '../../hooks/useFetch';
 import adoptionApi from '../../api/adoptionApi';
@@ -85,31 +86,31 @@ export default function AdoptionDashboard() {
     {
       label: 'Tổng yêu cầu',
       value: requests.length,
-      icon: '📋',
+      icon: <ClipboardList size={24} strokeWidth={1.75} />,
       tone: 'bg-[#EAF3FF] text-[#0D47A1]',
     },
     {
       label: 'Đang xác minh',
       value: countByStatus(STATUS.VERIFYING),
-      icon: '🔎',
+      icon: <Search size={24} strokeWidth={1.75} />,
       tone: 'bg-sky-50 text-sky-700',
     },
     {
       label: 'Chờ ghép trẻ',
       value: countByStatus(STATUS.MATCHING_CHILD),
-      icon: '🤝',
+      icon: <Handshake size={24} strokeWidth={1.75} />,
       tone: 'bg-violet-50 text-violet-700',
     },
     {
       label: 'Đã duyệt',
       value: countByStatus(STATUS.APPROVED),
-      icon: '✅',
+      icon: <CheckCircle2 size={24} strokeWidth={1.75} />,
       tone: 'bg-emerald-50 text-emerald-700',
     },
     {
       label: 'Từ chối sơ bộ',
       value: countByStatus(STATUS.PRE_REJECTED),
-      icon: '🚫',
+      icon: <Ban size={24} strokeWidth={1.75} />,
       tone: 'bg-red-50 text-red-700',
     },
   ];

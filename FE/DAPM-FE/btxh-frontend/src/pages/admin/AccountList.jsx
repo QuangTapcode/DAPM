@@ -107,7 +107,7 @@ function AddAccountModal({ onClose, onAdd }) {
     onAdd({ ...form, id: Date.now(), isActive: true, createdAt: new Date().toISOString() });
   };
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-2xl border border-[#D8E6F5] bg-[#F7FBFF] text-sm text-[#334155] placeholder-[#B0C4D8] focus:border-[#2F80ED] focus:ring-4 focus:ring-blue-100 outline-none transition';
+  const inputCls = 'w-full px-4 py-2.5 rounded-2xl border border-[#D8E6F5] bg-[#F7FBFF] text-sm text-[#334155] placeholder-[#B0C4D8] focus:border-[#0D47A1] focus:ring-4 focus:ring-blue-100 outline-none transition';
   const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8] mb-1.5';
 
   return (
@@ -310,7 +310,7 @@ export default function AccountList() {
                 </svg>
                 <input type="text" placeholder="Tìm tên, email..." value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-9 pr-4 py-2 rounded-2xl border border-[#DCE8F7] bg-[#F7FBFF] text-sm text-[#334155] focus:border-[#2F80ED] focus:ring-4 focus:ring-blue-100 outline-none transition w-52"/>
+                  className="pl-9 pr-4 py-2 rounded-2xl border border-[#DCE8F7] bg-[#F7FBFF] text-sm text-[#334155] focus:border-[#0D47A1] focus:ring-4 focus:ring-blue-100 outline-none transition w-52"/>
               </div>
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-[#DCE8F7] text-xs font-semibold text-[#5F81BC] hover:bg-[#EAF3FF] transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
