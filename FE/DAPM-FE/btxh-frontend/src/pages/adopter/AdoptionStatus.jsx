@@ -94,7 +94,7 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
                 )}
                 {fileUrl && !isImage && (
                   <div className="w-14 h-14 flex items-center justify-center rounded-lg border border-[#E3ECF8] bg-slate-50 flex-shrink-0">
-                    <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#2F80ED] hover:underline">PDF</a>
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#0D47A1] hover:underline">PDF</a>
                   </div>
                 )}
                 <div>
@@ -113,7 +113,7 @@ function DocumentUploader({ requestId, readOnly, onUploadSuccess }) {
               </div>
               {!readOnly && (
                 <div>
-                  <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#2F80ED] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1f66c9]">
+                  <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0D47A1] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0a3880]">
                     {uploadingId === doc.maLoaiGiayTo ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : (
@@ -462,7 +462,7 @@ export default function AdoptionStatus() {
           <p className="text-slate-400">Bạn chưa có đơn nhận nuôi nào.</p>
           <Link
             to="/nhan-nuoi/tao-don"
-            className="mt-3 inline-block text-sm font-medium text-[#2F80ED] hover:underline"
+            className="mt-3 inline-block text-sm font-medium text-[#0D47A1] hover:underline"
           >
             Tạo đơn nhận nuôi mới
           </Link>

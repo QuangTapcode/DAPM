@@ -16,7 +16,7 @@ const inputClass = (disabled) =>
         'w-full rounded-2xl border px-4 py-3 text-[15px] outline-none transition',
         disabled
             ? 'border-[#E6EEF8] bg-[#F6FAFF] text-slate-700 cursor-not-allowed'
-            : 'border-[#D8E6F5] bg-white text-slate-800 focus:border-[#2F80ED] focus:ring-4 focus:ring-blue-100',
+            : 'border-[#D8E6F5] bg-white text-slate-800 focus:border-[#0D47A1] focus:ring-4 focus:ring-blue-100',
     ].join(' ');
 
 const labelClass =
@@ -156,7 +156,7 @@ export default function ProfileForm({
                         <button
                             type="button"
                             onClick={() => setIsEditing(true)}
-                            className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#2F80ED] px-6 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.28)] transition hover:brightness-105"
+                            className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#0D47A1] px-6 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(13,71,161,0.20)] transition hover:brightness-105"
                         >
                             Thay đổi thông tin
                         </button>
@@ -173,7 +173,7 @@ export default function ProfileForm({
                                 type="submit"
                                 form={formId}
                                 disabled={isSubmitting}
-                                className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#2F80ED] px-6 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                                className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#0D47A1] px-6 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(13,71,161,0.20)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
                             >
                                 {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                             </button>
@@ -196,7 +196,7 @@ export default function ProfileForm({
                                 />
                                 <button
                                     type="button"
-                                    className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#2F80ED] text-white shadow-md"
+                                    className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#0D47A1] text-white shadow-md"
                                 >
                                     <Camera size={16} />
                                 </button>
@@ -210,7 +210,7 @@ export default function ProfileForm({
                         <div className="mt-7 space-y-4">
                             <div className="rounded-3xl bg-[#F6FAFF] px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#0D47A1]">
                                         <ShieldCheck size={18} />
                                     </div>
                                     <div className="text-left">
@@ -226,7 +226,7 @@ export default function ProfileForm({
 
                             <div className="rounded-3xl bg-[#F6FAFF] px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#0D47A1]">
                                         <CalendarDays size={18} />
                                     </div>
                                     <div className="text-left">
@@ -246,7 +246,7 @@ export default function ProfileForm({
                         <div className={`${cardClass} p-6 md:p-8`}>
                             <div className="mb-6">
                                 <h3 className={sectionTitleClass}>
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E9F2FF] text-[#0D47A1]">
                                         <User size={18} />
                                     </span>
                                     Thông tin cơ bản
@@ -336,7 +336,7 @@ export default function ProfileForm({
                         <div className={`${cardClass} p-6 md:p-8`}>
                             <div className="mb-6">
                                 <h3 className={sectionTitleClass}>
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E9F2FF] text-[#2F80ED]">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E9F2FF] text-[#0D47A1]">
                                         <MapPin size={18} />
                                     </span>
                                     Địa chỉ liên hệ
