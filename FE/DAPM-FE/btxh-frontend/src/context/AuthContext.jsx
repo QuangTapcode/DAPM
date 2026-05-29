@@ -15,6 +15,16 @@ export function AuthProvider({ children }) {
     }
     authApi.getProfile()
       .then((profile) => {
+        try {
+          const localUserStr = localStorage.getItem('user');
+          if (localUserStr) {
+            const localUser = JSON.parse(localUserStr);
+            if (localUser && localUser.role && !profile.role) {
+              profile.role = localUser.role;
+            }
+          }
+        } catch (e) {
+        }
         setUser(profile);
         localStorage.setItem('user', JSON.stringify(profile));
       })
@@ -70,4 +80,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
+}

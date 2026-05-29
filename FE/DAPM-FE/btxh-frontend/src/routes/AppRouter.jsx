@@ -65,7 +65,7 @@ function ProtectedRoute({ allowedRoles, children }) {
   if (loading) return null;
   if (!user) return <Navigate to="/dang-nhap" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role))
-    return <Navigate to="/dang-nhap" replace />;
+    return <Navigate to="/" replace />;
   return children;
 }
 function RequireCompletedAdopterProfile({ children }) {

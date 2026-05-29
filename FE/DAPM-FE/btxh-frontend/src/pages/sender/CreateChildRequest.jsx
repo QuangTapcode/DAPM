@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import family from '../../assets/sender.jpg';
 import receptionApi from '../../api/receptionApi';
 import authApi from '../../api/authApi';
 import lookupApi from '../../api/lookupApi';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const SENDER_TYPES = [
   { code: 'CME', label: 'Cha hoặc mẹ ruột', requireDocs: true },
@@ -93,6 +94,7 @@ function PageHeader() {
 
 function ApplicantSection({
   register,
+  control,
   errors,
   senderProvinceOptions,
   senderWardOptions,
@@ -125,19 +127,20 @@ function ApplicantSection({
 
         <div>
           <label className={labelClass}>Loại người gửi trẻ</label>
-          <select
-            {...register('senderTypeCode', {
-              required: 'Vui lòng chọn loại người gửi.',
-            })}
-            className={inputClass}
-          >
-            <option value="">Chọn loại người gửi</option>
-            {SENDER_TYPES.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="senderTypeCode"
+            control={control}
+            rules={{ required: 'Vui lòng chọn loại người gửi.' }}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={SENDER_TYPES.map(item => ({ value: item.code, label: item.label }))}
+                placeholder="Chọn loại người gửi"
+                error={!!errors.senderTypeCode}
+              />
+            )}
+          />
           <FieldError message={errors.senderTypeCode?.message} />
         </div>
 
@@ -177,37 +180,40 @@ function ApplicantSection({
 
         <div>
           <label className={labelClass}>Tỉnh / Thành phố</label>
-          <select
-            {...register('senderProvinceCode', {
-              required: 'Vui lòng chọn tỉnh/thành.',
-            })}
-            className={inputClass}
-          >
-            <option value="">Chọn tỉnh/thành</option>
-            {senderProvinceOptions.map((item) => (
-              <option key={item.maTinhTP} value={item.maTinhTP}>
-                {item.tenTinhTP}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="senderProvinceCode"
+            control={control}
+            rules={{ required: 'Vui lòng chọn tỉnh/thành.' }}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={senderProvinceOptions.map(item => ({ value: item.maTinhTP, label: item.tenTinhTP }))}
+                placeholder="Chọn tỉnh/thành"
+                error={!!errors.senderProvinceCode}
+              />
+            )}
+          />
           <FieldError message={errors.senderProvinceCode?.message} />
         </div>
 
         <div>
           <label className={labelClass}>Xã / Phường</label>
-          <select
-            {...register('senderWardCode', {
-              required: 'Vui lòng chọn xã/phường.',
-            })}
-            className={inputClass}
-          >
-            <option value="">Chọn xã/phường</option>
-            {senderWardOptions.map((item) => (
-              <option key={item.maPhuongXa} value={item.maPhuongXa}>
-                {item.tenPhuongXa}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="senderWardCode"
+            control={control}
+            rules={{ required: 'Vui lòng chọn xã/phường.' }}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={senderWardOptions.map(item => ({ value: item.maPhuongXa, label: item.tenPhuongXa }))}
+                placeholder="Chọn xã/phường"
+                error={!!errors.senderWardCode}
+                disabled={senderWardOptions.length === 0}
+              />
+            )}
+          />
           <FieldError message={errors.senderWardCode?.message} />
         </div>
       </div>
@@ -238,6 +244,7 @@ function ApplicantSection({
 
 function ChildSection({
   register,
+  control,
   errors,
   childProvinceOptions,
   childWardOptions,
@@ -277,10 +284,21 @@ function ChildSection({
 
         <div>
           <label className={labelClass}>Giới tính</label>
-          <select {...register('childGender')} className={inputClass}>
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-          </select>
+          <Controller
+            name="childGender"
+            control={control}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { value: 'male', label: 'Nam' },
+                  { value: 'female', label: 'Nữ' },
+                ]}
+                placeholder="Chọn giới tính"
+              />
+            )}
+          />
         </div>
 
         <div>
@@ -294,37 +312,40 @@ function ChildSection({
 
         <div>
           <label className={labelClass}>Tỉnh / Thành phố</label>
-          <select
-            {...register('childProvinceCode', {
-              required: 'Vui lòng chọn tỉnh/thành.',
-            })}
-            className={inputClass}
-          >
-            <option value="">Chọn tỉnh/thành</option>
-            {childProvinceOptions.map((item) => (
-              <option key={item.maTinhTP} value={item.maTinhTP}>
-                {item.tenTinhTP}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="childProvinceCode"
+            control={control}
+            rules={{ required: 'Vui lòng chọn tỉnh/thành.' }}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={childProvinceOptions.map(item => ({ value: item.maTinhTP, label: item.tenTinhTP }))}
+                placeholder="Chọn tỉnh/thành"
+                error={!!errors.childProvinceCode}
+              />
+            )}
+          />
           <FieldError message={errors.childProvinceCode?.message} />
         </div>
 
         <div>
           <label className={labelClass}>Xã / Phường</label>
-          <select
-            {...register('childWardCode', {
-              required: 'Vui lòng chọn xã/phường.',
-            })}
-            className={inputClass}
-          >
-            <option value="">Chọn xã/phường</option>
-            {childWardOptions.map((item) => (
-              <option key={item.maPhuongXa} value={item.maPhuongXa}>
-                {item.tenPhuongXa}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="childWardCode"
+            control={control}
+            rules={{ required: 'Vui lòng chọn xã/phường.' }}
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={childWardOptions.map(item => ({ value: item.maPhuongXa, label: item.tenPhuongXa }))}
+                placeholder="Chọn xã/phường"
+                error={!!errors.childWardCode}
+                disabled={childWardOptions.length === 0}
+              />
+            )}
+          />
           <FieldError message={errors.childWardCode?.message} />
         </div>
       </div>
@@ -354,7 +375,7 @@ function ChildSection({
   );
 }
 
-function ReasonSection({ register, errors }) {
+function ReasonSection({ register, control, errors }) {
   return (
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
@@ -365,19 +386,26 @@ function ReasonSection({ register, errors }) {
 
       <div>
         <label className={labelClass}>Lý do chính</label>
-        <select
-          {...register('reason', {
-            required: 'Vui lòng chọn lý do.',
-          })}
-          className={inputClass}
-        >
-          <option value="">Chọn lý do chính</option>
-          <option value="mo_coi">Trẻ mồ côi (cha mẹ qua đời)</option>
-          <option value="kinh_te">Hoàn cảnh kinh tế khó khăn</option>
-          <option value="suc_khoe">Cha / Mẹ bệnh nặng, không thể chăm sóc</option>
-          <option value="xa_hoi">Hoàn cảnh xã hội đặc biệt</option>
-          <option value="khac">Lý do khác</option>
-        </select>
+        <Controller
+          name="reason"
+          control={control}
+          rules={{ required: 'Vui lòng chọn lý do.' }}
+          render={({ field }) => (
+            <CustomSelect
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 'mo_coi', label: 'Trẻ mồ côi (cha mẹ qua đời)' },
+                { value: 'kinh_te', label: 'Hoàn cảnh kinh tế khó khăn' },
+                { value: 'suc_khoe', label: 'Cha / Mẹ bệnh nặng, không thể chăm sóc' },
+                { value: 'xa_hoi', label: 'Hoàn cảnh xã hội đặc biệt' },
+                { value: 'khac', label: 'Lý do khác' },
+              ]}
+              placeholder="Chọn lý do chính"
+              error={!!errors.reason}
+            />
+          )}
+        />
         <FieldError message={errors.reason?.message} />
       </div>
 
@@ -564,6 +592,7 @@ export default function CreateChildRequest() {
     handleSubmit,
     watch,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     mode: 'onChange',
@@ -594,6 +623,8 @@ export default function CreateChildRequest() {
       if (profile?.cccd) setValue('senderNationalId', profile.cccd);
       if (profile?.phone || profile?.sdt) setValue('senderPhone', profile.phone || profile.sdt);
       if (profile?.diaChiCuThe) setValue('senderAddressDetail', profile.diaChiCuThe);
+      if (profile?.maTinhTP) setValue('senderProvinceCode', profile.maTinhTP);
+      if (profile?.maPhuongXa) setValue('senderWardCode', profile.maPhuongXa);
     }).catch(() => {});
 
     lookupApi.getTinhTp().then((res) => {
@@ -604,9 +635,16 @@ export default function CreateChildRequest() {
   const senderTypeCode = watch('senderTypeCode');
   const senderProvinceCode = watch('senderProvinceCode');
   const childProvinceCode = watch('childProvinceCode');
+  
+  const prevSenderProv = useRef(watch('senderProvinceCode'));
+  const prevChildProv = useRef(watch('childProvinceCode'));
 
   useEffect(() => {
-    setValue('senderWardCode', '');
+    if (prevSenderProv.current !== senderProvinceCode && prevSenderProv.current !== '') {
+      setValue('senderWardCode', '');
+    }
+    prevSenderProv.current = senderProvinceCode;
+
     setSenderWards([]);
     if (!senderProvinceCode) return;
     lookupApi.getPhuongXa(senderProvinceCode).then((res) => {
@@ -615,7 +653,11 @@ export default function CreateChildRequest() {
   }, [senderProvinceCode, setValue]);
 
   useEffect(() => {
-    setValue('childWardCode', '');
+    if (prevChildProv.current !== childProvinceCode && prevChildProv.current !== '') {
+      setValue('childWardCode', '');
+    }
+    prevChildProv.current = childProvinceCode;
+
     setChildWards([]);
     if (!childProvinceCode) return;
     lookupApi.getPhuongXa(childProvinceCode).then((res) => {
@@ -726,6 +768,7 @@ export default function CreateChildRequest() {
             <div className="lg:col-span-8">
               <ApplicantSection
                 register={register}
+                control={control}
                 errors={errors}
                 senderProvinceOptions={senderProvinceOptions}
                 senderWardOptions={senderWardOptions}
@@ -749,6 +792,7 @@ export default function CreateChildRequest() {
             <div className="lg:col-span-8">
               <ChildSection
                 register={register}
+                control={control}
                 errors={errors}
                 childProvinceOptions={childProvinceOptions}
                 childWardOptions={childWardOptions}
@@ -761,7 +805,7 @@ export default function CreateChildRequest() {
 
             {/* Hàng 3 */}
             <div className="lg:col-span-8">
-              <ReasonSection register={register} errors={errors} />
+              <ReasonSection register={register} control={control} errors={errors} />
             </div>
 
             {/* Hàng 4 */}

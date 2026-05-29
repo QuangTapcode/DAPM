@@ -7,8 +7,6 @@ import lookupApi from '../../api/lookupApi';
 
 export default function AdopterProfile() {
   const [profile, setProfile] = useState(null);
-  const [tinhTpOptions, setTinhTpOptions] = useState([]);
-  const [phuongXaOptions, setPhuongXaOptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
@@ -20,15 +18,8 @@ export default function AdopterProfile() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profileRes, tinhTpRes, phuongXaRes] = await Promise.all([
-          authApi.getProfile(),
-          lookupApi.getTinhTp(),
-          lookupApi.getPhuongXa(),
-        ]);
-
+        const profileRes = await authApi.getProfile();
         setProfile(profileRes);
-        setTinhTpOptions(Array.isArray(tinhTpRes) ? tinhTpRes : (tinhTpRes?.items || []));
-        setPhuongXaOptions(Array.isArray(phuongXaRes) ? phuongXaRes : (phuongXaRes?.items || []));
       } catch (error) {
         console.error('Lỗi load profile:', error);
         alert(error?.message || 'Không thể tải thông tin cá nhân');
@@ -40,25 +31,7 @@ export default function AdopterProfile() {
     loadData();
   }, []);
 
-  const currentPhuongXa = useMemo(() => {
-    if (!profile?.maPhuongXa) return null;
-
-    return phuongXaOptions.find(
-      (item) => item.maPhuongXa === profile.maPhuongXa
-    );
-  }, [profile, phuongXaOptions]);
-
-  const profileWithAddress = useMemo(() => {
-    if (!profile) return null;
-
-    return {
-      ...profile,
-      maTinhTP: currentPhuongXa?.maTinhTP || '',
-      tenPhuongXa: currentPhuongXa?.tenPhuongXa || '',
-    };
-  }, [profile, currentPhuongXa]);
-
-  const profileComplete = isAdopterProfileComplete(profileWithAddress);
+  const profileComplete = isAdopterProfileComplete(profile);
   const showRequiredMessage = requiredProfile && !profileComplete;
 
   const requiredMessage =
@@ -117,13 +90,11 @@ export default function AdopterProfile() {
         )}
 
         <ProfileForm
-          user={profileWithAddress}
+          user={profile}
           formId="adopter-profile-form"
           title="Thông tin cá nhân"
           description="Cập nhật thông tin chính xác để chúng tôi có thể hỗ trợ tốt nhất trong quá trình nhận nuôi và chăm sóc trẻ."
           onSave={handleSave}
-          provinceOptions={tinhTpOptions}
-          wardOptions={phuongXaOptions}
         />
       </div>
     </div>

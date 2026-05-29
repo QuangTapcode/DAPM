@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import lookupApi from '../../api/lookupApi';
 import {
     User,
     MapPin,
@@ -57,10 +58,11 @@ function getInitialValues(user) {
         dateOfBirth: formatDateForInput(user?.ngaySinh || user?.dateOfBirth || user?.dob),
         phone: user?.phone || user?.sDT || '',
         email: user?.email || '',
-        province: user?.tenTinhTP || user?.province || user?.city || '',
-        ward: user?.tenPhuongXa || user?.ward || user?.district || '',
+        maTinhTP: user?.maTinhTP || '',
+        maXaPhuong: user?.maPhuongXa || user?.maXaPhuong || '',
+        tenTinhTP: user?.tenTinhTP || user?.province || user?.city || '',
+        tenPhuongXa: user?.tenPhuongXa || user?.ward || user?.district || '',
         addressDetail: user?.diaChiCuThe || user?.addressDetail || user?.address || '',
-        maXaPhuong: user?.maXaPhuong || '',
         avatarUrl: user?.avatarUrl || user?.avatar || '',
         profileStatus: user?.isActive ? 'Đang hoạt động' : (user?.profileStatus || 'Chưa xác minh'),
         memberSince: user?.createdAt || user?.memberSince || '',
@@ -73,22 +75,10 @@ export default function ProfileForm({
     description = '',
     formId = 'profile-form',
     onSave,
-    provinceOptions = [
-        'TP. Đà Nẵng',
-        'Quảng Nam',
-        'Thừa Thiên Huế',
-        'TP. Hồ Chí Minh',
-        'Hà Nội',
-    ],
-    wardOptions = [
-        'Quận Hải Châu',
-        'Quận Thanh Khê',
-        'Quận Sơn Trà',
-        'Quận Ngũ Hành Sơn',
-        'Quận Liên Chiểu',
-    ],
 }) {
     const [isEditing, setIsEditing] = useState(false);
+    const [tinhTpOptions, setTinhTpOptions] = useState([]);
+    const [phuongXaOptions, setPhuongXaOptions] = useState([]);
 
     const initialValues = useMemo(() => getInitialValues(user), [user]);
 
@@ -96,14 +86,55 @@ export default function ProfileForm({
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { isSubmitting },
     } = useForm({
         defaultValues: initialValues,
     });
 
+    const watchedMaTinhTP = watch('maTinhTP');
+    const [prevMaTinhTP, setPrevMaTinhTP] = useState(initialValues.maTinhTP);
+
     useEffect(() => {
         reset(initialValues);
+        setPrevMaTinhTP(initialValues.maTinhTP);
     }, [initialValues, reset]);
+
+    useEffect(() => {
+        const fetchTinhTp = async () => {
+            try {
+                const res = await lookupApi.getTinhTp();
+                setTinhTpOptions(Array.isArray(res) ? res : (res?.items || []));
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        fetchTinhTp();
+    }, []);
+
+    useEffect(() => {
+        const fetchPhuongXa = async () => {
+            if (!watchedMaTinhTP) {
+                setPhuongXaOptions([]);
+                return;
+            }
+            try {
+                const res = await lookupApi.getPhuongXa(watchedMaTinhTP);
+                setPhuongXaOptions(Array.isArray(res) ? res : (res?.items || []));
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        fetchPhuongXa();
+    }, [watchedMaTinhTP]);
+
+    useEffect(() => {
+        if (isEditing && watchedMaTinhTP !== prevMaTinhTP) {
+            setValue('maXaPhuong', '');
+            setPrevMaTinhTP(watchedMaTinhTP);
+        }
+    }, [watchedMaTinhTP, prevMaTinhTP, isEditing, setValue]);
 
     const onSubmit = async (data) => {
         const payload = {
@@ -348,16 +379,17 @@ export default function ProfileForm({
                                     <label className={labelClass}>Tỉnh / Thành phố</label>
                                     {isEditing ? (
                                         <select
-                                            {...register('province')}
+                                            {...register('maTinhTP')}
                                             className={inputClass(false)}
                                         >
-                                            {provinceOptions.map((item) => (
-                                                <option key={item} value={item}>{item}</option>
+                                            <option value="">Chọn Tỉnh / Thành phố</option>
+                                            {tinhTpOptions.map((item) => (
+                                                <option key={item.maTinhTP} value={item.maTinhTP}>{item.tenTinhTP}</option>
                                             ))}
                                         </select>
                                     ) : (
                                         <input
-                                            {...register('province')}
+                                            value={initialValues.tenTinhTP}
                                             disabled
                                             className={inputClass(true)}
                                         />
@@ -368,16 +400,17 @@ export default function ProfileForm({
                                     <label className={labelClass}>Phường / Xã / Quận</label>
                                     {isEditing ? (
                                         <select
-                                            {...register('ward')}
+                                            {...register('maXaPhuong')}
                                             className={inputClass(false)}
                                         >
-                                            {wardOptions.map((item) => (
-                                                <option key={item} value={item}>{item}</option>
+                                            <option value="">Chọn Phường / Xã</option>
+                                            {phuongXaOptions.map((item) => (
+                                                <option key={item.maPhuongXa} value={item.maPhuongXa}>{item.tenPhuongXa}</option>
                                             ))}
                                         </select>
                                     ) : (
                                         <input
-                                            {...register('ward')}
+                                            value={initialValues.tenPhuongXa}
                                             disabled
                                             className={inputClass(true)}
                                         />

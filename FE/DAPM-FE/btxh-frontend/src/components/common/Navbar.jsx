@@ -70,14 +70,14 @@ export default function Navbar() {
         '';
 
   const handleSwitchRole = () => {
-    if (user?.role === ROLES.SENDER) {
-      updateUser({ role: ROLES.ADOPTER });
-    } else if (user?.role === ROLES.ADOPTER) {
-      updateUser({ role: ROLES.SENDER });
-    }
+    const newRole = user?.role === ROLES.SENDER ? ROLES.ADOPTER : ROLES.SENDER;
 
     setDropdownOpen(false);
     navigate('/');
+    
+    setTimeout(() => {
+      updateUser({ role: newRole });
+    }, 0);
   };
   return (
     <header
