@@ -23,7 +23,7 @@ function StatusBadge({ status }) {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold ${cls[status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+    <span className={`inline-flex items-center rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${cls[status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
       {status || 'Chưa xác định'}
     </span>
   );
@@ -77,7 +77,7 @@ export default function MeetingList() {
         </header>
 
         <section className="overflow-hidden rounded-xl border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]">
-          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-7 py-6 lg:px-7">
             <div className="grid gap-4 xl:grid-cols-[1fr_480px]">
               <div className="relative">
                 <Search
@@ -122,46 +122,52 @@ export default function MeetingList() {
           </div>
 
           {loading ? (
-            <div className="px-6 py-16 text-center text-sm text-[#8FA0B8]">Đang tải...</div>
+            <div className="px-6 py-16 text-center text-[15px] font-semibold text-[#8FA0B8]">Đang tải...</div>
           ) : filtered.length === 0 ? (
-            <div className="px-6 py-16 text-center text-sm text-[#8FA0B8]">Không có lịch hẹn phù hợp.</div>
+            <div className="flex flex-col items-center px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3FF] text-[#0D47A1]">
+                <Calendar size={26} strokeWidth={1.75} />
+              </div>
+              <p className="mt-4 text-[15px] font-bold text-[#1A2B4B]">Không có lịch hẹn phù hợp</p>
+              <p className="mt-1.5 text-sm text-[#8FA0B8]">Thử đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Mã lịch hẹn</th>
-                    <th className="px-6 py-4 font-bold">Mã yêu cầu</th>
-                    <th className="px-6 py-4 font-bold">Cán bộ</th>
-                    <th className="px-6 py-4 font-bold">Thời gian</th>
-                    <th className="px-6 py-4 font-bold">Địa điểm</th>
-                    <th className="px-6 py-4 font-bold">Trạng thái</th>
-                    <th className="w-[100px] px-6 py-4 text-right font-bold">Thao tác</th>
+                    <th className="px-7 py-5 font-bold">Mã lịch hẹn</th>
+                    <th className="px-7 py-5 font-bold">Mã yêu cầu</th>
+                    <th className="px-7 py-5 font-bold">Cán bộ</th>
+                    <th className="px-7 py-5 font-bold">Thời gian</th>
+                    <th className="px-7 py-5 font-bold">Địa điểm</th>
+                    <th className="px-7 py-5 font-bold">Trạng thái</th>
+                    <th className="w-[100px] px-7 py-5 text-right font-bold">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EDF3FB]">
                   {filtered.map((m) => (
                     <tr key={m.maLichGap} className="transition hover:bg-[#F8FBFF] [&>td]:align-middle">
-                      <td className="px-6 py-5">
-                        <span className="rounded-lg bg-[#EAF3FF] px-3 py-1 text-xs font-extrabold text-[#0D47A1]">
+                      <td className="px-7 py-6">
+                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-[13px] font-extrabold tracking-wide text-[#0D47A1]">
                           {m.maLichGap || '—'}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                         {m.maYeuCauNhan || '—'}
                       </td>
-                      <td className="px-6 py-5 text-sm font-semibold text-[#26364A]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#26364A]">
                         {m.tenCanBo || '—'}
                       </td>
-                      <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                         {m.thoiGian
                           ? new Date(m.thoiGian).toLocaleString('vi-VN')
                           : '—'}
                       </td>
-                      <td className="px-6 py-5 text-sm text-[#26364A]">
+                      <td className="px-7 py-6 text-sm text-[#26364A]">
                         {m.diaDiem || '—'}
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <StatusBadge status={m.trangThai} />
                         {m.trangThai === 'Yêu cầu đổi lịch' && m.thoiGianDeXuatMoi && (
                           <p className="mt-1 text-xs text-amber-600">
@@ -169,14 +175,14 @@ export default function MeetingList() {
                           </p>
                         )}
                       </td>
-                      <td className="px-6 py-5 text-right">
+                      <td className="px-7 py-6 text-right">
                         {m.maYeuCauNhan && (
                           <button
                             type="button"
                             onClick={() => navigate(`/can-bo-nhan-nuoi/chi-tiet/${m.maYeuCauNhan}`)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#CFE0F5] bg-white px-3 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+                            className="inline-flex h-11 items-center gap-1.5 rounded-2xl border border-[#CFE0F5] bg-white px-4 text-[13px] font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] active:scale-[0.97]"
                           >
-                            <Eye size={13} />
+                            <Eye size={15} />
                             Xem
                           </button>
                         )}

@@ -232,7 +232,7 @@ export default function AdoptionRequestList() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Tìm theo mã, tên, số điện thoại, trạng thái, điểm..."
-                className="w-full rounded-2xl border border-[#D7E5F7] bg-[#F8FBFF] px-4 py-3 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#4B82C4] focus:bg-white"
+                className="h-12 w-full rounded-2xl border border-[#D7E5F7] bg-[#F8FBFF] px-4 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:bg-white focus:ring-4 focus:ring-[#0D47A1]/10"
               />
             </div>
           </div>
@@ -257,17 +257,17 @@ export default function AdoptionRequestList() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1300px] border-collapse text-left text-sm">
-                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Mã yêu cầu</th>
-                    <th className="px-6 py-4 font-bold">Người nhận nuôi</th>
-                    <th className="px-6 py-4 font-bold">Ngày tạo</th>
-                    <th className="px-6 py-4 font-bold">Thu nhập</th>
-                    <th className="px-6 py-4 font-bold">Điểm ưu tiên</th>
-                    <th className="px-6 py-4 font-bold">Điều kiện</th>
-                    <th className="px-6 py-4 font-bold">Giấy tờ</th>
-                    <th className="px-6 py-4 font-bold">Trạng thái</th>
-                    <th className="px-6 py-4 text-right font-bold">
+                    <th className="px-7 py-5 font-bold">Mã yêu cầu</th>
+                    <th className="px-7 py-5 font-bold">Người nhận nuôi</th>
+                    <th className="px-7 py-5 font-bold">Ngày tạo</th>
+                    <th className="px-7 py-5 font-bold">Thu nhập</th>
+                    <th className="px-7 py-5 font-bold">Điểm ưu tiên</th>
+                    <th className="px-7 py-5 font-bold">Điều kiện</th>
+                    <th className="px-7 py-5 font-bold">Giấy tờ</th>
+                    <th className="px-7 py-5 font-bold">Trạng thái</th>
+                    <th className="px-7 py-5 text-right font-bold">
                       Thao tác
                     </th>
                   </tr>
@@ -279,33 +279,33 @@ export default function AdoptionRequestList() {
                       key={item.maYeuCauNhan}
                       className="transition hover:bg-[#F7FAFF]"
                     >
-                      <td className="px-6 py-5">
-                        <p className="font-bold text-[#0D47A1]">
+                      <td className="px-7 py-6">
+                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-[13px] font-extrabold tracking-wide text-[#0D47A1]">
                           {item.maYeuCauNhan}
-                        </p>
-                        <p className="mt-1 text-xs text-[#8FA0B8]">
+                        </span>
+                        <p className="mt-1.5 text-[13px] text-[#8FA0B8]">
                           {item.maNguoiNhan}
                         </p>
                       </td>
 
-                      <td className="px-6 py-5">
-                        <p className="font-bold text-[#26364A]">
+                      <td className="px-7 py-6">
+                        <p className="text-[15px] font-bold text-[#1A2B4B]">
                           {item.tenNguoiNhan}
                         </p>
-                        <p className="mt-1 text-xs text-[#8FA0B8]">
+                        <p className="mt-1.5 text-[13px] text-[#8FA0B8]">
                           {item.sdtNguoiNhan}
                         </p>
                       </td>
 
-                      <td className="px-6 py-5 text-[#6F83A3]">
+                      <td className="px-7 py-6 text-[#6F83A3]">
                         {formatDate(item.ngayTao)}
                       </td>
 
-                      <td className="px-6 py-5 font-semibold text-[#26364A]">
+                      <td className="px-7 py-6 font-semibold text-[#26364A]">
                         {formatCurrency(item.thuNhapHangThang)}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <div
                           className={`inline-flex min-w-[92px] items-center justify-center rounded-2xl border px-3 py-2 ${getPriorityClass(
                             item.diemUuTien
@@ -321,7 +321,7 @@ export default function AdoptionRequestList() {
                         </p>
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <p className="font-semibold text-[#26364A]">
                           {item.tinhTrangHonNhan}
                         </p>
@@ -330,7 +330,7 @@ export default function AdoptionRequestList() {
                         </p>
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <p className="font-bold text-[#26364A]">
                           Đủ yêu cầu: {formatDocumentCount(item)}
                         </p>
@@ -339,14 +339,14 @@ export default function AdoptionRequestList() {
                         </p>
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <Badge status={item.trangThai} size="md" />
                       </td>
 
-                      <td className="px-6 py-5 text-right">
+                      <td className="px-7 py-6 text-right">
                         <Link
                           to={`/can-bo-nhan-nuoi/chi-tiet/${item.maYeuCauNhan || item.MaYeuCauNhan}`}
-                          className="rounded-xl bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#083778]"
+                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#0D47A1] px-5 text-[13px] font-bold text-white transition hover:bg-[#083778] active:scale-[0.97]"
                         >
                           Xem chi tiết
                         </Link>
@@ -356,11 +356,13 @@ export default function AdoptionRequestList() {
 
                   {filteredRequests.length === 0 && (
                     <tr>
-                      <td
-                        colSpan="9"
-                        className="px-6 py-14 text-center text-sm text-[#8FA0B8]"
-                      >
-                        Không tìm thấy yêu cầu nhận nuôi phù hợp.
+                      <td colSpan="9" className="px-6 py-16 text-center">
+                        <p className="text-[15px] font-bold text-[#1A2B4B]">
+                          Không tìm thấy yêu cầu nhận nuôi phù hợp
+                        </p>
+                        <p className="mt-1.5 text-sm text-[#8FA0B8]">
+                          Thử đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm.
+                        </p>
                       </td>
                     </tr>
                   )}
