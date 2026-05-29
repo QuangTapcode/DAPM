@@ -605,54 +605,30 @@ export default function ChildHealthForm() {
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-[#DCE6F2] bg-white px-4 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8]">
-                    Cân nặng
-                  </p>
-                  <p className="mt-2 text-[24px] font-black leading-none text-[#0D47A1]">
-                    {latestHealth?.CanNang || '—'}
-                    {latestHealth?.CanNang ? (
-                      <span className="ml-1 text-xs font-bold text-[#7D90AA]">kg</span>
-                    ) : null}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-[#DCE6F2] bg-white px-4 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8]">
-                    Chiều cao
-                  </p>
-                  <p className="mt-2 text-[24px] font-black leading-none text-[#0D47A1]">
-                    {latestHealth?.ChieuCao || '—'}
-                    {latestHealth?.ChieuCao ? (
-                      <span className="ml-1 text-xs font-bold text-[#7D90AA]">cm</span>
-                    ) : null}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-[#DCE6F2] bg-white px-4 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8]">
-                    Nhiệt độ
-                  </p>
-                  <p className="mt-2 text-[24px] font-black leading-none text-[#0D47A1]">
-                    {latestHealth?.NhietDo || '—'}
-                    {latestHealth?.NhietDo ? (
-                      <span className="ml-1 text-xs font-bold text-[#7D90AA]">°C</span>
-                    ) : null}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-[#DCE6F2] bg-white px-4 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8]">
-                    Nhịp tim
-                  </p>
-                  <p className="mt-2 text-[24px] font-black leading-none text-[#0D47A1]">
-                    {latestHealth?.NhipTim || '—'}
-                    {latestHealth?.NhipTim ? (
-                      <span className="ml-1 text-xs font-bold text-[#7D90AA]">l/p</span>
-                    ) : null}
-                  </p>
-                </div>
+              <div className="mt-5 grid grid-cols-2 gap-3.5">
+                {[
+                  { label: 'Cân nặng', value: latestHealth?.CanNang, unit: 'kg' },
+                  { label: 'Chiều cao', value: latestHealth?.ChieuCao, unit: 'cm' },
+                  { label: 'Nhiệt độ', value: latestHealth?.NhietDo, unit: '°C' },
+                  { label: 'Nhịp tim', value: latestHealth?.NhipTim, unit: 'l/p' },
+                ].map((metric) => (
+                  <div
+                    key={metric.label}
+                    className="rounded-2xl bg-white p-5 ring-1 ring-[#E3EDF8] transition hover:ring-[#C5D9F0] hover:shadow-[0_8px_24px_rgba(16,42,90,0.06)]"
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8]">
+                      {metric.label}
+                    </p>
+                    <p className="mt-3 text-[32px] font-black leading-none tracking-[-0.02em] text-[#0D47A1]">
+                      {metric.value || '—'}
+                      {metric.value ? (
+                        <span className="ml-1.5 text-sm font-bold text-[#7D90AA]">
+                          {metric.unit}
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -851,8 +827,16 @@ export default function ChildHealthForm() {
           )}
 
           {healthRows.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm font-semibold text-[#8FA0B8]">
-              Chưa có bản ghi theo dõi sức khỏe.
+            <div className="flex flex-col items-center px-6 py-14 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3FF] text-[#0D47A1]">
+                <HeartPulse size={26} strokeWidth={1.75} />
+              </div>
+              <p className="mt-4 text-[15px] font-bold text-[#1A2B4B]">
+                Chưa có bản ghi theo dõi sức khỏe
+              </p>
+              <p className="mt-1.5 text-sm text-[#8FA0B8]">
+                Nhấn "Thêm" để tạo bản ghi theo dõi đầu tiên cho trẻ.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1148,8 +1132,16 @@ export default function ChildHealthForm() {
           )}
 
           {vaccineRows.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm font-semibold text-[#8FA0B8]">
-              Chưa có lịch sử tiêm chủng.
+            <div className="flex flex-col items-center px-6 py-14 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3FF] text-[#0D47A1]">
+                <Syringe size={26} strokeWidth={1.75} />
+              </div>
+              <p className="mt-4 text-[15px] font-bold text-[#1A2B4B]">
+                Chưa có lịch sử tiêm chủng
+              </p>
+              <p className="mt-1.5 text-sm text-[#8FA0B8]">
+                Nhấn "Thêm" để ghi nhận mũi tiêm đầu tiên cho trẻ.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
