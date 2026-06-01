@@ -168,25 +168,24 @@ function normalizeChild(child = {}) {
   };
 }
 
-function getProfileStatus(selectedChild, meeting, meetingResult) {
-  if (!selectedChild) return 'Chưa gán trẻ';
+function getProfileStatus(finalSelectedChild, meeting) {
   if (!meeting) return 'Chưa tạo lịch gặp';
-  if (meeting.trangThai !== 'Đã xác nhận') return 'Chờ xác nhận lịch';
-  if (!meetingResult.result) return 'Chưa ghi nhận kết quả';
-  if (meetingResult.result === 'Phù hợp') return 'Đủ điều kiện gửi duyệt';
-  if (meetingResult.result === 'Cần gặp lại') return 'Cần gặp lại';
-  return 'Không đủ điều kiện';
+  if (meeting.trangThai === 'Chờ xác nhận') return 'Chờ xác nhận lịch';
+  if (meeting.trangThai === 'Đã xác nhận') return 'Chờ gặp mặt';
+  if (meeting.trangThai === 'Đã gặp mặt') {
+     if (!finalSelectedChild) return 'Chưa chốt trẻ phù hợp';
+     return 'Đủ điều kiện gửi duyệt';
+  }
+  return meeting.trangThai;
 }
 
 function profileStatusClass(status) {
   const map = {
-    'Chưa gán trẻ': 'border-slate-200 bg-slate-50 text-slate-600',
     'Chưa tạo lịch gặp': 'border-amber-200 bg-amber-50 text-amber-700',
     'Chờ xác nhận lịch': 'border-amber-200 bg-amber-50 text-amber-700',
-    'Chưa ghi nhận kết quả': 'border-sky-200 bg-sky-50 text-sky-700',
+    'Chờ gặp mặt': 'border-sky-200 bg-sky-50 text-sky-700',
+    'Chưa chốt trẻ phù hợp': 'border-sky-200 bg-sky-50 text-sky-700',
     'Đủ điều kiện gửi duyệt': 'border-green-200 bg-green-50 text-green-700',
-    'Cần gặp lại': 'border-orange-200 bg-orange-50 text-orange-700',
-    'Không đủ điều kiện': 'border-red-200 bg-red-50 text-red-700',
   };
 
   return map[status] || 'border-slate-200 bg-slate-50 text-slate-600';
@@ -240,7 +239,7 @@ function SectionTitle({ number, title, description }) {
   );
 }
 
-function ChildCard({ child, request, selected, onSelect }) {
+function ChildCard({ child, request, selected, onSelect, disabled }) {
   const childAge = getAge(child.NgaySinh);
   const ageGap = getAgeGap(request.NgaySinhNguoiNhan, child.NgaySinh);
 
@@ -270,7 +269,7 @@ function ChildCard({ child, request, selected, onSelect }) {
 
         {selected && (
           <span className="rounded-full bg-[#0D47A1] px-3 py-1 text-xs font-bold text-white">
-            Đã gán
+            Đã chọn
           </span>
         )}
       </div>
@@ -312,9 +311,10 @@ function ChildCard({ child, request, selected, onSelect }) {
       <button
         type="button"
         onClick={() => onSelect(child)}
-        className={`${primaryButton} mt-5 w-full`}
+        disabled={disabled}
+        className={`${selected ? secondaryButton : primaryButton} mt-5 w-full`}
       >
-        Gán trẻ vào hồ sơ
+        {selected ? 'Bỏ chọn' : 'Chọn ghép vào lịch hẹn'}
       </button>
     </article>
   );
@@ -337,7 +337,7 @@ export default function CreateAdoptionProfile() {
     normalizeRequest({}, requestId)
   );
   const [children, setChildren] = useState([]);
-  const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedChildren, setSelectedChildren] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [meeting, setMeeting] = useState(null);
@@ -347,10 +347,7 @@ export default function CreateAdoptionProfile() {
   });
   const [meetingCreating, setMeetingCreating] = useState(false);
 
-  const [meetingResult, setMeetingResult] = useState({
-    result: '',
-    note: '',
-  });
+  const [childStatuses, setChildStatuses] = useState({});
 
   const [staffNote, setStaffNote] = useState('');
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -365,9 +362,10 @@ export default function CreateAdoptionProfile() {
       try {
         setLoading(true);
 
-        const [requestRes, childrenRes] = await Promise.all([
+        const [requestRes, childrenRes, meetingRes] = await Promise.all([
           adoptionApi.getById(requestId),
           childApi.getAll({ status: 'Chờ nhận nuôi', limit: 100 }),
+          meetingApi.getAll({ maYeuCauNhan: requestId, limit: 1 }).catch(() => null),
         ]);
 
         if (!active) return;
@@ -382,6 +380,36 @@ export default function CreateAdoptionProfile() {
         );
 
         setChildren(normalizedChildren);
+
+        // Fetch meeting if it exists
+        const meetingsData = meetingRes ? getResponseItems(meetingRes) : [];
+        const existingMeeting = meetingsData.length > 0 ? meetingsData[0] : null;
+
+        if (existingMeeting) {
+          setMeeting(existingMeeting);
+
+          const childIds = [];
+          const meetingChildren = existingMeeting.children || existingMeeting.Children || existingMeeting.maTres || existingMeeting.chiTietLichGap || existingMeeting.chiTietGapMat || existingMeeting.danhSachTre;
+          
+          if (Array.isArray(meetingChildren)) {
+            childIds.push(...meetingChildren.map(ct => typeof ct === 'string' ? ct : (ct.maTre || ct.MaTre || ct.id)));
+          }
+
+          if (childIds.length > 0) {
+            const selected = normalizedChildren.filter(c => childIds.includes(c.MaTre));
+            if (selected.length > 0) {
+              setSelectedChildren(selected);
+              
+              const restoredStatuses = {};
+              meetingChildren.forEach(ct => {
+                const id = typeof ct === 'string' ? ct : (ct.maTre || ct.MaTre || ct.id);
+                if (id && ct.ketQua) restoredStatuses[id] = ct.ketQua;
+                else if (id && ct.KetQua) restoredStatuses[id] = ct.KetQua;
+              });
+              setChildStatuses(restoredStatuses);
+            }
+          }
+        }
       } catch (error) {
         console.error('Lỗi tải dữ liệu tạo hồ sơ nhận nuôi:', error);
 
@@ -409,15 +437,20 @@ export default function CreateAdoptionProfile() {
     return children;
   }, [children]);
 
+  const finalSelectedChild = useMemo(() => {
+    const maTrePhuHop = Object.keys(childStatuses).find(key => childStatuses[key] === 'Phù hợp');
+    if (!maTrePhuHop) return null;
+    return selectedChildren.find(c => c.MaTre === maTrePhuHop) || null;
+  }, [childStatuses, selectedChildren]);
+
   const profileStatus = getProfileStatus(
-    selectedChild,
-    meeting,
-    meetingResult
+    finalSelectedChild,
+    meeting
   );
 
-  const canRecordResult = meeting && meeting.trangThai === 'Đã xác nhận';
+  const canRecordResult = meeting && meeting.trangThai === 'Đã gặp mặt';
 
-  const canSubmitProfile = selectedChild !== null;
+  const canSubmitProfile = finalSelectedChild !== null;
 
   const officerName =
     user?.HoTen ||
@@ -427,22 +460,40 @@ export default function CreateAdoptionProfile() {
     user?.name ||
     'Cán bộ nhận nuôi';
 
-  function handleSelectChild(child) {
-    setSelectedChild(child);
-    setMeeting(null);
-    setMeetingResult({ result: '', note: '' });
+  function handleToggleChild(child) {
+    if (meeting) return;
+    setSelectedChildren((prev) => {
+      const isSelected = prev.some((c) => c.MaTre === child.MaTre);
+      if (isSelected) {
+        return prev.filter((c) => c.MaTre !== child.MaTre);
+      }
+      return [...prev, child];
+    });
+  }
+
+  function handleChildStatusChange(maTre, newStatus) {
+    setChildStatuses((prev) => {
+      const next = { ...prev };
+      if (newStatus === 'Phù hợp') {
+        Object.keys(next).forEach(key => {
+          if (next[key] === 'Phù hợp') next[key] = ''; 
+        });
+      }
+      next[maTre] = newStatus;
+      return next;
+    });
   }
 
   async function handleCreateMeeting(e) {
     e.preventDefault();
-    if (!selectedChild || meetingCreating) return;
+    if (selectedChildren.length === 0 || meetingCreating) return;
     setMeetingCreating(true);
     try {
       const created = await meetingApi.create({
         maYeuCauNhan: request.MaYeuCauNhan,
         thoiGian: meetingForm.thoiGian,
         diaDiem: meetingForm.diaDiem,
-        maTres: [selectedChild.MaTre],
+        maTres: selectedChildren.map((c) => c.MaTre),
       });
       setMeeting(created);
     } catch (err) {
@@ -452,14 +503,14 @@ export default function CreateAdoptionProfile() {
     }
   }
 
-  async function handleConfirmMeeting() {
+  async function handleMarkMet() {
     if (!meeting?.maLichGap || meetingCreating) return;
     setMeetingCreating(true);
     try {
-      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Đã xác nhận' });
+      const updated = await meetingApi.update(meeting.maLichGap, { trangThai: 'Đã gặp mặt' });
       setMeeting(updated);
     } catch (err) {
-      alert('Lỗi xác nhận lịch: ' + (err?.message || 'Lỗi không xác định'));
+      alert('Lỗi cập nhật trạng thái: ' + (err?.message || 'Lỗi không xác định'));
     } finally {
       setMeetingCreating(false);
     }
@@ -473,7 +524,7 @@ export default function CreateAdoptionProfile() {
     try {
       await adoptionProfileApi.create({
         maYeuCauNhan: request.MaYeuCauNhan,
-        maTre: selectedChild.MaTre,
+        maTre: finalSelectedChild.MaTre,
         maCanBo: user?.MaNguoiDung || user?.maNguoiDung || user?.id || '',
         ghiChu: staffNote,
       });
@@ -534,7 +585,7 @@ export default function CreateAdoptionProfile() {
 
               <div className="space-y-10 p-6 lg:p-8">
                 <section>
-                  <SectionTitle number="I" title="Thông tin yêu cầu nhận nuôi" />
+                  <SectionTitle number="I" title="Thông initial yêu cầu nhận nuôi" />
 
                   <div className="mt-5 grid gap-5 md:grid-cols-2">
                     <ReadOnlyField
@@ -662,39 +713,39 @@ export default function CreateAdoptionProfile() {
                   <div className="mt-5 grid gap-5 md:grid-cols-2">
                     <ReadOnlyField
                       label="Mã trẻ"
-                      value={selectedChild?.MaTre || 'Chưa gán trẻ'}
-                      strong={Boolean(selectedChild)}
+                      value={finalSelectedChild?.MaTre || 'Chưa gán trẻ'}
+                      strong={Boolean(finalSelectedChild)}
                     />
 
                     <ReadOnlyField
                       label="Họ tên trẻ"
-                      value={selectedChild?.HoTen || ''}
+                      value={finalSelectedChild?.HoTen || ''}
                     />
 
                     <ReadOnlyField
                       label="Ngày sinh trẻ"
                       value={
-                        selectedChild ? safeDate(selectedChild.NgaySinh) : ''
+                        finalSelectedChild ? safeDate(finalSelectedChild.NgaySinh) : ''
                       }
                     />
 
                     <ReadOnlyField
                       label="Giới tính"
-                      value={selectedChild?.GioiTinh || ''}
+                      value={finalSelectedChild?.GioiTinh || ''}
                     />
 
                     <ReadOnlyField
                       label="Dân tộc"
-                      value={selectedChild?.DanToc || ''}
+                      value={finalSelectedChild?.DanToc || ''}
                     />
 
                     <ReadOnlyField
                       label="Chênh lệch tuổi"
                       value={
-                        selectedChild
+                        finalSelectedChild
                           ? `${getAgeGap(
                             request.NgaySinhNguoiNhan,
-                            selectedChild.NgaySinh
+                            finalSelectedChild.NgaySinh
                           )} tuổi`
                           : ''
                       }
@@ -703,10 +754,10 @@ export default function CreateAdoptionProfile() {
                     <ReadOnlyField
                       label="Đặc điểm"
                       value={
-                        selectedChild?.DacDiemNhanDang ||
-                        selectedChild?.TinhCach ||
-                        selectedChild?.SoThich ||
-                        selectedChild?.GhiChu ||
+                        finalSelectedChild?.DacDiemNhanDang ||
+                        finalSelectedChild?.TinhCach ||
+                        finalSelectedChild?.SoThich ||
+                        finalSelectedChild?.GhiChu ||
                         ''
                       }
                       wide
@@ -753,7 +804,7 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Khu vực chọn trẻ"
-                description="Danh sách trẻ đang chờ nhận nuôi. Chọn trẻ để gán vào hồ sơ."
+                description="Danh sách trẻ tiềm năng. Có thể chọn nhiều trẻ để đưa vào một lịch gặp."
               />
 
               <div className="mt-5 max-h-[680px] space-y-4 overflow-y-auto pr-1">
@@ -762,8 +813,9 @@ export default function CreateAdoptionProfile() {
                     key={child.MaTre}
                     child={child}
                     request={request}
-                    selected={selectedChild?.MaTre === child.MaTre}
-                    onSelect={handleSelectChild}
+                    selected={selectedChildren.some(c => c.MaTre === child.MaTre)}
+                    onSelect={handleToggleChild}
+                    disabled={meeting !== null}
                   />
                 ))}
 
@@ -778,17 +830,28 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Tạo lịch gặp mặt"
-                description="Lịch gặp dùng để xác nhận trước khi lập hồ sơ."
+                description="Lịch gặp dùng để người nhận nuôi tiếp xúc với các trẻ trước khi quyết định gán hồ sơ."
               />
 
-              {!selectedChild && (
+              {selectedChildren.length === 0 && (
                 <div className="mt-5">
-                  <EmptyState>Cần gán trẻ vào hồ sơ trước khi tạo lịch gặp.</EmptyState>
+                  <EmptyState>Cần chọn ít nhất 1 trẻ để tạo lịch gặp.</EmptyState>
                 </div>
               )}
 
-              {selectedChild && !meeting && (
+              {selectedChildren.length > 0 && !meeting && (
                 <form onSubmit={handleCreateMeeting} className="mt-5 grid gap-5">
+                  <div>
+                    <label className={labelClass}>Các trẻ tham gia ({selectedChildren.length})</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedChildren.map((child) => (
+                        <span key={child.MaTre} className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-xs font-bold text-[#0D47A1]">
+                          {child.HoTen} ({child.MaTre})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label className={labelClass}>Thời gian gặp</label>
                     <input
@@ -844,21 +907,21 @@ export default function CreateAdoptionProfile() {
                       type="button"
                       onClick={() => {
                         setMeeting(null);
-                        setMeetingResult({ result: '', note: '' });
+                        setChildStatuses({});
                       }}
                       className={secondaryButton}
                     >
-                      Cập nhật lịch
+                      Cập nhật thông tin lịch
                     </button>
 
-                    {meeting.trangThai !== 'Đã xác nhận' && (
+                    {meeting.trangThai === 'Đã xác nhận' && (
                       <button
                         type="button"
-                        onClick={handleConfirmMeeting}
+                        onClick={handleMarkMet}
                         disabled={meetingCreating}
                         className={primaryButton}
                       >
-                        {meetingCreating ? 'Đang xác nhận...' : 'Xác nhận lịch'}
+                        {meetingCreating ? 'Đang cập nhật...' : 'Đã gặp mặt'}
                       </button>
                     )}
                   </div>
@@ -868,67 +931,53 @@ export default function CreateAdoptionProfile() {
 
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
-                title="Ghi nhận kết quả gặp mặt"
-                description="Chỉ kết quả phù hợp mới cho phép gửi hồ sơ duyệt."
+                title="Đánh giá sau gặp mặt"
+                description="Chọn trạng thái cho từng trẻ. Trẻ 'Phù hợp' sẽ được chọn lập hồ sơ."
               />
 
               {!meeting && (
                 <div className="mt-5">
-                  <EmptyState>Cần tạo lịch gặp trước khi ghi nhận kết quả.</EmptyState>
+                  <EmptyState>Cần tạo lịch gặp trước khi đánh giá.</EmptyState>
                 </div>
               )}
 
-              {meeting && meeting.trangThai !== 'Đã xác nhận' && (
+              {meeting && meeting.trangThai !== 'Đã gặp mặt' && (
                 <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-                  Cần xác nhận lịch gặp trước khi ghi nhận kết quả.
+                  Cần xác nhận lịch và thực hiện đánh dấu "Đã gặp mặt" trước khi ghi nhận kết quả đánh giá.
                 </p>
               )}
 
               {canRecordResult && (
                 <div className="mt-5 grid gap-5">
                   <div>
-                    <label className={labelClass}>Kết quả</label>
-                    <select
-                      value={meetingResult.result}
-                      onChange={(e) =>
-                        setMeetingResult((prev) => ({
-                          ...prev,
-                          result: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">Chọn kết quả</option>
-                      <option value="Phù hợp">Phù hợp</option>
-                      <option value="Không phù hợp">Không phù hợp</option>
-                      <option value="Cần gặp lại">Cần gặp lại</option>
-                    </select>
+                    <label className={labelClass}>Đánh giá từng trẻ</label>
+                    <div className="space-y-4">
+                      {selectedChildren.map((child) => (
+                        <div key={child.MaTre} className="flex flex-col gap-3 rounded-xl border border-[#D7E5F7] p-4 bg-[#FAFCFF]">
+                          <p className="text-sm font-bold text-[#26364A]">{child.HoTen} ({child.MaTre})</p>
+                          <select
+                            value={childStatuses[child.MaTre] || ''}
+                            onChange={(e) => handleChildStatusChange(child.MaTre, e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="">Chọn kết quả đánh giá</option>
+                            <option value="Phù hợp">Phù hợp (Gán vào hồ sơ)</option>
+                            <option value="Không phù hợp">Không phù hợp</option>
+                            <option value="Cần gặp lại">Cần gặp lại</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div>
-                    <label className={labelClass}>Ghi chú kết quả</label>
+                    <label className={labelClass}>Ghi chú buổi gặp (cho hồ sơ)</label>
                     <textarea
-                      rows={4}
-                      value={meetingResult.note}
-                      onChange={(e) =>
-                        setMeetingResult((prev) => ({
-                          ...prev,
-                          note: e.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                      placeholder="Nhập nhận xét sau buổi gặp..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>Ghi chú cán bộ</label>
-                    <textarea
-                      rows={4}
+                      rows={3}
                       value={staffNote}
                       onChange={(e) => setStaffNote(e.target.value)}
                       className={inputClass}
-                      placeholder="Nhập ghi chú nếu cần..."
+                      placeholder="Nhập ghi chú chung nếu cần..."
                     />
                   </div>
                 </div>
@@ -938,12 +987,12 @@ export default function CreateAdoptionProfile() {
             <section className={`${cardClass} p-6 lg:p-7`}>
               <SectionTitle
                 title="Gửi hồ sơ duyệt"
-                description="Sau khi đủ điều kiện, payload lập hồ sơ sẽ gồm mã yêu cầu, mã trẻ, cán bộ lập, ngày lập, trạng thái và ghi chú."
+                description="Sau khi đủ điều kiện, hồ sơ sẽ được lập với trẻ đã chọn."
               />
 
               {submitAttempted && !canSubmitProfile && (
                 <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-700">
-                  Cần chọn trẻ trước khi gửi hồ sơ duyệt.
+                  Cần phải đánh giá ít nhất 1 trẻ là "Phù hợp" trước khi gửi hồ sơ duyệt.
                 </p>
               )}
 

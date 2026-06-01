@@ -259,51 +259,6 @@ export default function HomePage() {
             Chúng tôi tiếp nhận, chăm sóc và kết nối các em với những gia đình
             nhận nuôi đầy tình thương — vì một tương lai tươi sáng hơn cho mỗi em.
           </p>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 14,
-              justifyContent: "center",
-            }}
-          >
-            <Link
-              to="/dang-ky"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                height: 52,
-                padding: "0 28px",
-                borderRadius: 14,
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#fff",
-                background: "linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)",
-                boxShadow: "0 3px 10px rgba(13,71,161,0.22)",
-              }}
-            >
-              Đăng ký ngay
-            </Link>
-
-            <Link
-              to="/huong-dan"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                height: 52,
-                padding: "0 28px",
-                borderRadius: 14,
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#0D47A1",
-                background: "#fff",
-                border: "1px solid rgba(13,71,161,0.25)",
-              }}
-            >
-              Tìm hiểu quy trình
-            </Link>
-          </div>
         </div>
       </section>
 
