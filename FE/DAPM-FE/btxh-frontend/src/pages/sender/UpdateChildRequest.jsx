@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Lightbulb } from 'lucide-react';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import receptionApi from '../../api/receptionApi';
 import { inputCls, selectCls, textareaCls, FormField } from '../../components/common/FormField';
@@ -46,9 +47,9 @@ export default function UpdateChildRequest() {
       {/* header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-          <button onClick={() => navigate('/gui-tre/dashboard')} className="hover:text-[#1d4ed8] font-medium transition-colors">Tổng quan</button>
+          <button onClick={() => navigate('/gui-tre/dashboard')} className="hover:text-[#0D47A1] font-medium transition-colors">Tổng quan</button>
           <span>/</span>
-          <button onClick={() => navigate('/gui-tre/trang-thai')} className="hover:text-[#1d4ed8] font-medium transition-colors">Trạng thái</button>
+          <button onClick={() => navigate('/gui-tre/trang-thai')} className="hover:text-[#0D47A1] font-medium transition-colors">Trạng thái</button>
           <span>/</span>
           <span className="text-gray-600 font-semibold">Cập nhật hồ sơ</span>
         </div>
@@ -58,7 +59,7 @@ export default function UpdateChildRequest() {
 
       {/* notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex gap-3">
-        <span className="text-lg flex-shrink-0">💡</span>
+        <Lightbulb size={18} className="flex-shrink-0 text-amber-500 mt-0.5" />
         <div>
           <p className="text-sm font-bold text-amber-800 mb-0.5">Cập nhật thông tin</p>
           <p className="text-xs text-amber-700 leading-relaxed">
@@ -73,7 +74,7 @@ export default function UpdateChildRequest() {
           {/* child info */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-              <div className="w-1 h-5 bg-[#1d4ed8] rounded-full" />
+              <div className="w-1 h-5 bg-[#0D47A1] rounded-full" />
               <h2 className="font-black text-gray-800">Thông tin trẻ em</h2>
             </div>
             <div className="p-5 space-y-4">
@@ -112,7 +113,7 @@ export default function UpdateChildRequest() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#1d4ed8] hover:bg-[#1e40af] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-md shadow-blue-200 text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#0D47A1] hover:bg-[#0a3880] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition active:scale-[0.99] text-sm"
             >
               {isSubmitting ? (
                 <>

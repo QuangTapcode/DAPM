@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Anh1 from "../../assets/Anh1_Home.jpg";
 import Anh2 from "../../assets/Anh2_Home.jpg";
 export default function HomePage() {
@@ -202,22 +203,107 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* HERO - nền trắng */}
-      <section style={{ background: "#ffffff", padding: "70px 0 76px" }}>
-        <div className="container" style={{ textAlign: "center", maxWidth: 860 }}>
+      {/* HERO */}
+      <section
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          padding: "84px 0 88px",
+          background:
+            "radial-gradient(48rem 30rem at 50% -8%, rgba(41,121,255,0.10), transparent 60%), #ffffff",
+        }}
+      >
+        <div className="container" style={{ textAlign: "center", maxWidth: 880 }}>
+          <span
+            style={{
+              display: "inline-block",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              color: "#1976D2",
+              background: "rgba(41,121,255,0.08)",
+              padding: "6px 14px",
+              borderRadius: 999,
+              marginBottom: 22,
+            }}
+          >
+            Trung tâm Bảo trợ Xã hội Trẻ em Mồ côi
+          </span>
+
+          <h1
+            style={{
+              fontSize: "clamp(34px, 5vw, 56px)",
+              fontWeight: 900,
+              lineHeight: 1.12,
+              letterSpacing: "-0.025em",
+              color: "#0D47A1",
+              margin: "0 0 20px",
+              textWrap: "balance",
+            }}
+          >
+            Mỗi đứa trẻ đều xứng đáng
+            <br />
+            có một mái ấm yêu thương
+          </h1>
+
           <p
             style={{
-              maxWidth: 700,
-              margin: "0 auto",
+              maxWidth: 660,
+              margin: "0 auto 32px",
               fontSize: 18,
-              lineHeight: 1.85,
+              lineHeight: 1.8,
               color: "#5f6f82",
             }}
           >
-            Có một nơi mà tình thương không bao giờ vơi cạn — đó chính là Trung tâm
-            Bảo trợ Trẻ em Mồ côi. Chúng tôi tin rằng mỗi đứa trẻ đều xứng đáng có
-            một điểm tựa, một danh tính và một tương lai tươi sáng.
+            Chúng tôi tiếp nhận, chăm sóc và kết nối các em với những gia đình
+            nhận nuôi đầy tình thương — vì một tương lai tươi sáng hơn cho mỗi em.
           </p>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 14,
+              justifyContent: "center",
+            }}
+          >
+            <Link
+              to="/dang-ky"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 52,
+                padding: "0 28px",
+                borderRadius: 14,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#fff",
+                background: "linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)",
+                boxShadow: "0 3px 10px rgba(13,71,161,0.22)",
+              }}
+            >
+              Đăng ký ngay
+            </Link>
+
+            <Link
+              to="/huong-dan"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 52,
+                padding: "0 28px",
+                borderRadius: 14,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#0D47A1",
+                background: "#fff",
+                border: "1px solid rgba(13,71,161,0.25)",
+              }}
+            >
+              Tìm hiểu quy trình
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -364,7 +450,7 @@ export default function HomePage() {
                   <div className="feat-icon-float" style={{ top: i % 2 === 0 ? -14 : "auto", bottom: i % 2 === 1 ? -14 : "auto", right: i % 2 === 0 ? -10 : "auto", left: i % 2 === 1 ? -10 : "auto" }}>
                     {f.icon}
                   </div>
-                  <div className="feat-circle" style={{ background: `linear-gradient(135deg, ${f.dot} 0%, ${i === 0 ? "#1976D2" : i === 1 ? "#42A5F5" : "#90CAF9"} 100%)`, boxShadow: `0 12px 32px ${f.dot}40` }}>
+                  <div className="feat-circle" style={{ background: `linear-gradient(135deg, ${f.dot} 0%, ${i === 0 ? "#1976D2" : i === 1 ? "#42A5F5" : "#90CAF9"} 100%)`, boxShadow: `0 6px 18px ${f.dot}26` }}>
                     <span className="feat-circle-inner">{f.num}</span>
                   </div>
                 </div>

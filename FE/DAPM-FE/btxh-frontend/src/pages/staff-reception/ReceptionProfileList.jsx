@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import receptionProfileApi from '../../api/receptionProfileApi';
-import { Eye, Search } from 'lucide-react';
+import { Eye, Search, Inbox } from 'lucide-react';
 import { formatDate } from '../../utils/formatDate';
 
 
@@ -203,9 +203,9 @@ function StatusPill({ status }) {
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${meta.cls}`}
         >
-            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+            <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
             {meta.label}
         </span>
     );
@@ -289,7 +289,7 @@ export default function ReceptionProfileList() {
                 )}
 
                 <section className="overflow-hidden rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]">
-                    <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+                    <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-7 py-6 lg:px-7">
                         <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
                             <div className="rounded-[24px] border border-[#DCE8F6] bg-[#EEF4FB] p-1.5">
                                 <div className="flex flex-wrap gap-1.5">
@@ -341,27 +341,33 @@ export default function ReceptionProfileList() {
                     </div>
 
                     {filteredProfiles.length === 0 ? (
-                        <div className="px-6 py-16 text-center">
-                            <p className="text-sm font-semibold text-[#8FA0B8]">
-                                Không có hồ sơ tiếp nhận phù hợp.
+                        <div className="flex flex-col items-center px-6 py-16 text-center">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3FF] text-[#0D47A1]">
+                                <Inbox size={26} strokeWidth={1.75} />
+                            </div>
+                            <p className="mt-4 text-[15px] font-bold text-[#1A2B4B]">
+                                Không có hồ sơ tiếp nhận phù hợp
+                            </p>
+                            <p className="mt-1.5 text-sm text-[#8FA0B8]">
+                                Thử đổi bộ lọc hoặc từ khóa tìm kiếm.
                             </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
-                                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                                <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                                     <tr>
-                                        <th className="px-6 py-4 font-bold">Mã hồ sơ</th>
-                                        <th className="px-6 py-4 font-bold">Mã yêu cầu</th>
-                                        <th className="px-6 py-4 font-bold">Mã trẻ</th>
-                                        <th className="px-6 py-4 font-bold">Tên trẻ</th>
-                                        <th className="px-6 py-4 font-bold">Người gửi</th>
-                                        <th className="px-6 py-4 font-bold">Người duyệt</th>
-                                        <th className="px-6 py-4 font-bold">Ngày tiếp nhận</th>
-                                        <th className="px-6 py-4 font-bold">Ngày duyệt</th>
-                                        <th className="px-6 py-4 font-bold">Trạng thái</th>
-                                        <th className="px-6 py-4 font-bold">Ghi chú</th>
-                                        <th className="w-[120px] px-6 py-4 text-right font-bold">
+                                        <th className="px-7 py-5 font-bold">Mã hồ sơ</th>
+                                        <th className="px-7 py-5 font-bold">Mã yêu cầu</th>
+                                        <th className="px-7 py-5 font-bold">Mã trẻ</th>
+                                        <th className="px-7 py-5 font-bold">Tên trẻ</th>
+                                        <th className="px-7 py-5 font-bold">Người gửi</th>
+                                        <th className="px-7 py-5 font-bold">Người duyệt</th>
+                                        <th className="px-7 py-5 font-bold">Ngày tiếp nhận</th>
+                                        <th className="px-7 py-5 font-bold">Ngày duyệt</th>
+                                        <th className="px-7 py-5 font-bold">Trạng thái</th>
+                                        <th className="px-7 py-5 font-bold">Ghi chú</th>
+                                        <th className="w-[120px] px-7 py-5 text-right font-bold">
                                             Thao tác
                                         </th>
                                     </tr>
@@ -380,31 +386,31 @@ export default function ReceptionProfileList() {
                                                     : 'hover:bg-[#F8FBFF]'
                                                     }`}
                                             >
-                                                <td className="px-6 py-5">
-                                                    <span className="rounded-xl bg-[#EAF3FF] px-3 py-1 text-xs font-extrabold text-[#0D47A1]">
+                                                <td className="px-7 py-6">
+                                                    <span className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-[13px] font-extrabold tracking-wide text-[#0D47A1]">
                                                         {profile.MaHSTiepNhan}
                                                     </span>
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                                                <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                                                     {profile.MaYeuCauGuiTre}
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                                                <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                                                     {profile.MaTre || 'Chưa có'}
                                                 </td>
 
-                                                <td className="px-6 py-5">
-                                                    <p className="font-bold text-[#26364A]">
+                                                <td className="px-7 py-6">
+                                                    <p className="text-[15px] font-bold text-[#1A2B4B]">
                                                         {profile.TenTre}
                                                     </p>
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm font-semibold text-[#26364A]">
+                                                <td className="px-7 py-6 text-sm font-semibold text-[#26364A]">
                                                     {profile.TenNguoiGui}
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm text-[#5F738F]">
+                                                <td className="px-7 py-6 text-sm text-[#5F738F]">
                                                     <p className="font-semibold text-[#26364A]">
                                                         {profile.TenNguoiDuyet}
                                                     </p>
@@ -413,27 +419,27 @@ export default function ReceptionProfileList() {
                                                     </p>
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm text-[#5F738F]">
+                                                <td className="px-7 py-6 text-sm text-[#5F738F]">
                                                     {profile.NgayTiepNhan
                                                         ? formatDate(profile.NgayTiepNhan)
                                                         : '—'}
                                                 </td>
 
-                                                <td className="px-6 py-5 text-sm text-[#8FA0B8]">
+                                                <td className="px-7 py-6 text-sm text-[#8FA0B8]">
                                                     {profile.NgayDuyet
                                                         ? formatDate(profile.NgayDuyet)
                                                         : 'Chưa duyệt'}
                                                 </td>
 
-                                                <td className="px-6 py-5">
+                                                <td className="px-7 py-6">
                                                     <StatusPill status={profile.TrangThai} />
                                                 </td>
 
-                                                <td className="max-w-[260px] px-6 py-5 text-sm leading-6 text-[#5F738F]">
+                                                <td className="max-w-[260px] px-7 py-6 text-sm leading-6 text-[#5F738F]">
                                                     {truncateText(profile.GhiChu, 80)}
                                                 </td>
 
-                                                <td className="px-6 py-5">
+                                                <td className="px-7 py-6">
                                                     <div className="flex justify-end">
                                                         <button
                                                             type="button"
@@ -441,9 +447,9 @@ export default function ReceptionProfileList() {
                                                                 e.stopPropagation();
                                                                 openDetail(profile.MaHSTiepNhan);
                                                             }}
-                                                            className="inline-flex h-10 w-[96px] items-center justify-center gap-2 rounded-2xl border border-[#CFE0F5] bg-white px-4 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+                                                            className="inline-flex h-11 w-[104px] items-center justify-center gap-2 rounded-2xl border border-[#CFE0F5] bg-white px-4 text-[13px] font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] active:scale-[0.97]"
                                                         >
-                                                            <Eye size={14} />
+                                                            <Eye size={15} />
                                                             Xem
                                                         </button>
                                                     </div>

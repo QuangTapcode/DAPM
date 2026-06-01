@@ -271,7 +271,7 @@ export default function RequestStatus() {
           <p className="text-slate-400">Bạn chưa có yêu cầu nào.</p>
           <Link
             to="/gui-tre/tao-yeu-cau"
-            className="mt-3 inline-block text-sm font-medium text-[#2F80ED] hover:underline"
+            className="mt-3 inline-block text-sm font-medium text-[#0D47A1] hover:underline"
           >
             Tạo yêu cầu đầu tiên
           </Link>
@@ -469,7 +469,7 @@ export default function RequestStatus() {
                 <div className="mt-8">
                   <Link
                     to={`/gui-tre/cap-nhat/${selectedRequest.id}`}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#2F80ED] px-5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(47,128,237,0.22)] transition hover:brightness-105"
+                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#0D47A1] px-5 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(13,71,161,0.20)] transition hover:bg-[#0a3880] active:scale-[0.98]"
                   >
                     Cập nhật hồ sơ
                   </Link>

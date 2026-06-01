@@ -107,7 +107,7 @@ function AddAccountModal({ onClose, onAdd }) {
     onAdd({ ...form, id: Date.now(), isActive: true, createdAt: new Date().toISOString() });
   };
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-2xl border border-[#D8E6F5] bg-[#F7FBFF] text-sm text-[#334155] placeholder-[#B0C4D8] focus:border-[#2F80ED] focus:ring-4 focus:ring-blue-100 outline-none transition';
+  const inputCls = 'w-full px-4 py-2.5 rounded-2xl border border-[#D8E6F5] bg-[#F7FBFF] text-sm text-[#334155] placeholder-[#B0C4D8] focus:border-[#0D47A1] focus:ring-4 focus:ring-blue-100 outline-none transition';
   const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.12em] text-[#8FA0B8] mb-1.5';
 
   return (
@@ -310,7 +310,7 @@ export default function AccountList() {
                 </svg>
                 <input type="text" placeholder="Tìm tên, email..." value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-9 pr-4 py-2 rounded-2xl border border-[#DCE8F7] bg-[#F7FBFF] text-sm text-[#334155] focus:border-[#2F80ED] focus:ring-4 focus:ring-blue-100 outline-none transition w-52"/>
+                  className="pl-9 pr-4 py-2 rounded-2xl border border-[#DCE8F7] bg-[#F7FBFF] text-sm text-[#334155] focus:border-[#0D47A1] focus:ring-4 focus:ring-blue-100 outline-none transition w-52"/>
               </div>
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-[#DCE8F7] text-xs font-semibold text-[#5F81BC] hover:bg-[#EAF3FF] transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,7 +332,7 @@ export default function AccountList() {
               <thead>
                 <tr className="border-b border-[#F0F5FC]">
                   {['Họ tên', 'Email', 'Vai trò', 'Trạng thái', 'Ngày tạo', 'Hành động'].map(h => (
-                    <th key={h} className="px-6 pb-3 pt-4 text-left text-[11px] font-bold uppercase tracking-[0.14em] text-[#8FA0B8]">{h}</th>
+                    <th key={h} className="px-6 py-5 text-left text-[12px] font-bold uppercase tracking-[0.12em] text-[#8093AB]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -346,46 +346,46 @@ export default function AccountList() {
                   const isUserActive = checkActive(u);
                   return (
                     <tr key={u.id} className="hover:bg-[#F5F9FE] transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-[#EAF3FF] flex items-center justify-center font-bold text-[#0D47A1] text-sm shrink-0">
+                          <div className="h-12 w-12 rounded-[16px] bg-gradient-to-br from-[#EAF3FF] to-[#DCEBFC] ring-1 ring-[#0D47A1]/5 flex items-center justify-center font-black text-[#0D47A1] text-sm shrink-0">
                             {initials}
                           </div>
                           <div>
-                            <p className="font-semibold text-[15px] text-[#334155]">{displayName || '—'}</p>
-                            <p className="text-[11px] text-[#8FA0B8]">ID: DG-{1000 + u.id}</p>
+                            <p className="font-bold text-[15px] text-[#1A2B4B]">{displayName || '—'}</p>
+                            <p className="mt-0.5 text-[13px] text-[#8FA0B8]">ID: DG-{1000 + u.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-[#8FA0B8]">{u.email}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold ${rolePill}`}>
+                      <td className="px-6 py-5 text-[#8FA0B8]">{u.email}</td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[13px] font-bold ${rolePill}`}>
                           {roleLabel}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${isUserActive ? 'text-emerald-600' : 'text-red-500'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isUserActive ? 'bg-emerald-500' : 'bg-red-400'}`}/>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center gap-2 text-[13px] font-bold ${isUserActive ? 'text-emerald-600' : 'text-red-500'}`}>
+                          <span className={`w-2 h-2 rounded-full ${isUserActive ? 'bg-emerald-500' : 'bg-red-400'}`}/>
                           {isUserActive ? 'Hoạt động' : 'Bị khóa'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-[#8FA0B8]">{formatDate(u.createdAt)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-5 text-[#8FA0B8]">{formatDate(u.createdAt)}</td>
+                      <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
                           <button onClick={() => setModalUser(u)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-[#0D47A1] text-white rounded-xl text-xs font-semibold hover:bg-[#1565C0] transition-colors">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            className="inline-flex h-10 items-center gap-1.5 px-4 bg-[#0D47A1] text-white rounded-xl text-[13px] font-bold hover:bg-[#1565C0] transition active:scale-[0.97]">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
                             Phân quyền
                           </button>
                           <button onClick={() => handleToggleLock(u.id)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                            className={`inline-flex h-10 items-center gap-1.5 px-4 rounded-xl text-[13px] font-bold transition active:scale-[0.97] ${
                               isUserActive
                                 ? 'border border-red-200 text-red-500 hover:bg-red-50'
                                 : 'border border-emerald-200 text-emerald-600 hover:bg-emerald-50'
                             }`}>
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               {isUserActive
                                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                 : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
@@ -399,14 +399,14 @@ export default function AccountList() {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan="6" className="text-center py-12 text-[#8FA0B8] text-sm">Không có dữ liệu</td></tr>
+                  <tr><td colSpan="6" className="text-center py-16 text-[15px] font-semibold text-[#8093AB]">Không có dữ liệu</td></tr>
                 )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[#E3ECF8]">
+          <div className="flex items-center justify-between px-6 py-5 border-t border-[#E3ECF8]">
             <p className="text-xs text-[#8FA0B8]">Hiện thị 1 – {Math.min(10, filtered.length)} của {filtered.length} tài khoản</p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

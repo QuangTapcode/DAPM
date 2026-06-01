@@ -92,14 +92,23 @@ function getAge(dateString) {
   if (Number.isNaN(dob.getTime())) return '—';
 
   const now = new Date();
-  let age = now.getFullYear() - dob.getFullYear();
-  const monthDiff = now.getMonth() - dob.getMonth();
+  if (dob > now) return '—';
 
-  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
-    age -= 1;
+  let years = now.getFullYear() - dob.getFullYear();
+  let months = now.getMonth() - dob.getMonth();
+
+  if (now.getDate() < dob.getDate()) months -= 1;
+  if (months < 0) {
+    years -= 1;
+    months += 12;
   }
 
-  return age >= 0 ? `${age} tuổi` : '—';
+  if (years >= 1) return `${years} tuổi`;
+  if (months >= 1) return `${months} tháng`;
+
+  const diffDays = Math.floor((now - dob) / 86400000);
+  if (diffDays >= 7) return `${Math.floor(diffDays / 7)} tuần`;
+  return `${Math.max(diffDays, 0)} ngày`;
 }
 
 function getGenderText(value) {
@@ -125,9 +134,9 @@ function StatusPill({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}
+      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${meta.cls}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
       {status || 'Chưa cập nhật'}
     </span>
   );
@@ -140,7 +149,7 @@ function HealthPill({ status }) {
 
   return (
     <span
-      className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}
+      className={`inline-flex whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${meta.cls}`}
     >
       {status || 'Chưa cập nhật'}
     </span>
@@ -251,7 +260,7 @@ export default function ChildList() {
         </header>
 
         <section className="overflow-hidden rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]">
-          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-7 py-6 lg:px-7">
             <div className="flex flex-col gap-5">
               <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                 <div className="rounded-[24px] border border-[#DCE8F6] bg-[#EEF4FB] p-1.5">
@@ -328,17 +337,17 @@ export default function ChildList() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
-                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Trẻ</th>
-                    <th className="px-6 py-4 font-bold">Mã trẻ</th>
-                    <th className="px-6 py-4 font-bold">Ngày sinh</th>
-                    <th className="px-6 py-4 font-bold">Dân tộc</th>
-                    <th className="px-6 py-4 font-bold">Địa chỉ</th>
-                    <th className="px-6 py-4 font-bold">Sức khỏe</th>
-                    <th className="px-6 py-4 font-bold">Trạng thái</th>
-                    <th className="px-6 py-4 font-bold">Ngày tiếp nhận</th>
-                    <th className="w-[260px] px-6 py-4 text-right font-bold">
+                    <th className="px-7 py-5 font-bold">Trẻ</th>
+                    <th className="px-7 py-5 font-bold">Mã trẻ</th>
+                    <th className="px-7 py-5 font-bold">Ngày sinh</th>
+                    <th className="px-7 py-5 font-bold">Dân tộc</th>
+                    <th className="px-7 py-5 font-bold">Địa chỉ</th>
+                    <th className="px-7 py-5 font-bold">Sức khỏe</th>
+                    <th className="px-7 py-5 font-bold">Trạng thái</th>
+                    <th className="px-7 py-5 font-bold">Ngày tiếp nhận</th>
+                    <th className="w-[260px] px-7 py-5 text-right font-bold">
                       Thao tác
                     </th>
                   </tr>
@@ -351,38 +360,40 @@ export default function ChildList() {
                       onClick={() => openDetail(child.MaTre)}
                       className="cursor-pointer transition hover:bg-[#F8FBFF]"
                     >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3FF] text-sm font-black text-[#0D47A1]">
+                      <td className="px-7 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#EAF3FF] to-[#DCEBFC] text-base font-black text-[#0D47A1] ring-1 ring-[#0D47A1]/5">
                             {getInitials(child.HoTen)}
                           </div>
 
-                          <div>
-                            <p className="font-bold text-[#26364A]">
+                          <div className="min-w-0">
+                            <p className="text-[16px] font-bold leading-tight text-[#1A2B4B]">
                               {child.HoTen}
                             </p>
-                            <p className="mt-1 text-xs font-semibold text-[#7D90AA]">
-                              {getGenderText(child.GioiTinh)} · {getAge(child.NgaySinh)}
+                            <p className="mt-1.5 flex items-center gap-2 text-[13px] font-semibold text-[#7D90AA]">
+                              <span>{getGenderText(child.GioiTinh)}</span>
+                              <span className="h-1 w-1 rounded-full bg-[#C4D2E4]" />
+                              <span>{getAge(child.NgaySinh)}</span>
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-5">
-                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1 text-xs font-extrabold text-[#0D47A1]">
+                      <td className="px-7 py-6">
+                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-[13px] font-extrabold tracking-wide text-[#0D47A1]">
                           {child.MaTre}
                         </span>
                       </td>
 
-                      <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                         {child.NgaySinh ? formatDate(child.NgaySinh) : '—'}
                       </td>
 
-                      <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                         {child.DanToc || 'Chưa cập nhật'}
                       </td>
 
-                      <td className="max-w-[300px] px-6 py-5 text-sm leading-6 text-[#5F738F]">
+                      <td className="max-w-[300px] px-7 py-6 text-sm leading-6 text-[#5F738F]">
                         {joinAddress(
                           child.DiaChiCuThe,
                           child.TenXaPhuong,
@@ -390,24 +401,24 @@ export default function ChildList() {
                         )}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <HealthPill status={child.SucKhoeGanNhat} />
                         <p className="mt-2 max-w-[220px] text-xs leading-5 text-[#8FA0B8]">
                           {child.TinhTrangSucKhoe || 'Chưa có ghi nhận'}
                         </p>
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <StatusPill status={child.TrangThai} />
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm text-[#5F738F]">
                         {child.NgayTiepNhan
                           ? formatDate(child.NgayTiepNhan)
                           : '—'}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -415,9 +426,9 @@ export default function ChildList() {
                               e.stopPropagation();
                               openEdit(child.MaTre);
                             }}
-                            className="inline-flex h-10 w-[88px] items-center justify-center gap-2 rounded-2xl border border-[#CFE0F5] bg-white px-3 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]"
+                            className="inline-flex h-11 w-[92px] items-center justify-center gap-2 rounded-2xl border border-[#CFE0F5] bg-white px-3 text-[13px] font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] active:scale-[0.97]"
                           >
-                            <Pencil size={14} />
+                            <Pencil size={15} />
                             Sửa
                           </button>
 
@@ -427,9 +438,9 @@ export default function ChildList() {
                               e.stopPropagation();
                               openHealth(child.MaTre);
                             }}
-                            className="inline-flex h-10 w-[116px] items-center justify-center gap-2 rounded-2xl bg-[#0D47A1] px-3 text-xs font-bold text-white transition hover:bg-[#083778]"
+                            className="inline-flex h-11 w-[120px] items-center justify-center gap-2 rounded-2xl bg-[#0D47A1] px-3 text-[13px] font-bold text-white transition hover:bg-[#083778] active:scale-[0.97]"
                           >
-                            <HeartPulse size={14} />
+                            <HeartPulse size={15} />
                             Sức khỏe
                           </button>
                         </div>

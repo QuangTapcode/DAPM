@@ -86,7 +86,7 @@ function SectionCard({ title, icon, children, className = '' }) {
       className={`rounded-[28px] border border-[#E3EBF6] bg-white p-6 shadow-[0_14px_36px_rgba(31,42,61,0.06)] ${className}`}
     >
       <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#2563EB]">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#0D47A1]">
           {icon}
         </div>
 
@@ -127,7 +127,7 @@ function DocumentItem({ name, url }) {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="shrink-0 rounded-xl border border-[#CFE0F5] bg-white px-3 py-2 text-xs font-bold text-[#2563EB] transition hover:bg-[#EEF4FF]"
+        className="shrink-0 rounded-xl border border-[#CFE0F5] bg-white px-3 py-2 text-xs font-bold text-[#0D47A1] transition hover:bg-[#EEF4FF]"
       >
         Xem
       </a>
@@ -144,7 +144,7 @@ function NoticeState({ title, message, onBack }) {
       <button
         type="button"
         onClick={onBack}
-        className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#2563EB] px-5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(37,99,235,0.18)] transition hover:brightness-105"
+        className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0D47A1] px-5 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(13,71,161,0.20)] transition hover:bg-[#0a3880] active:scale-[0.98]"
       >
         <ArrowLeft size={16} />
         Quay lại
@@ -189,7 +189,7 @@ function ChildListTable({ childrenList, selectedId, onSelect }) {
                       className={`cursor-pointer transition ${active ? 'bg-[#EAF3FF]' : 'bg-white hover:bg-[#F8FBFF]'
                         }`}
                     >
-                      <td className="px-5 py-4 font-bold text-[#2563EB]">
+                      <td className="px-5 py-4 font-bold text-[#0D47A1]">
                         {child.childCode || child.id}
                       </td>
 
@@ -250,7 +250,7 @@ function ChildDetail({ child }) {
       <div className="border-b border-[#E8EEF6] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#EEF4FF] text-[28px] font-black text-[#2563EB]">
+            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#EEF4FF] text-[28px] font-black text-[#0D47A1]">
               {initials}
             </div>
 
@@ -419,7 +419,7 @@ export default function SentChildInfo() {
   if (loading) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 py-20">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1d4ed8]/20 border-t-[#1d4ed8]" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0D47A1]/20 border-t-[#0D47A1]" />
         <p className="text-sm text-slate-400">Đang tải thông tin...</p>
       </div>
     );
@@ -476,7 +476,7 @@ export default function SentChildInfo() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Tìm theo mã trẻ, tên trẻ, khu vực..."
-                className="w-full rounded-2xl border border-[#D7E5F7] bg-white py-3 pl-11 pr-4 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10"
+                className="w-full rounded-2xl border border-[#D7E5F7] bg-white py-3 pl-11 pr-4 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10"
               />
             </div>
           </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Eye,
+  Inbox,
 } from 'lucide-react';
 
 import receptionApi from '../../api/receptionApi';
@@ -13,7 +14,7 @@ const pageClass = 'min-h-screen bg-[#F5F7FB]';
 const cardClass =
   'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
 const actionButtonBase =
-  'inline-flex h-10 w-[118px] items-center justify-center gap-2 rounded-2xl px-4 text-xs font-bold transition';
+  'inline-flex h-11 w-[122px] items-center justify-center gap-2 rounded-2xl px-4 text-[13px] font-bold transition active:scale-[0.97]';
 const STATUS_DB = {
   CHO_XU_LY: 'Chờ xử lý',
   DANG_XEM_XET: 'Đang xem xét',
@@ -149,9 +150,9 @@ function StatusPill({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold whitespace-nowrap ${meta.cls}`}
+      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] font-bold whitespace-nowrap ${meta.cls}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
       {meta.label}
     </span>
   );
@@ -176,8 +177,11 @@ function RequestAction({ status, onClick }) {
 }
 function EmptyState({ text }) {
   return (
-    <div className="px-6 py-16 text-center">
-      <p className="text-sm font-semibold text-[#8FA0B8]">{text}</p>
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3FF] text-[#0D47A1]">
+        <Inbox size={26} strokeWidth={1.75} />
+      </div>
+      <p className="mt-4 text-[15px] font-bold text-[#1A2B4B]">{text}</p>
     </div>
   );
 }
@@ -276,7 +280,7 @@ export default function ChildRequestList() {
         </header>
 
         <section className={cardClass}>
-          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-7 py-6 lg:px-7">
             <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
               <div className="rounded-[24px] border border-[#DCE8F6] bg-[#EEF4FB] p-1.5">
                 <div className="flex flex-wrap gap-1.5">
@@ -338,18 +342,18 @@ export default function ChildRequestList() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1240px] border-collapse text-left text-sm">
-                <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Mã yêu cầu</th>
-                    <th className="px-6 py-4 font-bold">Người gửi</th>
-                    <th className="px-6 py-4 font-bold">Loại người gửi</th>
-                    <th className="px-6 py-4 font-bold">Quan hệ với trẻ</th>
-                    <th className="px-6 py-4 font-bold">Trẻ tạm</th>
-                    <th className="px-6 py-4 font-bold">Ngày tạo</th>
-                    <th className="px-6 py-4 font-bold">Cập nhật</th>
-                    <th className="px-6 py-4 font-bold">Trạng thái</th>
-                    <th className="px-6 py-4 font-bold">Ghi chú</th>
-                    <th className="w-[150px] px-6 py-4 text-right font-bold">Thao tác</th>
+                    <th className="px-7 py-5 font-bold">Mã yêu cầu</th>
+                    <th className="px-7 py-5 font-bold">Người gửi</th>
+                    <th className="px-7 py-5 font-bold">Loại người gửi</th>
+                    <th className="px-7 py-5 font-bold">Quan hệ với trẻ</th>
+                    <th className="px-7 py-5 font-bold">Trẻ tạm</th>
+                    <th className="px-7 py-5 font-bold">Ngày tạo</th>
+                    <th className="px-7 py-5 font-bold">Cập nhật</th>
+                    <th className="px-7 py-5 font-bold">Trạng thái</th>
+                    <th className="px-7 py-5 font-bold">Ghi chú</th>
+                    <th className="w-[150px] px-7 py-5 text-right font-bold">Thao tác</th>
                   </tr>
                 </thead>
 
@@ -360,49 +364,49 @@ export default function ChildRequestList() {
                       onClick={() => openDetail(request.id)}
                       className="cursor-pointer transition hover:bg-[#F8FBFF]"
                     >
-                      <td className="px-6 py-5">
-                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1 text-xs font-extrabold text-[#0D47A1]">
+                      <td className="px-7 py-6">
+                        <span className="rounded-xl bg-[#EAF3FF] px-3 py-1.5 text-[13px] font-extrabold tracking-wide text-[#0D47A1]">
                           {request.code}
                         </span>
                       </td>
 
-                      <td className="px-6 py-5">
-                        <p className="font-bold text-[#26364A]">
+                      <td className="px-7 py-6">
+                        <p className="text-[15px] font-bold text-[#1A2B4B]">
                           {request.senderName}
                         </p>
                       </td>
 
-                      <td className="px-6 py-5 text-sm font-semibold text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm font-semibold text-[#5F738F]">
                         {request.senderType}
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm text-[#5F738F]">
                         {request.relationship}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <p className="font-semibold text-[#26364A]">
                           {request.childName}
                         </p>
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-[#5F738F]">
+                      <td className="px-7 py-6 text-sm text-[#5F738F]">
                         {formatDate(request.createdAt)}
                       </td>
 
-                      <td className="px-6 py-5 text-sm text-[#8FA0B8]">
+                      <td className="px-7 py-6 text-sm text-[#8FA0B8]">
                         {request.updatedAt ? formatDate(request.updatedAt) : '—'}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <StatusPill status={request.status} />
                       </td>
 
-                      <td className="max-w-[280px] px-6 py-5 text-sm leading-6 text-[#5F738F]">
+                      <td className="max-w-[280px] px-7 py-6 text-sm leading-6 text-[#5F738F]">
                         {truncateText(request.note || request.reason, 80)}
                       </td>
 
-                      <td className="px-6 py-5">
+                      <td className="px-7 py-6">
                         <div className="flex justify-end">
                           <RequestAction
                             status={request.status}

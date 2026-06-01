@@ -164,7 +164,7 @@ function AdoptionInfoSection({ register, errors, watch, setValue }) {
   return (
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#1976D2] text-xs">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#0D47A1] text-xs">
           ✓
         </span>
         <h2 className="text-[15px] font-bold !text-[#0D47A1]">
@@ -324,7 +324,7 @@ function ExpectationSection({ register, errors, watch, setValue }) {
   return (
     <section className="rounded-2xl bg-white border border-[#edf2f7] shadow-sm p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#1976D2] text-xs">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf4ff] text-[#0D47A1] text-xs">
           ♥
         </span>
         <h2 className="text-[15px] font-bold !text-[#0D47A1]">
@@ -525,7 +525,7 @@ function NotesCard() {
 
   return (
     <section className="rounded-2xl bg-[#eaf4ff] border border-[#dbeafe] p-5">
-      <h3 className="text-[15px] font-bold text-[#1f5fbf] mb-4">
+      <h3 className="text-[15px] font-bold text-[#0a3880] mb-4">
         Lưu ý quan trọng
       </h3>
 
@@ -550,7 +550,7 @@ function SubmitCard({ isSubmitting, onCancel }) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-[#1976D2] hover:bg-[#1f5fbf] text-white text-sm font-semibold py-3 px-4 transition disabled:opacity-70"
+        className="w-full rounded-xl bg-[#0D47A1] hover:bg-[#0a3880] text-white text-sm font-semibold py-3 px-4 transition disabled:opacity-70"
       >
         {isSubmitting ? 'Đang xử lý...' : 'Gửi đơn đăng ký'}
       </button>

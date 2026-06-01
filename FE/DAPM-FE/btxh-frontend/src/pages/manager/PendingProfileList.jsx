@@ -30,16 +30,7 @@ function EyeIcon() {
   );
 }
 
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-orange-400',
-  'bg-teal-500',
-  'bg-rose-400',
-  'bg-violet-500',
-  'bg-emerald-500',
-];
-
-function Avatar({ name, idx }) {
+function Avatar({ name }) {
   const safeName = (name || 'Người dùng').trim();
   const initials =
     safeName
@@ -51,9 +42,7 @@ function Avatar({ name, idx }) {
       .toUpperCase() || 'ND';
 
   return (
-    <div
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-    >
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#EAF3FF] to-[#DCEBFC] text-sm font-black text-[#0D47A1] ring-1 ring-[#0D47A1]/5">
       {initials}
     </div>
   );
@@ -70,7 +59,7 @@ function ProfileRow({ item, idx, checked, onToggle }) {
       className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-blue-50/40 [&>td]:align-middle"
       onClick={() => navigate(detailPath)}
     >
-      <td className="px-4 py-3.5" onClick={(event) => event.stopPropagation()}>
+      <td className="px-6 py-5" onClick={(event) => event.stopPropagation()}>
         <input
           type="checkbox"
           checked={checked}
@@ -79,54 +68,54 @@ function ProfileRow({ item, idx, checked, onToggle }) {
         />
       </td>
 
-      <td className="whitespace-nowrap px-4 py-3.5 text-sm font-bold text-blue-600">
+      <td className="whitespace-nowrap px-6 py-5 text-[15px] font-extrabold text-[#0D47A1]">
         #{item.id}
       </td>
 
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <span
-          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+          className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
             isReception
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-emerald-100 text-emerald-700'
+              ? 'bg-[#EAF3FF] text-[#0D47A1]'
+              : 'bg-emerald-50 text-emerald-700'
           }`}
         >
           {isReception ? 'Gửi trẻ' : 'Nhận nuôi'}
         </span>
       </td>
 
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <div className="flex items-center gap-2.5">
-          <Avatar name={mainName} idx={idx} />
+          <Avatar name={mainName} />
           <div>
-            <p className="text-sm font-semibold leading-tight text-gray-800">{mainName}</p>
-            <p className="mt-0.5 text-xs text-gray-400">
+            <p className="text-[15px] font-bold leading-tight text-[#1A2B4B]">{mainName}</p>
+            <p className="mt-1 text-[13px] text-[#8FA0B8]">
               Mã yêu cầu: {item.requestId || 'Chưa cập nhật'}
             </p>
           </div>
         </div>
       </td>
 
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <p className="text-sm font-medium text-gray-700">{item.phone || '-'}</p>
         <p className="mt-0.5 text-xs text-gray-400">
           {item.childName ? `Trẻ: ${item.childName}` : item.address || 'Chưa cập nhật'}
         </p>
       </td>
 
-      <td className="whitespace-nowrap px-3 py-3.5 text-sm text-gray-500">
+      <td className="whitespace-nowrap px-6 py-5 text-sm text-gray-500">
         {formatDate(item.createdAt)}
       </td>
 
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <Badge status={item.status} />
       </td>
 
-      <td className="px-4 py-3.5 text-center" onClick={(event) => event.stopPropagation()}>
+      <td className="px-6 py-5 text-center" onClick={(event) => event.stopPropagation()}>
         <Link
           to={detailPath}
           title="Xem chi tiết"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF3FF] text-[#0D47A1] transition hover:bg-[#DCEBFC] active:scale-[0.95]"
         >
           <EyeIcon />
         </Link>
@@ -247,10 +236,10 @@ export default function PendingProfileList() {
         <button
           onClick={handleBulkApprove}
           disabled={selectedRows.length === 0 || saving}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
+          className={`inline-flex h-11 items-center gap-1.5 rounded-xl px-5 text-sm font-bold text-white transition active:scale-[0.98] ${
             selectedRows.length === 0 || saving
-              ? 'cursor-not-allowed bg-blue-300'
-              : 'bg-blue-600 hover:bg-blue-700'
+              ? 'cursor-not-allowed bg-[#9DB8DD]'
+              : 'bg-[#0D47A1] hover:bg-[#083778]'
           }`}
         >
           {saving ? 'Đang phê duyệt...' : `Phê duyệt (${selectedRows.length})`}
@@ -269,13 +258,13 @@ export default function PendingProfileList() {
                 setSelectedRows([]);
               }}
               className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
-                active ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                active ? 'bg-white text-[#0D47A1] shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {item.label}
               <span
                 className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
-                  active ? 'bg-blue-50 text-blue-500' : 'bg-gray-200 text-gray-400'
+                  active ? 'bg-[#EAF3FF] text-[#0D47A1]' : 'bg-gray-200 text-gray-400'
                 }`}
               >
                 {item.count}
@@ -295,8 +284,8 @@ export default function PendingProfileList() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-4 py-3 text-left">
+              <tr className="border-b border-gray-100 bg-[#F7FAFF]">
+                <th className="px-6 py-4 text-left">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
@@ -318,7 +307,7 @@ export default function PendingProfileList() {
                 ].map((header) => (
                   <th
                     key={header}
-                    className={`px-4 py-3 text-xs font-bold uppercase tracking-wide text-gray-400 ${
+                    className={`px-6 py-4 text-[12px] font-bold uppercase tracking-[0.12em] text-[#8093AB] ${
                       header === 'Thao tác' ? 'text-center' : 'text-left'
                     }`}
                   >
@@ -331,7 +320,7 @@ export default function PendingProfileList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-gray-400">
+                  <td colSpan={8} className="px-6 py-16 text-center text-[15px] font-semibold text-[#8093AB]">
                     Đang tải hồ sơ...
                   </td>
                 </tr>
@@ -352,7 +341,7 @@ export default function PendingProfileList() {
 
               {!loading && visibleRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-gray-400">
+                  <td colSpan={8} className="px-6 py-16 text-center text-[15px] font-semibold text-[#8093AB]">
                     Không có hồ sơ nào chờ duyệt.
                   </td>
                 </tr>

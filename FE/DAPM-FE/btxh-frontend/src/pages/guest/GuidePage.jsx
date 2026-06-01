@@ -4,7 +4,7 @@ const GUIDE_CONTENT = {
   adopt: {
     tab: "Hướng dẫn Nhận nuôi",
     intro:
-      "Cung cấp quy trình minh bạch và đầy đủ các điều kiện pháp lý để bảo vệ quyền lợi tốt nhất cho trẻ em tại The Sanctuary.",
+      "Cung cấp quy trình minh bạch và đầy đủ các điều kiện pháp lý để bảo vệ quyền lợi tốt nhất cho trẻ em tại trung tâm.",
     conditionTitle: "01. Điều kiện nhận nuôi",
     processTitle: "02. Quy trình 4 bước",
     conditions: [
@@ -315,7 +315,7 @@ export default function GuidePage() {
           justify-content: center;
           font-size: 26px;
           font-weight: 800;
-          box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.18);
         }
 
         .guide-step-content h3 {
@@ -412,6 +412,20 @@ export default function GuidePage() {
 
       <section className="guide-page">
         <div className="guide-container">
+          <h1
+            style={{
+              textAlign: "center",
+              fontSize: "clamp(30px, 4vw, 44px)",
+              fontWeight: 900,
+              letterSpacing: "-0.025em",
+              lineHeight: 1.15,
+              color: "#0D47A1",
+              margin: "0 0 16px",
+            }}
+          >
+            Hướng dẫn quy trình
+          </h1>
+
           <p className="guide-intro">{data.intro}</p>
 
           <div className="guide-tab-wrap">

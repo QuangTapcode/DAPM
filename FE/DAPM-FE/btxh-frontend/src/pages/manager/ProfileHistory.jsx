@@ -12,16 +12,7 @@ import {
   normalizeManagerProfile,
 } from './managerProfileUtils';
 
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-orange-400',
-  'bg-teal-500',
-  'bg-rose-400',
-  'bg-violet-500',
-  'bg-emerald-500',
-];
-
-function Avatar({ name, idx }) {
+function Avatar({ name }) {
   const safeName = (name || 'Người dùng').trim();
   const initials =
     safeName
@@ -33,9 +24,7 @@ function Avatar({ name, idx }) {
       .toUpperCase() || 'ND';
 
   return (
-    <div
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-    >
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#EAF3FF] to-[#DCEBFC] text-sm font-black text-[#0D47A1] ring-1 ring-[#0D47A1]/5">
       {initials}
     </div>
   );
@@ -50,33 +39,33 @@ function ProfileRow({ item, idx, onClick }) {
       className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-blue-50/40"
       onClick={() => onClick(item)}
     >
-      <td className="whitespace-nowrap px-4 py-3.5 text-sm font-bold text-blue-600">
+      <td className="whitespace-nowrap px-6 py-5 text-[15px] font-extrabold text-[#0D47A1]">
         #{item.id}
       </td>
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <span
-          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-            isReception ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+          className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
+            isReception ? 'bg-[#EAF3FF] text-[#0D47A1]' : 'bg-emerald-50 text-emerald-700'
           }`}
         >
           {isReception ? 'Gửi trẻ' : 'Nhận nuôi'}
         </span>
       </td>
-      <td className="px-3 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <Avatar name={mainName} idx={idx} />
+      <td className="px-6 py-5">
+        <div className="flex items-center gap-3">
+          <Avatar name={mainName} />
           <div>
-            <p className="text-sm font-semibold leading-tight text-gray-800">{mainName}</p>
-            <p className="mt-0.5 text-xs text-gray-400">
+            <p className="text-[15px] font-bold leading-tight text-[#1A2B4B]">{mainName}</p>
+            <p className="mt-1 text-[13px] text-[#8FA0B8]">
               Mã yêu cầu: {item.requestId || 'Chưa cập nhật'}
             </p>
           </div>
         </div>
       </td>
-      <td className="whitespace-nowrap px-3 py-3.5 text-sm text-gray-500">
+      <td className="whitespace-nowrap px-6 py-5 text-sm text-[#5F738F]">
         {formatDate(item.approvedAt || item.createdAt)}
       </td>
-      <td className="px-3 py-3.5">
+      <td className="px-6 py-5">
         <Badge status={item.status} />
       </td>
     </tr>
@@ -198,9 +187,9 @@ export default function ProfileHistory() {
               <button
                 key={item.value}
                 onClick={() => setTab(item.value)}
-                className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
+                className={`border-b-2 pb-2 text-sm font-bold transition-colors ${
                   tab === item.value
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-[#0D47A1] text-[#0D47A1]'
                     : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -218,25 +207,25 @@ export default function ProfileHistory() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-            <thead className="bg-slate-50 text-slate-500">
+            <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">Mã hồ sơ</th>
-                <th className="px-6 py-4 text-left font-semibold">Loại</th>
-                <th className="px-6 py-4 text-left font-semibold">Người liên quan</th>
-                <th className="px-6 py-4 text-left font-semibold">Ngày xử lý</th>
-                <th className="px-6 py-4 text-left font-semibold">Trạng thái</th>
+                <th className="px-6 py-5 text-left font-bold">Mã hồ sơ</th>
+                <th className="px-6 py-5 text-left font-bold">Loại</th>
+                <th className="px-6 py-5 text-left font-bold">Người liên quan</th>
+                <th className="px-6 py-5 text-left font-bold">Ngày xử lý</th>
+                <th className="px-6 py-5 text-left font-bold">Trạng thái</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-16 text-center text-[15px] font-semibold text-[#8093AB]">
                     Đang tải lịch sử hồ sơ...
                   </td>
                 </tr>
               ) : visibleItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-16 text-center text-[15px] font-semibold text-[#8093AB]">
                     Chưa có hồ sơ đã xử lý.
                   </td>
                 </tr>

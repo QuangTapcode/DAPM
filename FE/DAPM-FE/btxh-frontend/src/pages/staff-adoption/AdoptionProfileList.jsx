@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatDate';
 import adoptionProfileApi from '../../api/adoptionProfileApi';
@@ -11,13 +12,13 @@ const cardClass =
   'rounded-[30px] border border-[#E1E8F2] bg-white shadow-[0_18px_46px_rgba(31,42,61,0.07)]';
 
 const inputClass =
-  'w-full rounded-2xl border border-[#D7E5F7] bg-white px-4 py-3 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10';
+  'h-12 w-full rounded-2xl border border-[#D7E5F7] bg-white px-4 text-sm font-medium text-[#26364A] outline-none transition placeholder:text-[#9AACBF] focus:border-[#0D47A1] focus:ring-4 focus:ring-[#0D47A1]/10';
 
 const primaryButton =
-  'rounded-xl bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#083778]';
+  'inline-flex h-11 items-center justify-center rounded-2xl bg-[#0D47A1] px-4 text-[13px] font-bold text-white transition hover:bg-[#083778] active:scale-[0.97]';
 
 const secondaryButton =
-  'rounded-xl border border-[#CFE0F5] bg-white px-4 py-2 text-xs font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF]';
+  'inline-flex h-11 items-center justify-center rounded-2xl border border-[#CFE0F5] bg-white px-4 text-[13px] font-bold text-[#0D47A1] transition hover:bg-[#F4F8FF] active:scale-[0.97]';
 
 
 function normalizeMeeting(item) {
@@ -74,8 +75,9 @@ const profileStatusTabs = [
 function EmptyRow({ colSpan, text }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-6 py-14 text-center text-sm text-[#8FA0B8]">
-        {text}
+      <td colSpan={colSpan} className="px-6 py-16 text-center">
+        <p className="text-[15px] font-bold text-[#1A2B4B]">{text}</p>
+        <p className="mt-1.5 text-sm text-[#8FA0B8]">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
       </td>
     </tr>
   );
@@ -192,11 +194,7 @@ function StatusCombobox({ value, options, onChange }) {
                   {item.label}
                 </span>
 
-                {active && (
-                  <span className="text-xs font-extrabold text-[#0D47A1]">
-                    ✓
-                  </span>
-                )}
+                {active && <Check size={15} className="text-[#0D47A1]" strokeWidth={2.5} />}
               </button>
             );
           })}
@@ -343,7 +341,7 @@ export default function AdoptionProfileList() {
         {/* Main Card */}
         <section className={`${cardClass} overflow-hidden`}>
           {/* Toolbar */}
-          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-6 py-5 lg:px-7">
+          <div className="border-b border-[#E4EAF2] bg-gradient-to-r from-white to-[#F1F7FF] px-7 py-6 lg:px-7">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               {/* Main tabs */}
               <div className="w-full rounded-[24px] border border-[#DCE8F6] bg-[#EEF4FB] p-1.5 xl:w-[520px]">
@@ -412,24 +410,24 @@ export default function AdoptionProfileList() {
 
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1220px] border-collapse text-left text-sm">
-                  <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                  <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                     <tr>
-                      <th className="px-6 py-4 font-bold">Mã lịch</th>
-                      <th className="px-6 py-4 font-bold">Yêu cầu</th>
-                      <th className="px-6 py-4 font-bold">Người nhận nuôi</th>
-                      <th className="px-6 py-4 font-bold">Trẻ được chọn</th>
-                      <th className="px-6 py-4 font-bold">Thời gian</th>
-                      <th className="px-6 py-4 font-bold">Trạng thái</th>
-                      <th className="px-6 py-4 font-bold">Kết quả</th>
-                      <th className="px-6 py-4 text-right font-bold">Thao tác</th>
+                      <th className="px-7 py-5 font-bold">Mã lịch</th>
+                      <th className="px-7 py-5 font-bold">Yêu cầu</th>
+                      <th className="px-7 py-5 font-bold">Người nhận nuôi</th>
+                      <th className="px-7 py-5 font-bold">Trẻ được chọn</th>
+                      <th className="px-7 py-5 font-bold">Thời gian</th>
+                      <th className="px-7 py-5 font-bold">Trạng thái</th>
+                      <th className="px-7 py-5 font-bold">Kết quả</th>
+                      <th className="px-7 py-5 text-right font-bold">Thao tác</th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-[#EDF3FB]">
                     {filteredMeetings.map((item) => (
                       <tr key={item.MaLichGap} className="transition hover:bg-[#F7FAFF]">
-                        <td className="px-6 py-5">
-                          <p className="font-extrabold text-[#0D47A1]">
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-extrabold text-[#0D47A1]">
                             {item.MaLichGap}
                           </p>
                           <p className="mt-1 text-xs font-medium text-[#8FA0B8]">
@@ -437,12 +435,12 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5 font-bold text-[#26364A]">
+                        <td className="px-7 py-6 text-[15px] font-bold text-[#1A2B4B]">
                           {item.MaYeuCauNhan}
                         </td>
 
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-bold text-[#1A2B4B]">
                             {item.TenNguoiNhan}
                           </p>
                           <p className="mt-1 text-xs text-[#8FA0B8]">
@@ -450,14 +448,14 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">{item.MaTre}</p>
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-bold text-[#1A2B4B]">{item.MaTre}</p>
                           <p className="mt-1 text-xs text-[#8FA0B8]">
                             {item.TenTre}
                           </p>
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <p className="font-semibold text-[#26364A]">
                             {item.ThoiGian
                               ? new Date(item.ThoiGian).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
@@ -468,11 +466,11 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <Badge status={item.TrangThai} size="md" />
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           {item.KetQuaGapMat ? (
                             <Badge status={item.KetQuaGapMat} size="md" />
                           ) : (
@@ -482,7 +480,7 @@ export default function AdoptionProfileList() {
                           )}
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <div className="flex justify-end gap-2">
                             <Link
                               to={`/can-bo-nhan-nuoi/tao-ho-so/${item.MaYeuCauNhan}`}
@@ -533,24 +531,24 @@ export default function AdoptionProfileList() {
 
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
-                  <thead className="bg-[#F7FAFF] text-[11px] uppercase tracking-[0.14em] text-[#8FA0B8]">
+                  <thead className="bg-[#F7FAFF] text-[12px] uppercase tracking-[0.12em] text-[#8093AB]">
                     <tr>
-                      <th className="px-6 py-4 font-bold">Mã hồ sơ</th>
-                      <th className="px-6 py-4 font-bold">Yêu cầu</th>
-                      <th className="px-6 py-4 font-bold">Người nhận nuôi</th>
-                      <th className="px-6 py-4 font-bold">Trẻ được gán</th>
-                      <th className="px-6 py-4 font-bold">Ngày lập</th>
-                      <th className="px-6 py-4 font-bold">Cán bộ lập</th>
-                      <th className="px-6 py-4 font-bold">Trạng thái</th>
-                      <th className="px-6 py-4 text-right font-bold">Thao tác</th>
+                      <th className="px-7 py-5 font-bold">Mã hồ sơ</th>
+                      <th className="px-7 py-5 font-bold">Yêu cầu</th>
+                      <th className="px-7 py-5 font-bold">Người nhận nuôi</th>
+                      <th className="px-7 py-5 font-bold">Trẻ được gán</th>
+                      <th className="px-7 py-5 font-bold">Ngày lập</th>
+                      <th className="px-7 py-5 font-bold">Cán bộ lập</th>
+                      <th className="px-7 py-5 font-bold">Trạng thái</th>
+                      <th className="px-7 py-5 text-right font-bold">Thao tác</th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-[#EDF3FB]">
                     {filteredProfiles.map((item) => (
                       <tr key={item.MaHoSoNhanNuoi} className="transition hover:bg-[#F7FAFF]">
-                        <td className="px-6 py-5">
-                          <p className="font-extrabold text-[#0D47A1]">
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-extrabold text-[#0D47A1]">
                             {item.MaHoSoNhanNuoi}
                           </p>
                           <p className="mt-1 text-xs font-medium text-[#8FA0B8]">
@@ -558,12 +556,12 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5 font-bold text-[#26364A]">
+                        <td className="px-7 py-6 text-[15px] font-bold text-[#1A2B4B]">
                           {item.MaYeuCauNhan}
                         </td>
 
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-bold text-[#1A2B4B]">
                             {item.TenNguoiNhan}
                           </p>
                           <p className="mt-1 text-xs text-[#8FA0B8]">
@@ -571,18 +569,18 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5">
-                          <p className="font-bold text-[#26364A]">{item.MaTre}</p>
+                        <td className="px-7 py-6">
+                          <p className="text-[15px] font-bold text-[#1A2B4B]">{item.MaTre}</p>
                           <p className="mt-1 text-xs text-[#8FA0B8]">
                             {item.TenTre}
                           </p>
                         </td>
 
-                        <td className="px-6 py-5 font-semibold text-[#5F738F]">
+                        <td className="px-7 py-6 font-semibold text-[#5F738F]">
                           {formatDate(item.NgayLap)}
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <p className="font-semibold text-[#26364A]">
                             {item.TenCanBoLap}
                           </p>
@@ -591,11 +589,11 @@ export default function AdoptionProfileList() {
                           </p>
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <Badge status={item.TrangThai} size="md" />
                         </td>
 
-                        <td className="px-6 py-5">
+                        <td className="px-7 py-6">
                           <div className="flex justify-end gap-2">
                             <Link
                               to={`/can-bo-nhan-nuoi/ho-so/${item.MaHoSoNhanNuoi}`}
@@ -608,7 +606,7 @@ export default function AdoptionProfileList() {
                               <button
                                 type="button"
                                 onClick={() => completeProfile(item.MaHoSoNhanNuoi)}
-                                className="rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-xs font-bold text-green-700 transition hover:bg-green-100"
+                                className="inline-flex h-11 items-center justify-center rounded-2xl border border-green-200 bg-green-50 px-4 text-[13px] font-bold text-green-700 transition hover:bg-green-100 active:scale-[0.97]"
                               >
                                 Hoàn tất
                               </button>
